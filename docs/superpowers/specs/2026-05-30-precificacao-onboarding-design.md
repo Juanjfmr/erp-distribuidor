@@ -181,6 +181,13 @@ Upload arquivo → Detecção automática do sistema de origem
 | 4 | Trial: alterar de 14 para 30 dias | `firebase.js` | Baixa |
 | 5 | Acesso de contador (visualizador externo) | `usuarios.js`, `nav.js` | Baixa |
 | 6 | Strings do projeto antigo renomeadas | `state.js`, `config.js` | Baixa |
+| 7 | **NF-e integrada via Focus NFe** | `invoiceService.js` (novo), `notas.js` | Alta |
+| 7a | Campos fiscais em produtos (NCM, CFOP, origem) | `produtos.js` | Baixa |
+| 7b | Campos fiscais na empresa (IE, regime tributário) | `config.js` | Baixa |
+| 7c | Numeração atômica de NF no Firestore | `firebase.js`, `invoiceService.js` | Média |
+| 7d | Emissão, cancelamento e CCe via API Focus NFe | `invoiceService.js` | Alta |
+| 7e | DANFE PDF + chave de acesso no retorno | `notas.js` | Média |
+| 7f | Sandbox Focus NFe para homologação | — | Baixa (configuração) |
 
 ### 4.2 Fase 2 — Pós-lançamento (primeiros 90 dias)
 
