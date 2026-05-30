@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>2R Comércio — Gestão Empresarial</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>ERP Distribuidora — Gestão Empresarial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script type="module">
 // ─── FIREBASE SDK ─────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeApp as initSecondaryApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDjW5fM3X8iLPPS1Co5Htjc8P5HjqcnObE",
-  authDomain: "distribuidora-martins-6711e.firebaseapp.com",
-  projectId: "distribuidora-martins-6711e",
-  storageBucket: "distribuidora-martins-6711e.firebasestorage.app",
-  messagingSenderId: "866358377648",
-  appId: "1:866358377648:web:8eb1059140d42cd3070f75"
+  apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
+  authDomain: "erp-distribuidora-905ca.firebaseapp.com",
+  projectId: "erp-distribuidora-905ca",
+  storageBucket: "erp-distribuidora-905ca.firebasestorage.app",
+  messagingSenderId: "1081428850259",
+  appId: "1:1081428850259:web:6e3d83b13a033e0154b8a6"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -29,7 +32,7 @@ const auth = getAuth(app);
 // Expose to global scope for use in non-module scripts
 window._db = db;
 window._auth = auth;
-window._fbFns = { doc, setDoc, getDoc, collection, getDocs, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp };
+window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
 
 // Auth state listener
 onAuthStateChanged(auth, async (user) => {
@@ -70,9 +73,11 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         // Nenhum perfil: primeiro usuário criado direto no Firebase Console — vira admin
         const companyId = user.uid;
-        const profile = { name: user.email, email: user.email, role: 'admin', active: true, createdAt: new Date().toISOString(), companyId };
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        const profile = { name: user.displayName || user.email, email: user.email, role: 'admin', active: true, createdAt: new Date().toISOString(), companyId };
         await setDoc(doc(db, 'users', user.uid), profile);
-        await setDoc(doc(db, 'config', 'global'), { companyId }); // cria config/global uma única vez
+        await setDoc(doc(db, 'config', 'global'), { companyId });
+        await setDoc(doc(db, 'empresas', companyId), { plan: 'trial', trialEndsAt, active: true }, { merge: true });
         window._userProfile = profile;
         window._userRole = 'admin';
         window._companyId = companyId;
@@ -81,6 +86,28 @@ onAuthStateChanged(auth, async (user) => {
       window._userRole = 'admin'; // fallback
       window._companyId = user.uid;
     }
+    // ── Verificação de plano / trial ─────────────────────────────────────────
+    const companySnap = await getDoc(doc(db, 'empresas', window._companyId)).catch(()=>null);
+    const companyData = companySnap && companySnap.exists() ? companySnap.data() : {};
+    const plan = companyData.plan || 'trial';
+    const trialEndsAt = companyData.trialEndsAt ? new Date(companyData.trialEndsAt) : null;
+    const isActive = companyData.active !== false;
+    const trialExpired = plan === 'trial' && trialEndsAt && new Date() > trialEndsAt;
+
+    if (!isActive || trialExpired) {
+      document.getElementById('login-screen').style.setProperty('display','none','important');
+      document.getElementById('app').style.setProperty('display','none','important');
+      document.getElementById('trial-block-screen').style.setProperty('display','flex','important');
+      if (trialExpired) {
+        document.getElementById('trial-block-msg').textContent =
+          'Seu período de teste de 14 dias encerrou. Entre em contato para ativar sua assinatura.';
+      }
+      return;
+    }
+    window._plan = plan;
+    window._trialEndsAt = trialEndsAt;
+    window._companyData = companyData;
+
     const loginEl = document.getElementById('login-screen');
     const appEl = document.getElementById('app');
     loginEl.style.setProperty('display','none','important');
@@ -103,23 +130,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if(passInput) passInput.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   const emailInput = document.getElementById('login-email');
   if(emailInput) emailInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+  // Salva código de afiliado da URL no localStorage (persiste até o cadastro)
+  const refParam = new URLSearchParams(window.location.search).get('ref');
+  if(refParam) { localStorage.setItem('_ref', refParam); showSignup(); }
 });
 
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d1117;--bg2:#161b22;--bg3:#010409;
-  --border:#21262d;--border2:#30363d;
-  --text:#e6edf3;--text2:#c9d1d9;--muted:#8b949e;
-  --amber:#f0c040;--green:#3fb950;--red:#f85149;--blue:#58a6ff;
-  --font-d:'Syne',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
+  --bg:#020617;--bg2:#0f172a;--bg3:#020617;
+  --border:#1e293b;--border2:#334155;
+  --text:#f8fafc;--text2:#cbd5e1;--muted:#64748b;
+  --amber:#f59e0b;--green:#22c55e;--red:#f85149;--blue:#58a6ff;
+  --font-d:'Plus Jakarta Sans',sans-serif;--font-b:'Plus Jakarta Sans',sans-serif;--font-m:'JetBrains Mono',monospace;
 }
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px}
 body{display:flex}
 input,select,button,textarea{font-family:var(--font-b)}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:-1px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:0;box-shadow:0 0 0 4px rgba(245,158,11,.12)}
 #login-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg3);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column}
 #app{width:100%;height:100vh;display:none;overflow:hidden;flex-direction:column}
 #app.visible{display:flex!important}
@@ -134,13 +164,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-o
 .logo-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.1em}
 nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-left:2px solid transparent;transition:all .15s}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor}
 .nav-item:hover{color:var(--text2);background:rgba(255,255,255,.03)}
 .nav-item.active{color:var(--amber);background:rgba(240,192,64,.08);border-left-color:var(--amber);font-weight:600}
 .nav-sep{height:1px;background:var(--border);margin:8px 0}
 .sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--font-m)}
 .page-title{font-family:var(--font-d);font-weight:700;font-size:20px}
 .topbar-date{font-size:12px;color:var(--muted);font-family:var(--font-m)}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap}
 td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
@@ -153,7 +184,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:18px 20px}
 .kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.kpi-value{font-family:var(--font-m);font-size:21px;font-weight:500;margin-top:6px}
+.kpi-value{font-family:var(--font-m);font-size:21px;font-weight:500;margin-top:6px;letter-spacing:-.02em}
 .kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
 .bg-green{background:rgba(63,185,80,.15);color:var(--green)}
@@ -272,31 +303,98 @@ tr:hover td{background:rgba(255,255,255,.015)}
   .totals-box{padding:12px}
 }
 </style>
+<style>
+/* ── Login Screen Redesign (ls-*) ─────────────────────────────────────────── */
+#login-screen{flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;overflow:hidden}
+.ls-brand{flex:0 0 60%;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;position:relative;background:linear-gradient(135deg,#010409 0%,#0d1117 45%,#0f1c2e 100%);overflow:hidden}
+.ls-brand::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 40%,rgba(240,192,64,.07) 0%,transparent 70%),radial-gradient(ellipse 60% 80% at 80% 70%,rgba(88,166,255,.05) 0%,transparent 70%);pointer-events:none}
+.ls-brand::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(33,38,45,.4) 1px,transparent 1px),linear-gradient(90deg,rgba(33,38,45,.4) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;opacity:.5}
+.ls-brand-inner{position:relative;z-index:1;max-width:480px}
+.ls-logo{display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.ls-logo-icon{flex-shrink:0;background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.25);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:center}
+.ls-logo-text{font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--amber);letter-spacing:.04em;line-height:1;text-transform:uppercase}
+.ls-logo-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:3px}
+.ls-tagline{font-family:var(--font-d);font-weight:700;font-size:32px;line-height:1.2;color:var(--text);margin-bottom:12px}
+.ls-tagline span{color:var(--amber)}
+.ls-desc{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:40px}
+.ls-benefits{list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:48px}
+.ls-benefits li{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text2)}
+.ls-benefits li svg{flex-shrink:0;color:var(--green)}
+.ls-cta-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--amber);text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:opacity .15s}
+.ls-cta-link:hover{opacity:.8}
+.ls-trial-badge{margin-top:24px;font-size:12px;color:var(--muted);padding-top:20px;border-top:1px solid var(--border)}
+.nf-ft-btn{background:transparent;border:none;padding:6px 14px;font-size:12px;font-family:var(--font-b);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nf-ft-btn.nf-ft-active{background:var(--amber);color:#0d1117;font-weight:700}
+.seg-card{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:11.5px;color:var(--text2);transition:all .15s;background:var(--bg);white-space:nowrap;overflow:hidden}
+.seg-card:hover{border-color:var(--amber);color:var(--text)}
+.seg-card.seg-active{border-color:var(--amber);background:rgba(245,158,11,.08);color:var(--amber)}
+.ls-form-side{flex:0 0 40%;display:flex;align-items:center;justify-content:center;background:var(--bg2);padding:40px 48px;overflow-y:auto}
+.ls-form-wrap{width:100%;max-width:360px}
+.ls-form-title{font-family:var(--font-d);font-weight:700;font-size:22px;color:var(--text);margin-bottom:6px}
+.ls-form-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5}
+.ls-field{margin-bottom:16px}
+.ls-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.04em}
+.ls-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text);font-size:14px;transition:border-color .15s,box-shadow .15s}
+.ls-input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(240,192,64,.12)}
+.ls-input::placeholder{color:var(--muted)}
+.ls-btn-primary{width:100%;background:var(--amber);color:#0d1117;border:none;border-radius:8px;padding:13px;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.02em}
+.ls-btn-primary:hover{background:#ffd050}
+.ls-btn-primary:active{transform:scale(.99)}
+.ls-divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.ls-divider::before,.ls-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.ls-divider span{font-size:11px;color:var(--muted)}
+.ls-btn-google{width:100%;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .15s,background .15s}
+.ls-btn-google:hover{border-color:var(--border);background:rgba(255,255,255,.03)}
+.ls-footer-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+.ls-link{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px;transition:color .15s}
+.ls-link:hover{color:var(--text2)}
+.ls-link-amber{font-size:12px;color:var(--amber);cursor:pointer;font-weight:600;transition:opacity .15s}
+.ls-link-amber:hover{opacity:.8}
+.ls-err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:7px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:16px;display:none}
+/* Transition entre login/signup */
+.ls-panel{transition:opacity .25s,transform .25s}
+.ls-panel.ls-hidden{opacity:0;pointer-events:none;transform:translateY(6px);position:absolute;width:100%}
+.ls-form-wrap{position:relative}
+/* Trial block */
+.ls-trial-card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:52px 44px;width:420px;max-width:92vw;text-align:center}
+.ls-trial-icon{margin-bottom:20px;display:flex;justify-content:center}
+.ls-trial-title{font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--amber);margin-bottom:10px}
+.ls-trial-sub{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:32px}
+.ls-trial-btn{display:block;background:var(--amber);color:#0d1117;border-radius:8px;padding:13px 24px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:14px;transition:background .15s}
+.ls-trial-btn:hover{background:#ffd050}
+.ls-trial-logout{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.ls-trial-logout:hover{color:var(--text2)}
+@media(max-width:768px){
+  .ls-brand{display:none!important}
+  .ls-form-side{flex:1;padding:32px 24px}
+}
+</style>
 </head>
 <body>
 <div id="sidebar">
   <div class="logo">
-    <div class="logo-title">2R Comércio</div>
+    <div class="logo-title">ERP Distribuidora</div>
     <div class="logo-sub">GESTÃO EMPRESARIAL</div>
   </div>
   <nav id="nav">
-    <div class="nav-item active" onclick="navigate('dashboard')" data-view="dashboard"><span>▦</span> Dashboard</div>
+    <div class="nav-item active" onclick="navigate('dashboard')" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</div>
     <div class="nav-sep"></div>
-    <div class="nav-item" onclick="navigate('produtos')" data-view="produtos"><span>⊞</span> Produtos</div>
-    <div class="nav-item" onclick="navigate('clientes')" data-view="clientes"><span>◎</span> Clientes</div>
-    <div class="nav-item" onclick="navigate('fornecedores')" data-view="fornecedores"><span>◫</span> Fornecedores</div>
-    <div class="nav-item" onclick="navigate('pedidos')" data-view="pedidos"><span>📋</span> Pedidos</div>
+    <div class="nav-item" onclick="navigate('produtos')" data-view="produtos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Produtos</div>
+    <div class="nav-item" onclick="navigate('clientes')" data-view="clientes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Clientes</div>
+    <div class="nav-item" onclick="navigate('fornecedores')" data-view="fornecedores"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Fornecedores</div>
+    <div class="nav-item" onclick="navigate('pedidos')" data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg> Pedidos</div>
     <div class="nav-sep"></div>
-    <div class="nav-item" onclick="navigate('notas')" data-view="notas"><span>◈</span> Nota Fiscal</div>
-    <div class="nav-item" onclick="navigate('devolucoes')" data-view="devolucoes"><span>↩</span> Devoluções</div>
-    <div class="nav-item" onclick="navigate('compras')" data-view="compras"><span>↓</span> Compras</div>
-    <div class="nav-item" onclick="navigate('contas')" data-view="contas"><span>◉</span> Contas</div>
+    <div class="nav-item" onclick="navigate('notas')" data-view="notas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Nota Fiscal</div>
+    <div class="nav-item" onclick="navigate('devolucoes')" data-view="devolucoes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.79"/></svg> Devoluções</div>
+    <div class="nav-item" onclick="navigate('compras')" data-view="compras"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Compras</div>
+    <div class="nav-item" onclick="navigate('contas')" data-view="contas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Contas</div>
     <div class="nav-sep"></div>
-    <div class="nav-item" onclick="navigate('caixa')" data-view="caixa"><span>⊟</span> Fluxo de Caixa</div>
-    <div class="nav-item" onclick="navigate('relatorios')" data-view="relatorios"><span>▤</span> Relatórios</div>
+    <div class="nav-item" onclick="navigate('caixa')" data-view="caixa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Fluxo de Caixa</div>
+    <div class="nav-item" onclick="navigate('relatorios')" data-view="relatorios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Relatórios</div>
     <div class="nav-sep"></div>
-    <div class="nav-item" onclick="navigate('config')" data-view="config"><span>⚙</span> Configurações</div>
-    <div class="nav-item" onclick="navigate('usuarios')" data-view="usuarios" id="nav-usuarios"><span>👥</span> Usuários</div>
+    <div class="nav-item" onclick="navigate('config')" data-view="config"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Configurações</div>
+    <div class="nav-item" onclick="navigate('usuarios')" data-view="usuarios" id="nav-usuarios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Usuários</div>
+    <div class="nav-item" onclick="navigate('minha-conta')" data-view="minha-conta" id="nav-minhaconta"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Minha Conta</div>
   </nav>
   <div class="sidebar-footer" id="sb-footer">v2.0</div>
 </div>
@@ -358,6 +456,60 @@ function saveState(){
   saveToFirebase();
 }
 
+// ─── SCANNER DE CÓDIGO DE BARRAS ─────────────────────────────────────────────
+function scanBeep(ok=true){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value=ok?880:300;
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.15);
+  }catch(e){}
+}
+
+function scanAddItem(modalType, code){
+  if(!code) return;
+  const clean = code.trim();
+  // Busca por EAN, depois código interno, depois nome exato
+  const p = state.products.find(x=>x.active!==false&&x.ean===clean)
+         || state.products.find(x=>x.active!==false&&x.code===clean)
+         || state.products.find(x=>x.active!==false&&norm(x.name)===norm(clean));
+  if(!p){
+    scanBeep(false);
+    const scanEl = el(modalType==='nf'?'nf-scan-ean':'ped-scan-ean');
+    if(scanEl){ scanEl.style.borderColor='var(--red)'; setTimeout(()=>scanEl.style.borderColor='',1000); }
+    showSyncStatus(`⚠ EAN não encontrado: ${clean}`, true);
+    return;
+  }
+  if(modalType==='nf'){
+    const existing=state.nfItems.find(it=>it.productId===p.id);
+    if(existing){ existing.qty+=1; } else { state.nfItems.push({productId:p.id,qty:1,price:p.salePrice,itemDiscount:0}); }
+    nfRenderItems();
+  } else if(modalType==='ped'){
+    const existing=state.pedidoItems.find(it=>it.productId===p.id);
+    if(existing){ existing.qty+=1; } else { state.pedidoItems.push({productId:p.id,name:p.name,unit:p.unit,qty:1,price:p.salePrice,itemDiscount:0}); }
+    pedidoRenderItems();
+  } else if(modalType==='compra'){
+    const existing=state.compraItems.find(it=>it.productId===p.id);
+    if(existing){ existing.qty+=1; } else { state.compraItems.push({productId:p.id,name:p.name,qty:1,cost:p.costPrice||0,unit:p.unit||'UN'}); }
+    compraRenderItems();
+  }
+  scanBeep(true);
+  showSyncStatus(`✓ ${p.name} adicionado`);
+}
+
+function scanKeyHandler(e, modalType){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const val = e.target.value.trim();
+    scanAddItem(modalType, val);
+    e.target.value='';
+    e.target.focus();
+  }
+}
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const fmt = v => (v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const fmtNum = v => (v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -385,8 +537,14 @@ let _saving = false;
 let _nfSort = {col:"date", dir:"desc"};
 function _guardSave(){ if(_saving) return false; _saving=true; return true; }
 function _doneSave(){ _saving=false; }
-const CAT_PROD=["Bebidas","Alimentos","Limpeza","Higiene","Outros"];
-const UNITS=["UN","CX","DZ","PCT","KG","LT","MT","FD"];
+// Categorias e unidades dinâmicas — lidas do estado, com fallback padrão
+const DEFAULT_CAT_PROD=["Bebidas","Alimentos","Limpeza","Higiene","Outros"];
+const DEFAULT_UNITS=["UN","CX","DZ","PCT","KG","LT","MT","FD"];
+function getCatProd(){ return (state.company?.categories?.length ? state.company.categories : DEFAULT_CAT_PROD); }
+function getUnits(){ return (state.company?.units?.length ? state.company.units : DEFAULT_UNITS); }
+// Alias para compatibilidade com código existente
+Object.defineProperty(window,'CAT_PROD',{get:()=>getCatProd(),configurable:true});
+Object.defineProperty(window,'UNITS',{get:()=>getUnits(),configurable:true});
 const PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","35 dias","42 dias","30/60","30/60/90"];
 const CAT_FIN={entrada:["Vendas","Outros","Financiamento","Juros"],saida:["Compras","Logística","Operacional","Salários","Impostos","Outros"]};
 
@@ -440,7 +598,7 @@ function navigate(v){
   render();
 }
 function render(){
-  ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:renderConfig,usuarios:renderUsuarios})[state.currentView]();
+  ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:renderConfig,usuarios:renderUsuarios,'minha-conta':renderMinhaConta})[state.currentView]();
   applyRoleUI();
 }
 
@@ -511,40 +669,84 @@ function printNF(id){
   setTimeout(()=>w.print(),500);
 }
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
+window._dashPeriod = window._dashPeriod || 'mes';
 function renderDashboard(){
+  const period = window._dashPeriod || 'mes';
+  const now = new Date();
+  let dateFrom, dateTo = today();
+  if(period === 'hoje'){
+    dateFrom = today();
+  } else if(period === 'semana'){
+    const d = new Date(); d.setDate(d.getDate()-6);
+    dateFrom = d.toISOString().slice(0,10);
+  } else if(period === 'mes'){
+    dateFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+  } else if(period === 'mesant'){
+    const y = now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+    const m = now.getMonth()===0?11:now.getMonth()-1;
+    dateFrom = new Date(y,m,1).toISOString().slice(0,10);
+    dateTo = new Date(y,m+1,0).toISOString().slice(0,10);
+  }
+  const nfsPeriod = state.invoices.filter(n=>n.status!=="cancelada"&&n.date>=dateFrom&&n.date<=dateTo);
+  const totalVendas = nfsPeriod.reduce((s,n)=>s+n.total,0);
+  const totalNFs = nfsPeriod.length;
   const tIn=totalIn(), tOut=totalOut(), saldo=tIn-tOut;
-  const totalVendas=state.invoices.filter(n=>n.status!=="cancelada").reduce((s,n)=>s+n.total,0);
-  const lowStock=state.products.filter(p=>p.stock<=p.minStock);
   const overdueRec=state.receivables.filter(r=>r.status==="aberta"&&isOverdue(r.dueDate));
-  const recentTx=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  const aReceber=state.receivables.filter(r=>r.status==="aberta").reduce((s,r)=>s+r.amount,0);
+  const inadMap={};
+  overdueRec.forEach(r=>{ inadMap[r.clientId]=(inadMap[r.clientId]||0)+r.amount; });
+  const top3inad=Object.entries(inadMap).sort((a,b)=>b[1]-a[1]).slice(0,3)
+    .map(([cid,val])=>({client:state.clients.find(c=>c.id==cid),val}));
+  const next7 = new Date(); next7.setDate(next7.getDate()+7);
+  const next7str = next7.toISOString().slice(0,10);
+  const vencendo = state.receivables.filter(r=>r.status==="aberta"&&!isOverdue(r.dueDate)&&r.dueDate<=next7str);
+  const vencendoVal = vencendo.reduce((s,r)=>s+r.amount,0);
+  const lowStock=state.products.filter(p=>p.active!==false&&p.stock<=p.minStock);
   const recentNF=[...state.invoices].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   el("content").innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn-sm${period==='hoje'?' btn-amber':''}" onclick="window._dashPeriod='hoje';renderDashboard()">Hoje</button>
+      <button class="btn-sm${period==='semana'?' btn-amber':''}" onclick="window._dashPeriod='semana';renderDashboard()">7 dias</button>
+      <button class="btn-sm${period==='mes'?' btn-amber':''}" onclick="window._dashPeriod='mes';renderDashboard()">Este mês</button>
+      <button class="btn-sm${period==='mesant'?' btn-amber':''}" onclick="window._dashPeriod='mesant';renderDashboard()">Mês anterior</button>
+    </div>
     <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Vendas do Período</div><div class="kpi-value">${fmt(totalVendas)}</div><div class="kpi-sub">${totalNFs} notas</div></div>
       <div class="kpi"><div class="kpi-label">Saldo em Caixa</div><div class="kpi-value" style="color:${saldo>=0?"var(--green)":"var(--red)"}">${fmt(saldo)}</div><div class="kpi-sub">Entradas − Saídas</div></div>
-      <div class="kpi"><div class="kpi-label">Total de Vendas</div><div class="kpi-value">${fmt(totalVendas)}</div><div class="kpi-sub">${state.invoices.filter(n=>n.status!=="cancelada").length} notas ativas</div></div>
-      <div class="kpi"><div class="kpi-label">A Receber</div><div class="kpi-value text-amber">${fmt(state.receivables.filter(r=>r.status==="aberta").reduce((s,r)=>s+r.amount,0))}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==="aberta").length} parcelas em aberto</div></div>
+      <div class="kpi"><div class="kpi-label">A Receber (total aberto)</div><div class="kpi-value text-amber">${fmt(aReceber)}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==="aberta").length} parcelas em aberto</div></div>
       <div class="kpi"><div class="kpi-label">Vencidas</div><div class="kpi-value text-red">${fmt(overdueRec.reduce((s,r)=>s+r.amount,0))}</div><div class="kpi-sub">${overdueRec.length} parcela(s) vencida(s)</div></div>
     </div>
-    ${lowStock.length?`<div class="alert-warn">⚠ Estoque baixo: ${lowStock.map(p=>p.name).join(", ")}</div>`:""}
+    ${lowStock.length?`<div class="alert-warn">⚠ Estoque baixo: ${lowStock.map(p=>`${p.name} (${p.stock})`).join(", ")}</div>`:""}
     ${overdueRec.length?`<div class="alert-red">⚠ ${overdueRec.length} parcela(s) vencida(s) — <span style="cursor:pointer;text-decoration:underline" onclick="navigate('contas')">ver contas a receber</span></div>`:""}
     <div class="grid-2">
       <div class="card">
-        <div class="section-title" style="margin-bottom:14px">Últimas Transações</div>
-        ${recentTx.map(t=>`<div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:13px;color:var(--text2)">${t.description}</div><div class="text-muted" style="font-size:11px;margin-top:2px">${fmtDate(t.date)} · ${t.category}</div></div>
-          <div class="mono fw-bold" style="color:${t.type==="entrada"?"var(--green)":"var(--red)"}">${t.type==="entrada"?"+":"−"}${fmt(t.amount)}</div>
-        </div>`).join("")}
+        <div class="section-title" style="margin-bottom:14px">Top Inadimplentes</div>
+        ${top3inad.length
+          ? top3inad.map(({client,val})=>`<div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:13px;color:var(--text2)">${client?client.name:"—"}</div>
+              <span class="badge bg-red">${fmt(val)}</span>
+            </div>`).join("")
+          : `<div style="color:var(--green);font-size:13px;padding:8px 0">Nenhuma inadimplência no momento</div>`}
       </div>
       <div class="card">
-        <div class="section-title" style="margin-bottom:14px">Últimas Notas</div>
-        <table><thead><tr><th>Número</th><th>Data</th><th>Total</th><th>Status</th></tr></thead><tbody>
-          ${recentNF.map(n=>`<tr class="${n.status==="cancelada"?"cancelled-row":""}">
-            <td class="mono text-amber">${n.number}</td><td>${fmtDate(n.date)}</td>
-            <td class="mono">${fmt(n.total)}</td>
-            <td><span class="badge ${n.status==="paga"?"bg-green":n.status==="parcial"?"bg-blue":n.status==="cancelada"?"bg-gray":"bg-amber"}">${n.status}</span></td>
-          </tr>`).join("")}
-        </tbody></table>
+        <div class="section-title" style="margin-bottom:8px">A vencer nos próximos 7 dias</div>
+        <div class="kpi-value text-amber" style="font-size:22px;margin-bottom:12px">${fmt(vencendoVal)}</div>
+        ${vencendo.slice(0,5).map(r=>{const c=state.clients.find(cl=>cl.id==r.clientId);return`<div class="row-between" style="padding:6px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:12px;color:var(--text2)">${c?c.name:"—"}</div><div class="text-muted" style="font-size:11px">${fmtDate(r.dueDate)}</div></div>
+          <div class="mono" style="font-size:12px">${fmt(r.amount)}</div>
+        </div>`;}).join("")}
+        ${vencendo.length===0?`<div class="text-muted" style="font-size:13px">Nenhuma parcela vencendo em 7 dias</div>`:""}
       </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="section-title" style="margin-bottom:14px">Últimas Notas</div>
+      <table><thead><tr><th>Número</th><th>Data</th><th>Total</th><th>Status</th></tr></thead><tbody>
+        ${recentNF.map(n=>`<tr class="${n.status==="cancelada"?"cancelled-row":""}">
+          <td class="mono text-amber">${n.number}</td><td>${fmtDate(n.date)}</td>
+          <td class="mono">${fmt(n.total)}</td>
+          <td><span class="badge ${n.status==="paga"?"bg-green":n.status==="parcial"?"bg-blue":n.status==="cancelada"?"bg-gray":"bg-amber"}">${n.status}</span></td>
+        </tr>`).join("")}
+      </tbody></table>
     </div>`;
 }
 
@@ -573,7 +775,7 @@ function renderProdutos(){
       </div>
     </div>
     <div class="card"><table><thead><tr>
-      <th>Código</th><th>Produto</th><th>Categoria</th><th>Preço Custo</th><th>Preço Venda</th><th>Margem</th><th>Estoque</th><th>Status</th><th></th>
+      <th>Código</th><th>EAN</th><th>Produto</th><th>Categoria</th><th>Preço Custo</th><th>Preço Venda</th><th>Margem</th><th>Estoque</th><th>Status</th><th></th>
     </tr></thead><tbody id="prod-tbody"></tbody></table></div>`;
   filterProdutos();
 }
@@ -598,6 +800,7 @@ function filterProdutos(){
     const stl=inactive?"Inativo":p.stock<=p.minStock?"Baixo":p.stock<=p.minStock*1.5?"Atenção":"OK";
     return`<tr style="${inactive?"opacity:.5":""}">
       <td class="mono text-amber">${p.code}</td>
+      <td class="mono">${p.ean||'—'}</td>
       <td class="text-white fw-bold">${p.name}</td>
       <td>${p.category}</td>
       <td class="mono">${fmt(p.costPrice||0)}</td>
@@ -613,7 +816,7 @@ function filterProdutos(){
             <button class="btn-sm" onclick="viewPriceHistory(${p.id})" title="Histórico de preço">📈</button>
             <button class="btn-sm btn-red" onclick="deleteProd(${p.id})" title="Inativar produto">✕</button>`}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="9" class="empty">Nenhum produto.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="10" class="empty">Nenhum produto.</td></tr>`;
 }
 function openProdModal(id){
   const p=id?state.products.find(x=>x.id===id):null;
@@ -627,6 +830,11 @@ function openProdModal(id){
       <div class="form-group"><label class="form-label">Unidade</label><select id="f-unit" class="form-input">${UNITS.map(u=>`<option${p&&p.unit===u?" selected":""}>${u}</option>`).join("")}</select></div>
       <div class="form-group"><label class="form-label">Preço de Custo (R$)</label><input id="f-cost" class="form-input" type="number" step="0.01" value="${p?p.costPrice||"":""}"></div>
       <div class="form-group"><label class="form-label">Preço de Venda (R$)</label><input id="f-price" class="form-input" type="number" step="0.01" value="${p?p.salePrice:""}"></div>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group"><label class="form-label">EAN / Código de Barras</label><input id="f-ean" class="form-input" value="${p?p.ean||'':''}"></div>
+      <div class="form-group"><label class="form-label">NCM</label><input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}"></div>
+      <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?p.cfop||'':''}"></div>
     </div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Estoque Atual</label><input id="f-stock" class="form-input" type="number" value="${p?p.stock:0}"></div>
@@ -657,10 +865,10 @@ function saveProd(id){
     if(newSale!==p.salePrice||newCost!==p.costPrice){
       ph.push({date:today(),salePrice:newSale,costPrice:newCost,note:el("f-note")?el("f-note").value||"Atualização":"Atualização"});
     }
-    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph}:x);
+    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim()}:x);
   }else{
     savedId=uid();
-    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}]});
+    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim()});
   }
   saveState();
   showSyncStatus(id?"✓ Produto atualizado":"✓ Produto cadastrado");
@@ -732,12 +940,14 @@ function filterClientes(){
     const openRecs=state.receivables.filter(r=>r.clientId===c.id&&r.status==="aberta");
     const openAmt=openRecs.reduce((s,r)=>s+r.amount,0);
     const overdue=openRecs.some(r=>isOverdue(r.dueDate));
+    const oldest=state.receivables.filter(r=>r.clientId===c.id&&r.status==="aberta"&&isOverdue(r.dueDate)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate))[0];
+    const daysLate=oldest?Math.floor((new Date()-new Date(oldest.dueDate+'T00:00:00'))/86400000):0;
     return`<tr>
       <td class="text-white fw-bold">${c.name}</td>
       <td class="mono">${c.cnpj||"—"}</td>
       <td>${c.city||"—"}</td><td>${c.phone||"—"}</td>
       <td class="mono">${fmt(c.creditLimit||0)}</td>
-      <td><span class="badge ${overdue?"bg-red":openAmt>0?"bg-amber":"bg-green"}">${overdue?"Inadimplente":openAmt>0?"Em aberto: "+fmt(openAmt):"Em dia"}</span></td>
+      <td><span class="badge ${overdue?"bg-red":openAmt>0?"bg-amber":"bg-green"}">${overdue?"Inadimplente · "+daysLate+"d":openAmt>0?"Em aberto: "+fmt(openAmt):"Em dia"}</span></td>
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="openClientModal(${c.id})">Editar</button>
         <button class="btn-sm" onclick="deleteClient(${c.id})">✕</button>
@@ -756,7 +966,19 @@ function openClientModal(id){
       <div class="form-group"><label class="form-label">Telefone</label><input id="fc-phone" class="form-input" value="${c?c.phone||"":""}"></div>
       <div class="form-group"><label class="form-label">E-mail</label><input id="fc-email" class="form-input" value="${c?c.email||"":""}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Limite de Crédito (R$)</label><input id="fc-credit" class="form-input" type="number" step="0.01" value="${c?c.creditLimit||0:0}"></div>
+    <div class="form-grid-3">
+      <div class="form-group"><label class="form-label">Inscrição Estadual</label><input id="fc-ie" class="form-input" placeholder="Isento ou número" value="${c?c.ie||'':''}"></div>
+      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}"></div>
+      <div class="form-group"><label class="form-label">UF</label><select id="fc-uf" class="form-input">${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(u=>`<option${c&&c.uf===u?' selected':''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Logradouro</label><input id="fc-street" class="form-input" placeholder="Rua, Av..." value="${c?c.street||'':''}"></div>
+      <div class="form-group"><label class="form-label">Bairro</label><input id="fc-district" class="form-input" value="${c?c.district||'':''}"></div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Forma de Pagamento Padrão</label><select id="fc-payterm" class="form-input"><option value="">Selecione...</option><option${c&&c.payterm==='avista'?' selected':''} value="avista">À Vista</option><option${c&&c.payterm==='30'?' selected':''} value="30">30 dias</option><option${c&&c.payterm==='30-60'?' selected':''} value="30-60">30/60 dias</option><option${c&&c.payterm==='30-60-90'?' selected':''} value="30-60-90">30/60/90 dias</option><option${c&&c.payterm==='28ddl'?' selected':''} value="28ddl">28 DDL</option></select></div>
+      <div class="form-group"><label class="form-label">Limite de Crédito (R$)</label><input id="fc-credit" class="form-input" type="number" step="0.01" value="${c?c.creditLimit||0:0}"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveClient(${id||""})">Salvar</button>
@@ -765,7 +987,7 @@ function openClientModal(id){
 function saveClient(id){
   const name=el("fc-name").value.trim();
   if(!name) return alert("Informe o nome.");
-  const obj={name,cnpj:el("fc-cnpj").value,city:el("fc-city").value,phone:el("fc-phone").value,email:el("fc-email").value,creditLimit:parseFloat(el("fc-credit").value)||0};
+  const obj={name,cnpj:el("fc-cnpj").value,city:el("fc-city").value,phone:el("fc-phone").value,email:el("fc-email").value,creditLimit:parseFloat(el("fc-credit").value)||0,ie:el("fc-ie").value,cep:el("fc-cep").value,uf:el("fc-uf").value,street:el("fc-street").value,district:el("fc-district").value,payterm:el("fc-payterm").value};
   if(id) state.clients=state.clients.map(c=>c.id===id?{...obj,id}:c);
   else state.clients.push({...obj,id:uid()});
   saveState(); closeModal(); renderClientes();
@@ -880,7 +1102,7 @@ function renderNotas(){
       </div>
     </div>
     <div class="card" style="overflow-x:auto"><table><thead><tr>
-      ${[["number","Número"],["date","Data"],["clientId","Cliente"],["subtotal","Subtotal"],["","Desc."],["","Frete"],["total","Total"],["","Pagamento"],["","Status"],["","Ações"]].map(([col,lbl])=>col?`<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="nfSortBy('${col}')">${lbl} ${_nfSort.col===col?(_nfSort.dir==="asc"?"▲":"▼"):""}</th>`:`<th>${lbl}</th>`).join("")}
+      ${[["number","Número"],["date","Data"],["clientId","Cliente"],["total","Total"],["","Pagamento"],["","Status"],["","Ações"]].map(([col,lbl])=>col?`<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="nfSortBy('${col}')">${lbl} ${_nfSort.col===col?(_nfSort.dir==="asc"?"▲":"▼"):""}</th>`:`<th>${lbl}</th>`).join("")}
     </tr></thead><tbody id="nf-tbody"></tbody></table></div>`;
   filterNotas();
 }
@@ -909,20 +1131,17 @@ function filterNotas(){
     return`<tr class="${n.status==="cancelada"?"cancelled-row":""}">
       <td class="mono text-amber">${n.number}</td>
       <td>${fmtDate(n.date)}</td>
-      <td class="text-white">${c?c.name:"—"}</td>
-      <td class="mono">${fmt(n.subtotal)}</td>
-      <td class="mono">${n.discount>0?n.discount+"%":"—"}</td>
-      <td class="mono">${n.freight>0?fmt(n.freight):"—"}</td>
-      <td class="mono fw-bold">${fmt(n.total)}</td>
+      <td class="text-white fw-bold">${getNFClientName(n)}</td>
+      <td class="mono fw-bold">${fmt(n.total)}${n.discount>0?`<span class="text-muted" style="font-size:11px;margin-left:4px">-${n.discount}%</span>`:""}</td>
       <td><span class="badge bg-blue" style="font-size:10px">${n.paymentTerms}</span></td>
-      <td><span class="badge ${statusColor}">${n.status}</span></td>
+      <td><span class="badge ${statusColor}">${n.status==="emitida"?"pendente":n.status}</span></td>
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="viewNF(${n.id})">Ver</button>
-        <button class="btn-sm" onclick="printNF(${n.id})" title="Imprimir">🖨</button>
-        ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3)" onclick="darBaixaNF(${n.id})">💰 Receber</button>`:""}
+        <button class="btn-sm" onclick="printNF(${n.id})" title="Imprimir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm btn-green" onclick="darBaixaNF(${n.id})">↓ Receber</button>`:""}
         ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn-sm btn-red" onclick="cancelNF(${n.id})">Cancelar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="10" class="empty">Nenhuma nota encontrada.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhuma nota encontrada.</td></tr>`;
 }
 
 function openNFModal(){
@@ -932,9 +1151,20 @@ function openNFModal(){
   showModal(`
     <div class="modal-title">Emitir Nota Fiscal — <span class="text-amber mono">${nextNum}</span></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Cliente</label>
-        <select id="nf-client" class="form-input"><option value="">Selecione...</option>
-        ${state.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select>
+      <div class="form-group" style="position:relative">
+        <label class="form-label">Cliente</label>
+        <input id="nf-client-search" class="form-input" placeholder="Buscar por nome, CNPJ ou cidade..." oninput="nfClientSearch(this.value)" autocomplete="off" style="padding-right:32px">
+        <div id="nf-client-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4)"></div>
+        <input id="nf-client" type="hidden" value="">
+        <div id="nf-client-selected" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;font-size:12px;display:flex;justify-content:space-between;align-items:center">
+          <span id="nf-client-selected-name" style="color:var(--amber);font-weight:600"></span>
+          <span style="cursor:pointer;color:var(--muted);font-size:11px" onclick="nfClientClear()">✕ trocar</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button type="button" class="btn-sm" onclick="nfClientAvulso()" style="font-size:11px">+ Consumidor Final (avulso)</button>
+          <button type="button" class="btn-sm btn-amber" onclick="nfClientNovo()" style="font-size:11px">+ Novo cliente</button>
+        </div>
+        <div id="nf-credit-alert" class="alert-red" style="display:none"></div>
       </div>
       <div class="form-group"><label class="form-label">Data de Emissão</label>
         <input id="nf-date" type="date" class="form-input" value="${today()}">
@@ -949,32 +1179,47 @@ function openNFModal(){
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="nf-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="0" oninput="nfUpdateTotals()">
       </div>
-      <div class="form-group"><label class="form-label">Frete no PDF (R$)</label>
-        <input id="nf-freight" type="number" min="0" step="0.01" class="form-input" value="0" oninput="nfUpdateTotals()">
+      <div class="form-group">
+        <label class="form-label">Frete (R$) — Quem paga?</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="nf-freight-val" type="number" min="0" step="0.01" class="form-input" value="0" oninput="nfFreightUpdate()" style="flex:1">
+          <div style="display:flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button id="nf-ft-cli" type="button" class="nf-ft-btn nf-ft-active" onclick="nfFreightWho('cli')" title="Frete incluso na NF — cliente paga">Cliente</button>
+            <button id="nf-ft-emp" type="button" class="nf-ft-btn" onclick="nfFreightWho('emp')" title="Custo interno — não aparece na NF">Empresa</button>
+          </div>
+        </div>
+        <div id="nf-freight-hint" style="font-size:11px;color:var(--muted);margin-top:4px">Incluso no valor da NF — cliente paga</div>
+        <input id="nf-freight" type="hidden" value="0">
+        <input id="nf-freight-int" type="hidden" value="0">
       </div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Frete Interno (R$) <span class="text-muted" style="font-size:10px;font-weight:400">— não aparece no PDF, lança saída no caixa</span></label>
-        <input id="nf-freight-int" type="number" min="0" step="0.01" class="form-input" value="0">
-      </div>
       <div class="form-group"><label class="form-label">Observações <span class="text-muted" style="font-size:10px;font-weight:400">— aparece no PDF</span></label>
         <input id="nf-obs" class="form-input" placeholder="Observações da nota...">
       </div>
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DA NOTA</div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:8px 12px;margin-bottom:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v3M3 12v3M3 19v2M8 5v3M8 12v3M8 19v2M13 5v3M13 12v3M13 19v2M18 5v10M18 19v2M21 5v10M21 19v2"/></svg>
+      <input id="nf-scan-ean" class="form-input" style="flex:1;background:transparent;border:none;outline:none;padding:0;font-family:var(--font-m);font-size:13px" placeholder="Scanner EAN — aponte e leia o código (Enter para adicionar)" onkeydown="scanKeyHandler(event,'nf')" autocomplete="off">
+    </div>
     <div style="margin-bottom:10px">
-      <input id="nf-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="🔍 Buscar produto pelo nome..." oninput="nfRenderProdList(this.value)" autocomplete="off">
+      <input id="nf-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="Buscar produto pelo nome..." oninput="nfRenderProdList(this.value)" autocomplete="off">
       <div id="nf-prod-list" style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
     </div>
     <div id="nf-items-list"></div>
     <div id="nf-totals"></div>
     <div class="divider"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em">CUSTOS OPERACIONAIS</div>
-      <button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="nfAddCost()">+ Adicionar Custo</button>
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleNfCosts()">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em">CUSTOS E TAXAS ADICIONAIS</div>
+        <span id="nf-costs-toggle" style="font-size:11px;color:var(--muted)">▸</span>
+        <span style="font-size:10px;color:var(--muted);font-weight:400">(logística, embalagem, taxas — opcional)</span>
+      </div>
+      <button class="btn btn-ghost" id="nf-costs-add-btn" style="padding:3px 10px;font-size:12px;display:none" onclick="nfAddCost()">+ Adicionar</button>
     </div>
-    <div id="nf-costs-list"></div>
+    <div id="nf-costs-list" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="emitirNF('${nextNum}')">Emitir Nota</button>
@@ -982,10 +1227,45 @@ function openNFModal(){
   nfRenderItems();
   nfRenderProdList("");
   nfRenderCosts();
+  setTimeout(()=>{ const s=el("nf-scan-ean"); if(s) s.focus(); },100);
+}
+function nfFreightWho(who){
+  const val=parseFloat(el("nf-freight-val")?.value)||0;
+  const hint=el("nf-freight-hint");
+  const btnCli=el("nf-ft-cli"); const btnEmp=el("nf-ft-emp");
+  if(who==='cli'){
+    if(el("nf-freight")) el("nf-freight").value=val;
+    if(el("nf-freight-int")) el("nf-freight-int").value=0;
+    if(btnCli) btnCli.classList.add("nf-ft-active");
+    if(btnEmp) btnEmp.classList.remove("nf-ft-active");
+    if(hint) hint.textContent="Incluso no valor da NF — cliente paga";
+  } else {
+    if(el("nf-freight")) el("nf-freight").value=0;
+    if(el("nf-freight-int")) el("nf-freight-int").value=val;
+    if(btnCli) btnCli.classList.remove("nf-ft-active");
+    if(btnEmp) btnEmp.classList.add("nf-ft-active");
+    if(hint) hint.textContent="Custo interno — não aparece na NF do cliente";
+  }
+  nfUpdateTotals();
+}
+function nfFreightUpdate(){
+  const who=el("nf-ft-emp")?.classList.contains("nf-ft-active")?'emp':'cli';
+  nfFreightWho(who);
+}
+function toggleNfCosts(){
+  const list=el("nf-costs-list"); const btn=el("nf-costs-add-btn"); const tog=el("nf-costs-toggle");
+  if(!list) return;
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  if(btn) btn.style.display=open?'':'none';
+  if(tog) tog.textContent=open?'▾':'▸';
 }
 function nfAddCost(){
   if(!state.nfCosts) state.nfCosts=[];
   state.nfCosts.push({description:"",value:0,clientPays:true});
+  // Abre a seção se estiver fechada
+  const list=el("nf-costs-list");
+  if(list&&list.style.display==='none') toggleNfCosts();
   nfRenderCosts();
 }
 function nfRemCost(i){
@@ -1092,7 +1372,7 @@ function nfRenderItems(){
 }
 async function emitirNF(num){
   if(!_guardSave()) return;
-  if(!el("nf-client").value){ _doneSave(); return alert("Selecione o cliente."); }
+  if(!el("nf-client").value){ _doneSave(); return alert("Selecione o cliente ou escolha 'Consumidor Final'."); }
   if(!state.nfItems.length){ _doneSave(); return alert("Adicione pelo menos um item."); }
   const sub=nfGetSubtotal();
   const disc=parseFloat(el("nf-disc").value)||0;
@@ -1103,12 +1383,14 @@ async function emitirNF(num){
   const clientCosts=costs.filter(c=>c.clientPays).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
   const total=parseFloat((sub*(1-disc/100)+freight+clientCosts).toFixed(2));
   const date=el("nf-date").value;
-  const clientId=parseInt(el("nf-client").value);
+  const rawClientId=el("nf-client").value;
+  const isAvulso=rawClientId==='avulso';
+  const clientId=isAvulso?null:parseInt(rawClientId);
   const terms=el("nf-terms").value;
-  // Check credit limit
-  const client=getClient(clientId);
-  const openAmt=state.receivables.filter(r=>r.clientId===clientId&&r.status==="aberta").reduce((s,r)=>s+r.amount,0);
-  if(client.creditLimit>0&&(openAmt+total)>client.creditLimit){
+  // Check credit limit (só para clientes cadastrados)
+  const client=clientId?getClient(clientId):null;
+  const openAmt=clientId?state.receivables.filter(r=>r.clientId===clientId&&r.status==="aberta").reduce((s,r)=>s+r.amount,0):0;
+  if(client&&client.creditLimit>0&&(openAmt+total)>client.creditLimit){
     if(!confirm(`Atenção: este cliente tem ${fmt(openAmt)} em aberto. O limite de crédito é ${fmt(client.creditLimit)}. Limite será ultrapassado. Continuar?`)){ _doneSave(); return; }
   }
   // Check stock
@@ -1119,7 +1401,7 @@ async function emitirNF(num){
     _doneSave(); return;
   }
   try{
-    const nf={id:uid(),number:num,date,clientId,items:[...state.nfItems],discount:disc,freight,paymentTerms:terms,subtotal:parseFloat(sub.toFixed(2)),total,status:"emitida"};
+    const nf={id:uid(),number:num,date,clientId:isAvulso?null:clientId,clientName:isAvulso?"Consumidor Final":null,items:[...state.nfItems],discount:disc,freight,paymentTerms:terms,subtotal:parseFloat(sub.toFixed(2)),total,status:"emitida"};
     if(obs) nf.notes=obs;
     if(freightInt>0) nf.internalFreight=freightInt;
     if(costs.length) nf.costs=costs;
@@ -1158,7 +1440,7 @@ function viewNF(id){
       </div>
     </div>
     <div class="form-grid-2" style="margin-bottom:16px">
-      <div><div class="kpi-label">Cliente</div><div style="font-size:14px;margin-top:4px;font-weight:600">${c?c.name:"—"}</div></div>
+      <div><div class="kpi-label">Cliente</div><div style="font-size:14px;margin-top:4px;font-weight:600">${getNFClientName(n)}</div></div>
       <div><div class="kpi-label">Data / Pagamento</div><div style="font-size:14px;margin-top:4px">${fmtDate(n.date)} · ${n.paymentTerms}</div></div>
     </div>
     <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Desc.</th><th>Total</th></tr></thead><tbody>
@@ -1222,6 +1504,7 @@ function renderCompras(){
       <div class="section-title">Ordens de Compra</div>
       <div class="row">
         <input id="comp-search" class="form-input" style="width:200px" placeholder="Buscar compra/fornecedor..." oninput="filterCompras()">
+        <button class="btn btn-ghost" onclick="importarNFeXML()">↑ Importar NF-e XML</button>
         <button class="btn btn-primary" onclick="openCompraModal()">+ Nova Compra</button>
       </div>
     </div>
@@ -1262,6 +1545,74 @@ function filterCompras(){
     </tr>`;}).join(""):`<tr><td colspan="9" class="empty">Nenhuma compra encontrada.</td></tr>`;
 }
 const CP_PAY_METHODS=["Pix","Cartão de Crédito","Crédito Fornecedor","Dinheiro","Transferência"];
+function importarNFeXML(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xml';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const text = await file.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+
+    // Extrai dados do emitente (fornecedor)
+    const emit = xml.querySelector('emit');
+    const supplierCNPJ = emit?.querySelector('CNPJ')?.textContent?.replace(/\D/g,'') || '';
+    const supplierName = emit?.querySelector('xNome')?.textContent || '';
+
+    // Tenta achar fornecedor pelo CNPJ
+    const supplier = state.suppliers.find(s => (s.cnpj||'').replace(/\D/g,'') === supplierCNPJ);
+
+    // Número da NF
+    const nNF = xml.querySelector('nNF')?.textContent || '';
+    const dhEmi = xml.querySelector('dhEmi')?.textContent?.slice(0,10) || today();
+
+    // Extrai itens
+    const dets = xml.querySelectorAll('det');
+    state.compraItems = [];
+    const unknownProducts = [];
+
+    dets.forEach(det => {
+      const prod = det.querySelector('prod');
+      if(!prod) return;
+      const cProd = prod.querySelector('cProd')?.textContent || '';
+      const xProd = prod.querySelector('xProd')?.textContent || '';
+      const qCom = parseFloat(prod.querySelector('qCom')?.textContent || '0');
+      const vUnCom = parseFloat(prod.querySelector('vUnCom')?.textContent || '0');
+      const cEAN = prod.querySelector('cEAN')?.textContent || '';
+      const ncm = prod.querySelector('NCM')?.textContent || '';
+
+      // Tenta casar com produto cadastrado por EAN ou código
+      let match = null;
+      if(cEAN && cEAN !== 'SEM GTIN') match = state.products.find(p => p.ean === cEAN);
+      if(!match) match = state.products.find(p => p.code === cProd);
+      if(!match) match = state.products.find(p => (p.name||'').toLowerCase() === xProd.toLowerCase());
+
+      if(match){
+        state.compraItems.push({productId: match.id, qty: qCom, unitCost: vUnCom});
+      } else {
+        unknownProducts.push({cProd, xProd, qCom, vUnCom, cEAN, ncm});
+        state.compraItems.push({productId: null, qty: qCom, unitCost: vUnCom, _fromXml: true, _xProd: xProd, _cProd: cProd, _ean: cEAN, _ncm: ncm});
+      }
+    });
+
+    if(unknownProducts.length){
+      const names = unknownProducts.slice(0,3).map(p=>p.xProd).join(', ');
+      const more = unknownProducts.length > 3 ? ` e mais ${unknownProducts.length-3}` : '';
+      if(!confirm(`${unknownProducts.length} produto(s) não encontrado(s) no cadastro:\n${names}${more}\n\nDeseja continuar? Itens não reconhecidos precisarão ser vinculados manualmente.`)) return;
+    }
+
+    showSyncStatus(`✓ NF-e importada: ${state.compraItems.length} itens`);
+    openCompraModal({
+      supplierId: supplier?.id || '',
+      date: dhEmi,
+      nfNumber: nNF,
+      _xmlSupplierName: !supplier ? supplierName : null
+    });
+  };
+  input.click();
+}
 function openCompraModal(draft){
   if(!draft) state.compraItems=[];
   const nextNum=draft?.nextNum||"CP-"+String(state.purchases.length+1).padStart(4,"0");
@@ -1281,6 +1632,9 @@ function openCompraModal(draft){
       <div class="form-group"><label class="form-label">Data da Compra</label>
         <input id="cp-date" type="date" class="form-input" value="${date}">
       </div>
+    </div>
+    <div class="form-group"><label class="form-label">Nº NF do Fornecedor (opcional)</label>
+      <input id="cp-nf-num" class="form-input" placeholder="Ex: 123456" value="${draft?.nfNumber||''}">
     </div>
     <div class="form-grid-3">
       <div class="form-group"><label class="form-label">Forma de Pagamento</label>
@@ -1383,6 +1737,7 @@ function compraAddItem(){
   compraRenderItems();
 }
 function compraRemItem(i){ state.compraItems.splice(i,1); compraRenderItems(); }
+function compraVincularItem(i, prodId){ if(prodId){ state.compraItems[i].productId=parseInt(prodId); delete state.compraItems[i]._fromXml; } compraRenderItems(); }
 function compraUpdateTotals(){ compraRenderItems(); }
 function compraRenderItems(){
   const sub=state.compraItems.reduce((s,it)=>s+(it.qty*it.unitCost),0);
@@ -1390,15 +1745,31 @@ function compraRenderItems(){
   const total=sub+freight;
   if(el("cp-items-list")) el("cp-items-list").innerHTML=state.compraItems.length?`
     <div class="items-box">
-      ${state.compraItems.map((it,i)=>{const p=getProd(it.productId);return`
-        <div class="item-row">
+      ${state.compraItems.map((it,i)=>{const p=getProd(it.productId);
+        if(it._fromXml && it.productId===null){
+          return`<div class="item-row">
+            <div style="flex:1">
+              <span style="font-size:12px;color:var(--amber);font-weight:600">⚠ ${it._xProd} <span style="font-weight:400;opacity:.8">(vincular produto)</span></span>
+              <select class="form-input" style="margin-top:4px;font-size:12px" onchange="compraVincularItem(${i},this.value)">
+                <option value="">— vincular produto cadastrado —</option>
+                ${state.products.filter(p=>p.active!==false).map(pp=>`<option value="${pp.id}">${pp.name} (${pp.unit})</option>`).join("")}
+              </select>
+            </div>
+            <div class="row">
+              <span class="mono text-muted">${it.qty} × ${fmt(it.unitCost)}</span>
+              <span class="mono text-amber" style="min-width:90px;text-align:right">${fmt(it.qty*it.unitCost)}</span>
+              <button class="btn-sm btn-red" onclick="compraRemItem(${i})">✕</button>
+            </div>
+          </div>`;
+        }
+        return`<div class="item-row">
           <span style="font-size:13px;color:var(--text2)">${p?p.name:"?"}</span>
           <div class="row">
             <span class="mono text-muted">${it.qty} × ${fmt(it.unitCost)}</span>
             <span class="mono text-white" style="min-width:90px;text-align:right">${fmt(it.qty*it.unitCost)}</span>
             <button class="btn-sm btn-red" onclick="compraRemItem(${i})">✕</button>
           </div>
-        </div>`}).join("")}
+        </div>`;}).join("")}
     </div>`:"";
   if(el("cp-totals")) el("cp-totals").innerHTML=state.compraItems.length?`
     <div class="totals-box" style="margin-top:12px">
@@ -1657,6 +2028,136 @@ async function salvarEditCompra(id){
   finally{ _doneSave(); }
 }
 // ─── CONTAS ──────────────────────────────────────────────────────────────────
+function nfClientSearch(q){
+  const dd=el("nf-client-dropdown"); if(!dd) return;
+  const term=norm(q||"");
+  if(!term){ dd.style.display='none'; return; }
+  const matches=state.clients.filter(c=>
+    norm(c.name||"").includes(term)||
+    norm(c.cnpj||"").includes(term)||
+    norm(c.city||"").includes(term)
+  ).slice(0,8);
+  if(!matches.length){
+    dd.innerHTML=`<div style="padding:12px 14px;color:var(--muted);font-size:13px">Nenhum cliente encontrado</div>`;
+  } else {
+    dd.innerHTML=matches.map(c=>{
+      const overdue=state.receivables.filter(r=>r.clientId==c.id&&r.status==='aberta'&&isOverdue(r.dueDate));
+      return`<div style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="nfClientSelect(${c.id},'${c.name.replace(/'/g,"\\'")}')">
+        <div>
+          <div style="font-size:13px;color:var(--text);font-weight:600">${c.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.cnpj||''} ${c.city?'· '+c.city:''}</div>
+        </div>
+        ${overdue.length?`<span class="badge bg-red" style="font-size:10px">${overdue.length} venc.</span>`:''}
+      </div>`;
+    }).join('');
+  }
+  dd.style.display='block';
+}
+
+function nfClientSelect(id, name){
+  el("nf-client").value=id;
+  el("nf-client-search").value='';
+  const dd=el("nf-client-dropdown"); if(dd) dd.style.display='none';
+  const sel=el("nf-client-selected"); if(sel) sel.style.display='flex';
+  const nm=el("nf-client-selected-name"); if(nm) nm.textContent=name;
+  checkClienteNF(id);
+  // Pré-preenche condição de pagamento
+  const c=getClient(id);
+  if(c?.payterm){
+    const sel2=el("nf-terms");
+    if(sel2) [...sel2.options].forEach(o=>{ o.selected=o.value===c.payterm||o.text===c.payterm; });
+  }
+}
+
+function nfClientClear(){
+  el("nf-client").value='';
+  el("nf-client-search").value='';
+  const sel=el("nf-client-selected"); if(sel) sel.style.display='none';
+  const alert=el("nf-credit-alert"); if(alert) alert.style.display='none';
+  setTimeout(()=>{ el("nf-client-search")?.focus(); },50);
+}
+
+function nfClientAvulso(){
+  el("nf-client").value='avulso';
+  el("nf-client-search").value='';
+  const dd=el("nf-client-dropdown"); if(dd) dd.style.display='none';
+  const sel=el("nf-client-selected"); if(sel) sel.style.display='flex';
+  const nm=el("nf-client-selected-name"); if(nm) nm.textContent='Consumidor Final (sem cadastro)';
+  const alert=el("nf-credit-alert"); if(alert) alert.style.display='none';
+}
+
+function nfClientNovo(){
+  // Fecha o dropdown e abre mini-form inline de cadastro rápido
+  const dd=el("nf-client-dropdown"); if(dd) dd.style.display='none';
+  const searchVal=el("nf-client-search")?.value||'';
+  showModal(`<div class="modal-title">Cadastro Rápido de Cliente</div>
+    <div class="form-group"><label class="form-label">Nome / Razão Social *</label>
+      <input id="qc-name" class="form-input" value="${searchVal.replace(/"/g,'&quot;')}" placeholder="Nome do cliente">
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">CNPJ / CPF</label>
+        <input id="qc-cnpj" class="form-input" placeholder="00.000.000/0001-00">
+      </div>
+      <div class="form-group"><label class="form-label">Telefone</label>
+        <input id="qc-phone" class="form-input" placeholder="(00) 00000-0000">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Cidade</label>
+        <input id="qc-city" class="form-input">
+      </div>
+      <div class="form-group"><label class="form-label">Forma de Pagamento Padrão</label>
+        <select id="qc-payterm" class="form-input">
+          <option value="">Selecione...</option>
+          ${PAY_TERMS.map(t=>`<option>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal();openNFModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="nfSalvarClienteRapido()">Salvar e voltar à NF</button>
+    </div>`);
+  setTimeout(()=>el("qc-name")?.focus(),100);
+}
+
+async function nfSalvarClienteRapido(){
+  const name=el("qc-name")?.value.trim();
+  if(!name){ alert("Informe o nome do cliente."); return; }
+  const novo={id:uid(),name,cnpj:el("qc-cnpj")?.value||'',phone:el("qc-phone")?.value||'',city:el("qc-city")?.value||'',payterm:el("qc-payterm")?.value||'',creditLimit:0};
+  state.clients.push(novo);
+  await saveToFirebase();
+  closeModal();
+  // Reabre a NF e seleciona o novo cliente
+  openNFModal();
+  setTimeout(()=>nfClientSelect(novo.id, novo.name),200);
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#nf-client-search')&&!e.target.closest('#nf-client-dropdown')){
+    const dd=el("nf-client-dropdown"); if(dd) dd.style.display='none';
+  }
+});
+
+function getNFClientName(nf){
+  if(nf.clientId){ const c=getClient(nf.clientId); if(c) return c.name; }
+  return nf.clientName||'Consumidor Final';
+}
+
+function checkClienteNF(clientId){
+  const overdue = state.receivables.filter(r=>r.clientId==clientId&&r.status==='aberta'&&isOverdue(r.dueDate));
+  const alert = document.getElementById('nf-credit-alert');
+  if(!alert) return;
+  if(overdue.length){
+    const total = overdue.reduce((s,r)=>s+r.amount,0);
+    const oldest = overdue.sort((a,b)=>a.dueDate.localeCompare(b.dueDate))[0];
+    const days = Math.floor((new Date()-new Date(oldest.dueDate+'T00:00:00'))/86400000);
+    alert.style.display='block';
+    alert.innerHTML=`⚠ Cliente com ${overdue.length} parcela(s) vencida(s) totalizando ${fmt(total)} (mais antiga: ${days}d atraso). Confirme para continuar.`;
+  } else {
+    alert.style.display='none';
+  }
+}
 function renderContas(){
   const tab=state.contasTab||"receber";
   const recAbertas=state.receivables.filter(r=>r.status==="aberta");
@@ -1671,17 +2172,30 @@ function renderContas(){
   if(tab==="receber"){
     let sorted=[...state.receivables].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
     if(fOverdue) sorted=sorted.filter(r=>isOverdue(r.dueDate)&&r.status==="aberta");
+    const aging = {
+      corrente: recAbertas.filter(r=>!isOverdue(r.dueDate)).reduce((s,r)=>s+r.amount,0),
+      ate30: overdueRec.filter(r=>{ const d=Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000); return d>=1&&d<=30; }).reduce((s,r)=>s+r.amount,0),
+      de31a60: overdueRec.filter(r=>{ const d=Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000); return d>=31&&d<=60; }).reduce((s,r)=>s+r.amount,0),
+      acima60: overdueRec.filter(r=>{ const d=Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000); return d>60; }).reduce((s,r)=>s+r.amount,0),
+    };
     tableHTML=`
-      <table><thead><tr><th>Nota</th><th>Parcela</th><th>Cliente</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>
-        ${sorted.map(r=>{const c=getClient(r.clientId);const overdue=isOverdue(r.dueDate)&&r.status==="aberta";return`<tr>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Em dia</div><div class="kpi-value text-green" style="font-size:16px">${fmt(aging.corrente)}</div></div>
+        <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Venc. 1–30d</div><div class="kpi-value text-amber" style="font-size:16px">${fmt(aging.ate30)}</div></div>
+        <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Venc. 31–60d</div><div class="kpi-value" style="font-size:16px;color:var(--amber)">${fmt(aging.de31a60)}</div></div>
+        <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Venc. +60d</div><div class="kpi-value text-red" style="font-size:16px">${fmt(aging.acima60)}</div></div>
+      </div>
+      <table><thead><tr><th>Nota</th><th>Parcela</th><th>Cliente</th><th>Vencimento</th><th>Atraso</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>
+        ${sorted.map(r=>{const c=getClient(r.clientId);const overdue=isOverdue(r.dueDate)&&r.status==="aberta";const daysLate=(overdue&&r.status==="aberta")?Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000):0;return`<tr>
           <td class="mono text-amber">${r.invoiceNumber}</td>
           <td class="mono">${r.installment}/${r.total}${r.isSaldo?` <span class="badge bg-amber" style="font-size:10px">saldo</span>`:""}</td>
           <td class="text-white">${c?c.name:"—"}</td>
           <td class="mono ${overdue?"text-red":""}">${fmtDate(r.dueDate)}${overdue?" ⚠":""}</td>
+          <td class="mono ${overdue&&r.status==='aberta'?'text-red':'text-muted'}">${overdue&&r.status==='aberta'?daysLate+'d':'—'}</td>
           <td class="mono fw-bold">${fmt(r.amount)}</td>
           <td><span class="badge ${r.status==="paga"?"bg-green":r.status==="cancelada"?"bg-gray":overdue?"bg-red":"bg-amber"}">${r.status==="aberta"&&overdue?"vencida":r.status}</span></td>
           <td>${r.status==="aberta"?`<button class="btn-sm btn-green" onclick="payReceivable(${r.id})">Receber</button>`:`<span class="text-muted mono" style="font-size:11px">${r.paidAt?fmtDate(r.paidAt):""}</span>`}</td>
-        </tr>`}).join("")||`<tr><td colspan="7" class="empty">Nenhum lançamento.</td></tr>`}
+        </tr>`}).join("")||`<tr><td colspan="8" class="empty">Nenhum lançamento.</td></tr>`}
       </tbody></table>`;
   } else {
     let sorted=[...state.payables].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
@@ -1832,19 +2346,33 @@ function renderCaixa(){
   const tIn=totalIn(txs.filter(t=>t.type==="entrada")?txs.filter(t=>t.type==="entrada"):txs);
   const tOut=totalOut(txs.filter(t=>t.type==="saida")?txs.filter(t=>t.type==="saida"):txs);
   
-  // computed above
-  const saldo=totalIn()-totalOut();
+  // Saldo real = saldo de abertura + entradas − saídas
+  const openingBalance = parseFloat(state.company?.openingBalance||0);
+  const saldo = openingBalance + totalIn() - totalOut();
   const allCats=[...new Set(state.transactions.map(t=>t.category))].sort();
+
+  // Previsão próximos 7 e 30 dias
+  const now = new Date();
+  const d7 = new Date(); d7.setDate(d7.getDate()+7);
+  const d30 = new Date(); d30.setDate(d30.getDate()+30);
+  const d7str = d7.toISOString().slice(0,10);
+  const d30str = d30.toISOString().slice(0,10);
+  const todayStr = today();
+  const prev7rec = state.receivables.filter(r=>r.status==="aberta"&&r.dueDate>todayStr&&r.dueDate<=d7str).reduce((s,r)=>s+r.amount,0);
+  const prev7pay = state.payables.filter(p=>p.status==="aberta"&&p.dueDate>todayStr&&p.dueDate<=d7str).reduce((s,p)=>s+p.amount,0);
+  const prev30rec = state.receivables.filter(r=>r.status==="aberta"&&r.dueDate>todayStr&&r.dueDate<=d30str).reduce((s,r)=>s+r.amount,0);
+  const prev30pay = state.payables.filter(p=>p.status==="aberta"&&p.dueDate>todayStr&&p.dueDate<=d30str).reduce((s,p)=>s+p.amount,0);
 
   el("content").innerHTML=`
     <div class="section-header">
       <div class="section-title">Fluxo de Caixa</div>
       <button class="btn btn-primary" onclick="openTxModal()">+ Lançamento Manual</button>
     </div>
-    <div class="kpi-grid-3" style="margin-bottom:16px">
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Saldo Atual</div><div class="kpi-value" style="color:${saldo>=0?"var(--green)":"var(--red)"}">${fmt(saldo)}</div><div class="kpi-sub">Abertura + entradas − saídas</div></div>
       <div class="kpi"><div class="kpi-label">Entradas (total)</div><div class="kpi-value text-green">${fmt(totalIn())}</div></div>
       <div class="kpi"><div class="kpi-label">Saídas (total)</div><div class="kpi-value text-red">${fmt(totalOut())}</div></div>
-      <div class="kpi"><div class="kpi-label">Saldo</div><div class="kpi-value" style="color:${saldo>=0?"var(--green)":"var(--red)"}">${fmt(saldo)}</div></div>
+      <div class="kpi"><div class="kpi-label">Previsão 7 dias</div><div class="kpi-value" style="color:${(saldo+prev7rec-prev7pay)>=0?"var(--green)":"var(--red)"}">${fmt(saldo+prev7rec-prev7pay)}</div><div class="kpi-sub">+${fmt(prev7rec)} −${fmt(prev7pay)}</div></div>
     </div>
     <div class="card" style="padding:16px;margin-bottom:16px">
       <div class="row" style="flex-wrap:wrap;gap:12px">
@@ -1917,6 +2445,25 @@ function saveTx(){
 }
 function deleteTx(id){ if(confirm("Remover este lançamento?")){ state.transactions=state.transactions.filter(t=>t.id!==id); saveState(); renderCaixa(); } }
 // ─── RELATÓRIOS ──────────────────────────────────────────────────────────────
+function exportRelatorioCSV(){
+  const {filter} = getRelPeriod();
+  const filteredInv = state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const rows = [['Número','Data','Cliente','CNPJ','Produtos','Total','Status']];
+  filteredInv.forEach(n=>{
+    const c = getClient(n.clientId);
+    const prods = n.items.map(it=>{ const p=getProd(it.productId); return p?p.name:it.productId; }).join(' | ');
+    rows.push([n.number, n.date, c?c.name:'—', c?c.cnpj||'':'', prods, n.total.toFixed(2), n.status]);
+  });
+  const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'relatorio-nfs-'+(new Date().toISOString().slice(0,10))+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showSyncStatus('✓ CSV exportado');
+}
 function getRelPeriod(){
   const val=state.relPeriod||"all";
   if(val==="all") return {label:"Todo o período",filter:()=>true};
@@ -1927,6 +2474,7 @@ function getRelPeriod(){
 function renderRelatorios(){
   if(state.relTab==="abc"){ renderCurvaABC(); return; }
   if(state.relTab==="nf"){ renderRelatorioNF(); return; }
+  if(state.relTab==="abc-cli"){ renderCurvaABCClientes(); return; }
   const {label,filter}=getRelPeriod();
   const filteredInv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
   const filteredTx=state.transactions.filter(t=>filter(t.date));
@@ -1991,6 +2539,7 @@ function renderRelatorios(){
         <div class="tabs" style="margin-bottom:0;border-bottom:none">
           <div class="tab ${state.relTab==="geral"?"active":""}" onclick="state.relTab='geral';renderRelatorios()">Visão Geral</div>
           <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
+          <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
           <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
@@ -1998,6 +2547,7 @@ function renderRelatorios(){
           <option value="all" ${state.relPeriod==="all"?"selected":""}>Todo o período</option>
           ${sortedMonths.map(m=>{const [y,mo]=m.split("-");const ml=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?"selected":""}>${ml}/${y}</option>`;}).join("")}
         </select>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="exportRelatorioCSV()" title="Exportar CSV">↓ Exportar CSV</button>
         <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="window.print()" title="Imprimir relatório">🖨 Imprimir</button>
       </div>
     </div>
@@ -2208,6 +2758,150 @@ function renderRelNFDetail(nf){
 }
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
+function renderMinhaConta(){
+  const plan = window._plan || 'trial';
+  const trialEndsAt = window._trialEndsAt;
+  const co = state.company || {};
+  const companyData = window._companyData || {};
+  const affiliateCode = companyData.affiliateCode || (window._companyId||'').slice(0,8).toUpperCase();
+  const referredBy = companyData.referredBy || null;
+  const baseUrl = window.location.origin + window.location.pathname;
+  const affiliateLink = `${baseUrl}?ref=${affiliateCode}`;
+
+  // Dias restantes do trial
+  let trialDaysLeft = 0, trialPct = 0;
+  if(plan==='trial' && trialEndsAt){
+    const msLeft = new Date(trialEndsAt) - new Date();
+    trialDaysLeft = Math.max(0, Math.ceil(msLeft/86400000));
+    trialPct = Math.round((trialDaysLeft/14)*100);
+  }
+
+  const planLabel = {trial:'Teste Gratuito', basico:'Básico', profissional:'Profissional', empresarial:'Empresarial'}[plan] || plan;
+  const planColor = plan==='trial'?'bg-amber': plan==='basico'?'bg-blue':'bg-green';
+
+  // Contagem de referidos (empresas com referredBy === affiliateCode)
+  // Nota: isso seria consultado via Firestore em produção — por ora exibe o código
+
+  el("content").innerHTML=`
+    <div class="section-title" style="margin-bottom:24px">Minha Conta</div>
+    <div style="max-width:680px;display:flex;flex-direction:column;gap:20px">
+
+    <!-- Plano atual -->
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="row-between" style="margin-bottom:16px">
+        <div>
+          <div class="kpi-label">Plano Atual</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <span style="font-size:20px;font-weight:700;color:var(--text)">${planLabel}</span>
+            <span class="badge ${planColor}">${plan==='trial'?'Em teste':'Ativo'}</span>
+          </div>
+        </div>
+        ${plan==='trial'?`<div style="text-align:right">
+          <div class="kpi-label">Dias restantes</div>
+          <div style="font-size:28px;font-weight:700;color:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};margin-top:4px">${trialDaysLeft}</div>
+        </div>`:''}
+      </div>
+      ${plan==='trial'?`
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted)">
+            <span>Período de teste</span>
+            <span>${trialDaysLeft} dias restantes de 14</span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${trialPct}%;background:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};border-radius:4px;transition:width .4s"></div>
+          </div>
+          ${trialDaysLeft<=7?`<div class="alert-warn" style="margin-top:12px;margin-bottom:0">⚠ Seu teste encerra em ${trialDaysLeft} dia(s). Assine para não perder o acesso.</div>`:''}
+        </div>
+        <div class="divider"></div>
+        <div style="margin-bottom:16px">
+          <div class="section-title" style="font-size:14px;margin-bottom:12px">Escolha seu plano</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            ${[
+              {key:'basico', name:'Básico', price:'R$ 97/mês', features:['1 usuário','500 produtos','Pedidos + NF + Caixa']},
+              {key:'profissional', name:'Profissional', price:'R$ 197/mês', features:['5 usuários','Ilimitado','Todos os módulos'], highlight:true},
+              {key:'empresarial', name:'Empresarial', price:'R$ 397/mês', features:['15 usuários','API','Suporte prioritário']}
+            ].map(p=>`
+              <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
+                ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
+                <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
+                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:10px">${p.price}</div>
+                ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">✓ ${f}</div>`).join('')}
+                <button class="btn ${p.highlight?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:12px;padding:9px" onclick="assinarPlano('${p.key}','${p.name}','${p.price}')">Assinar</button>
+              </div>`).join('')}
+          </div>
+        </div>`:`
+        <div class="row-between">
+          <div style="font-size:13px;color:var(--text2)">Próximo vencimento: <b>${trialEndsAt?new Date(trialEndsAt).toLocaleDateString('pt-BR'):'—'}</b></div>
+          <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('upgrade','Upgrade','')">Gerenciar assinatura</button>
+        </div>`}
+    </div>
+
+    <!-- Uso atual -->
+    <div class="card" style="border-top:3px solid var(--blue)">
+      <div class="section-title" style="font-size:14px;margin-bottom:14px">Uso da conta</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${[
+          ['Produtos', state.products.filter(p=>p.active!==false).length],
+          ['Clientes', state.clients.length],
+          ['Notas Fiscais', state.invoices.filter(n=>n.status!=='cancelada').length],
+          ['Pedidos', (state.orders||[]).filter(o=>o.status!=='cancelado').length],
+          ['Compras', state.purchases.length],
+          ['Transações', state.transactions.length]
+        ].map(([lbl,val])=>`
+          <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:22px;font-weight:700;color:var(--text);font-family:var(--font-m)">${val}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${lbl}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Afiliados -->
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="row-between" style="margin-bottom:14px">
+        <div class="section-title" style="font-size:14px">Programa de Afiliados</div>
+        <span class="badge bg-green">Ativo</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">
+        Indique o ERP Distribuidora e ganhe <b style="color:var(--amber)">20% de comissão</b> recorrente enquanto o indicado for cliente ativo.
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.06em">SEU LINK DE AFILIADO</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="affiliate-link-input" class="form-input" value="${affiliateLink}" readonly style="flex:1;font-family:var(--font-m);font-size:12px;color:var(--amber)">
+        <button class="btn btn-ghost" onclick="copyAffiliateLink()" style="flex-shrink:0">Copiar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:20px;font-weight:700;color:var(--green);font-family:var(--font-m)" id="aff-count">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Indicações</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:20px;font-weight:700;color:var(--amber);font-family:var(--font-m)" id="aff-active">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Ativos</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-m)" id="aff-commission">R$ —</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Comissão/mês</div>
+        </div>
+      </div>
+      ${referredBy?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">Você foi indicado por um afiliado. Obrigado por escolher o ERP Distribuidora!</div>`:''}
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        Para receber suas comissões, entre em contato: <a href="mailto:contato@erp-distribuidora.com.br" style="color:var(--amber)">contato@erp-distribuidora.com.br</a>
+      </div>
+    </div>
+
+    </div>`; /* fecha o wrapper gap */
+}
+
+function copyAffiliateLink(){
+  const inp = el('affiliate-link-input');
+  if(inp){ inp.select(); document.execCommand('copy'); showSyncStatus('✓ Link copiado!'); }
+}
+
+function assinarPlano(key, name, price){
+  const msg = encodeURIComponent(`Olá! Quero assinar o plano ${name} (${price}) do ERP Distribuidora. Minha empresa: ${state.company?.name||'—'}`);
+  window.open(`https://wa.me/55?text=${msg}`, '_blank');
+}
+
 function renderConfig(){
   const co=state.company||{};
   el("content").innerHTML=`
@@ -2224,7 +2918,21 @@ function renderConfig(){
         <div class="form-group"><label class="form-label">UF</label><input id="cfg-uf" class="form-input" value="${co.uf||"MS"}"></div>
       </div>
       <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${co.email||""}"></div>
+      <div class="form-group"><label class="form-label">Saldo de Abertura do Caixa (R$)</label><input id="cfg-opening" class="form-input" type="number" step="0.01" value="${co.openingBalance||0}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Saldo bancário/caixa no momento em que começou a usar o sistema.</div></div>
       <button class="btn btn-primary" onclick="saveConfig()">Salvar Configurações</button>
+    </div>
+    <div class="card" style="max-width:580px;margin-top:0">
+      <div class="section-title" style="margin-bottom:4px">Categorias de Produtos</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Usado nos formulários de produto. Ex: Bebidas, Alimentos, Higiene</div>
+      <div class="form-group">
+        <textarea id="cfg-categories" class="form-input" rows="3" style="resize:vertical">${(co.categories||DEFAULT_CAT_PROD).join(", ")}</textarea>
+      </div>
+      <div class="section-title" style="margin-bottom:4px;margin-top:4px">Unidades de Medida</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Ex: UN, CX, KG, M², SC, GL, MT, L</div>
+      <div class="form-group">
+        <textarea id="cfg-units" class="form-input" rows="2" style="resize:vertical">${(co.units||DEFAULT_UNITS).join(", ")}</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveCatUnits()">Salvar Categorias e Unidades</button>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:14px">Dados do Sistema</div>
@@ -2247,8 +2955,19 @@ function renderConfig(){
     </div>`;
 }
 function saveConfig(){
-  state.company={name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value};
+  const prev = state.company||{};
+  state.company={...prev,name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value,openingBalance:parseFloat(el("cfg-opening").value)||0};
   saveState(); showSyncStatus("✓ Configurações salvas"); updateTopbar();
+}
+function saveCatUnits(){
+  const cats = el("cfg-categories").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const units = el("cfg-units").value.split(",").map(s=>s.trim()).filter(Boolean);
+  if(!cats.length) return alert("Informe ao menos uma categoria.");
+  if(!units.length) return alert("Informe ao menos uma unidade.");
+  state.company = {...(state.company||{}), categories: cats, units};
+  saveState();
+  showSyncStatus("✓ Categorias e unidades salvas");
+  renderConfig();
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
@@ -2265,7 +2984,10 @@ function importData(){
   }; inp.click();
 }
 async function resetData(){
-  if(!confirm("ATENÇÃO: Apagar TODOS os dados e reiniciar com dados de exemplo?")) return;
+  const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\n\nEsta operação não pode ser desfeita. Deseja continuar?");
+  if(!confirm1) return;
+  const typed = prompt('Para confirmar, digite exatamente: RESETAR');
+  if(typed !== 'RESETAR'){ alert("Confirmação incorreta. Operação cancelada."); return; }
   localStorage.removeItem(STORAGE_KEY);
   state = JSON.parse(JSON.stringify(defaultState));
   await saveToFirebase();
@@ -2285,29 +3007,66 @@ async function resetData(){
   // Force correct layout based on screen width
 })();
 // ─── FIREBASE SYNC ────────────────────────────────────────────────────────────
+// Coleções do estado que vivem em subcoleções no Firestore
+const _COLS = ['products','clients','suppliers','invoices','purchases',
+               'receivables','payables','transactions','stockMovements','orders','returns'];
+
+// Snapshot da última versão salva por coleção: { colName: { id: jsonString } }
+// Permite delta write — só escreve itens que mudaram
+if (!window._lastSaved) window._lastSaved = {};
+
 async function saveToFirebase() {
   try {
     const db = window._db;
-    const { doc, setDoc } = window._fbFns;
+    const { doc, setDoc, writeBatch } = window._fbFns;
     const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
-    const toSave = {
-      products: state.products,
-      clients: state.clients,
-      suppliers: state.suppliers,
-      invoices: state.invoices,
-      purchases: state.purchases,
-      receivables: state.receivables,
-      payables: state.payables,
-      transactions: state.transactions,
-      stockMovements: state.stockMovements,
+
+    // Salva metadados da empresa preservando plan/trialEndsAt (merge)
+    await setDoc(doc(db, 'empresas', uid), {
       company: state.company,
-      orders: state.orders||[],
-      returns: state.returns||[],
       updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    let batch = writeBatch(db);
+    let opCount = 0;
+
+    const flush = async () => {
+      if (opCount > 0) { await batch.commit(); batch = writeBatch(db); opCount = 0; }
     };
-    await setDoc(doc(db, 'empresas', uid), toSave);
-    // Also save locally as backup
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+
+    for (const colName of _COLS) {
+      const items = state[colName] || [];
+      const prevSnap = window._lastSaved[colName] || {};
+      const currentIds = new Set();
+
+      for (const item of items) {
+        const id = String(item.id);
+        currentIds.add(id);
+        const json = JSON.stringify(item);
+        if (prevSnap[id] !== json) {
+          // Item novo ou modificado — escreve
+          batch.set(doc(db, 'empresas', uid, colName, id), item);
+          opCount++;
+          if (opCount >= 490) await flush();
+        }
+        prevSnap[id] = json;
+      }
+
+      // Remove itens deletados do estado
+      for (const prevId of Object.keys(prevSnap)) {
+        if (!currentIds.has(prevId)) {
+          batch.delete(doc(db, 'empresas', uid, colName, prevId));
+          delete prevSnap[prevId];
+          opCount++;
+          if (opCount >= 490) await flush();
+        }
+      }
+
+      window._lastSaved[colName] = prevSnap;
+    }
+
+    await flush();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     showSyncStatus('✓ Salvo');
   } catch(e) {
     console.error('Firebase save error:', e);
@@ -2319,33 +3078,57 @@ async function saveToFirebase() {
 async function loadFromFirebase() {
   try {
     const db = window._db;
-    const { doc, getDoc } = window._fbFns;
+    const { doc, getDoc, collection, getDocs } = window._fbFns;
     const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
+
     const snap = await getDoc(doc(db, 'empresas', uid));
-    if (snap.exists()) {
+
+    // Carrega todas as subcoleções em paralelo
+    const colSnaps = await Promise.all(
+      _COLS.map(c => getDocs(collection(db, 'empresas', uid, c)))
+    );
+    const hasSubcollections = colSnaps.some(s => !s.empty);
+
+    if (hasSubcollections) {
+      // Formato novo: carrega de subcoleções
+      if (snap.exists() && snap.data().company) state.company = snap.data().company;
+      window._lastSaved = {};
+      _COLS.forEach((colName, i) => {
+        const items = [];
+        const snap = {};
+        colSnaps[i].forEach(d => {
+          items.push(d.data());
+          snap[d.id] = JSON.stringify(d.data());
+        });
+        state[colName] = items;
+        window._lastSaved[colName] = snap;
+      });
+    } else if (snap.exists()) {
+      // Formato legado (single-document): migra automaticamente
       const data = snap.data();
-      Object.assign(state, data);
-      state.nfItems = []; state.compraItems = []; state.nfCosts = [];
-      if(!state.stockMovements) state.stockMovements=[];
-      if(!state.suppliers) state.suppliers=[];
-      if(!state.purchases) state.purchases=[];
-      if(!state.receivables) state.receivables=[];
-      if(!state.payables) state.payables=[];
-      if(!state.orders) state.orders=[];
-      if(!state.returns) state.returns=[];
-      if(!state.pedidoItems) state.pedidoItems=[];
+      if (Array.isArray(data.products)) {
+        Object.assign(state, data);
+        window._lastSaved = {}; // força escrita completa na migração
+        await saveToFirebase();
+        showSyncStatus('✓ Dados migrados para novo formato');
+      }
     } else {
-      // First time: load defaults
+      // Primeiro acesso: inicializa estado padrão
       state = JSON.parse(JSON.stringify(defaultState));
+      window._lastSaved = {};
       await saveToFirebase();
     }
+
+    // Garante arrays temporários e opcionais
+    ['nfItems','compraItems','nfCosts','pedidoItems'].forEach(k => { if(!state[k]) state[k]=[]; });
+    _COLS.forEach(k => { if(!state[k]) state[k]=[]; });
+
     render();
     updateTopbar();
     applyRoleUI();
     showSyncStatus('✓ Conectado ao Firebase');
   } catch(e) {
     console.error('Firebase load error:', e);
-    // Fallback to localStorage
     loadState();
     render();
     updateTopbar();
@@ -2376,7 +3159,7 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-err');
-  const btn = document.querySelector('#login-screen .btn-primary');
+  const btn = document.querySelector('#ls-login-panel .ls-btn-primary');
   if (!email || !pass) { errEl.style.display='block'; errEl.textContent='Preencha e-mail e senha.'; return; }
   btn.textContent = 'Entrando...'; btn.disabled = true;
   try {
@@ -2390,6 +3173,177 @@ async function doLogin() {
   }
 }
 
+function selectSegment(card){
+  document.querySelectorAll('.seg-card').forEach(c=>c.classList.remove('seg-active'));
+  card.classList.add('seg-active');
+  const radio = card.closest('label').querySelector('input[type="radio"]');
+  if(radio) radio.checked = true;
+}
+
+function showSignup() {
+  document.getElementById('ls-login-panel').classList.add('ls-hidden');
+  document.getElementById('signup-box').classList.remove('ls-hidden');
+  document.getElementById('signup-err').style.display = 'none';
+}
+
+function showLogin() {
+  document.getElementById('signup-box').classList.add('ls-hidden');
+  document.getElementById('ls-login-panel').classList.remove('ls-hidden');
+}
+
+const SEGMENT_PRESETS = {
+  distribuidor: {
+    label: 'Distribuidora / Atacadista',
+    categories: ['Bebidas', 'Alimentos', 'Limpeza', 'Higiene', 'Congelados', 'Descartáveis', 'Outros'],
+    units: ['UN', 'CX', 'DZ', 'PCT', 'KG', 'LT', 'FD', 'FX']
+  },
+  construcao: {
+    label: 'Material de Construção',
+    categories: ['Cimento/Argamassa', 'Hidráulico', 'Elétrico', 'Tintas', 'Ferramentas', 'Pisos/Revestimentos', 'Madeiras', 'Metais', 'Outros'],
+    units: ['UN', 'SC', 'M²', 'ML', 'M³', 'KG', 'L', 'GL', 'CX', 'PCT', 'BR']
+  },
+  alimentos: {
+    label: 'Alimentos / Mercearia',
+    categories: ['Grãos e Cereais', 'Enlatados', 'Massas', 'Condimentos', 'Laticínios', 'Doces', 'Biscoitos', 'Orgânicos', 'Outros'],
+    units: ['UN', 'KG', 'CX', 'DZ', 'PCT', 'FD', 'SC']
+  },
+  bebidas: {
+    label: 'Bebidas',
+    categories: ['Cervejas', 'Refrigerantes', 'Sucos/Néctares', 'Águas', 'Energéticos', 'Destilados', 'Vinhos', 'Outros'],
+    units: ['UN', 'CX', 'FD', 'RL', 'DZ', 'L', 'PCT']
+  },
+  laticinios: {
+    label: 'Laticínios / Frios',
+    categories: ['Queijos', 'Embutidos/Frios', 'Iogurtes', 'Manteiga/Margarina', 'Leites', 'Sorvetes', 'Outros'],
+    units: ['KG', 'UN', 'CX', 'PCT', 'DZ', 'LT', 'FR']
+  },
+  hortifruti: {
+    label: 'Hortifruti / FLV',
+    categories: ['Frutas', 'Legumes', 'Verduras', 'Ovos', 'Grãos', 'Orgânicos', 'Outros'],
+    units: ['KG', 'UN', 'DZ', 'CX', 'ML', 'SC', 'BND']
+  },
+  padaria: {
+    label: 'Padaria / Confeitaria',
+    categories: ['Farinhas', 'Açúcares', 'Gorduras', 'Fermento', 'Ovos', 'Chocolates', 'Embalagens', 'Outros'],
+    units: ['KG', 'L', 'UN', 'CX', 'SC', 'PCT', 'FR']
+  },
+  autopecas: {
+    label: 'Auto Peças',
+    categories: ['Motor', 'Freios', 'Suspensão', 'Elétrico/Bateria', 'Filtros', 'Pneus', 'Acessórios', 'Funilaria', 'Outros'],
+    units: ['UN', 'CJ', 'KIT', 'PAR', 'L', 'M', 'PCT']
+  },
+  ferragens: {
+    label: 'Ferragens / Ferramentas',
+    categories: ['Fixação (Parafusos/Porcas)', 'Ferramentas Manuais', 'Ferramentas Elétricas', 'Fechaduras/Dobradiças', 'Tintas/Vernizes', 'Jardinagem', 'Outros'],
+    units: ['UN', 'CX', 'KG', 'M', 'PCT', 'KIT', 'DZ']
+  },
+  agricola: {
+    label: 'Agrícola / Insumos',
+    categories: ['Sementes', 'Fertilizantes', 'Defensivos', 'Irrigação', 'Ferramentas Agrícolas', 'Rações Animais', 'Outros'],
+    units: ['KG', 'L', 'SC', 'UN', 'CX', 'T', 'M']
+  },
+  descartaveis: {
+    label: 'Descartáveis / Embalagens',
+    categories: ['Copos/Pratos Descartáveis', 'Embalagens Plásticas', 'Sacolas', 'Talheres', 'Papel/Guardanapos', 'Embalagens Industriais', 'Outros'],
+    units: ['UN', 'PCT', 'CX', 'RL', 'FD', 'KG', 'DZ']
+  },
+  pet: {
+    label: 'Pet Shop / Veterinário',
+    categories: ['Rações Cães', 'Rações Gatos', 'Medicamentos', 'Acessórios', 'Higiene Pet', 'Brinquedos', 'Outros'],
+    units: ['UN', 'KG', 'PCT', 'FR', 'CX', 'LT', 'DZ']
+  },
+  informatica: {
+    label: 'Informática / Eletrônicos',
+    categories: ['Notebooks/PCs', 'Periféricos', 'Redes/Cabos', 'Componentes', 'Celulares', 'Acessórios', 'Impressão', 'Outros'],
+    units: ['UN', 'CX', 'KIT', 'M', 'PCT', 'DZ']
+  },
+  tecidos: {
+    label: 'Tecidos / Moda',
+    categories: ['Tecidos', 'Malhas', 'Aviamentos', 'Lingerie', 'Moda Fitness', 'Calçados', 'Acessórios', 'Outros'],
+    units: ['M', 'UN', 'DZ', 'CX', 'KG', 'PCT', 'RL']
+  },
+  papelaria: {
+    label: 'Papelaria / Escritório',
+    categories: ['Papel/Impressão', 'Canetas/Lápis', 'Cadernos/Blocos', 'Informática', 'Arte/Desenho', 'Arquivo', 'Outros'],
+    units: ['UN', 'RM', 'CX', 'PCT', 'DZ', 'KG', 'KIT']
+  },
+  outro: {
+    label: 'Outro segmento',
+    categories: ['Produtos', 'Outros'],
+    units: ['UN', 'CX', 'KG', 'PCT', 'LT', 'M']
+  }
+};
+
+async function doSignup() {
+  const company = document.getElementById('signup-company').value.trim();
+  const name    = document.getElementById('signup-name').value.trim();
+  const email   = document.getElementById('signup-email').value.trim();
+  const pass    = document.getElementById('signup-pass').value;
+  const errEl   = document.getElementById('signup-err');
+  const btn     = document.querySelector('#signup-box .ls-btn-primary');
+
+  errEl.style.display = 'none';
+  if (!company) { errEl.style.display='block'; errEl.textContent='Informe o nome da empresa.'; return; }
+  if (!name)    { errEl.style.display='block'; errEl.textContent='Informe seu nome.'; return; }
+  if (!email)   { errEl.style.display='block'; errEl.textContent='Informe o e-mail.'; return; }
+  if (pass.length < 6) { errEl.style.display='block'; errEl.textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
+
+  btn.textContent = 'Criando conta...'; btn.disabled = true;
+  try {
+    const { createUserWithEmailAndPassword, doc, setDoc } = window._fbFns;
+    const cred = await createUserWithEmailAndPassword(window._auth, email, pass);
+    const uid = cred.user.uid;
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Cria perfil do usuário
+    await setDoc(window._fbFns.doc(window._db, 'users', uid), {
+      name, email, role: 'admin', active: true,
+      createdAt: new Date().toISOString(), companyId: uid
+    });
+    // Cria config global do tenant
+    await setDoc(window._fbFns.doc(window._db, 'config', 'global'), { companyId: uid });
+    // Segmento selecionado → pré-configura categorias e unidades
+    const segKey = document.querySelector('input[name="signup-segment"]:checked')?.value || 'distribuidor';
+    const preset = SEGMENT_PRESETS[segKey] || SEGMENT_PRESETS.distribuidor;
+    // Captura código de afiliado da URL (?ref=XXXX) ou localStorage
+    const refCode = new URLSearchParams(window.location.search).get('ref') || localStorage.getItem('_ref') || null;
+    if(refCode) localStorage.removeItem('_ref');
+    // Gera código de afiliado único para este novo usuário
+    const affiliateCode = uid.slice(0,8).toUpperCase();
+    // Cria empresa com trial de 14 dias + configurações do segmento
+    await setDoc(window._fbFns.doc(window._db, 'empresas', uid), {
+      name: company, plan: 'trial', trialEndsAt, active: true,
+      createdAt: new Date().toISOString(), affiliateCode, referredBy: refCode,
+      company: { name: company, segment: segKey, categories: preset.categories, units: preset.units }
+    });
+    // onAuthStateChanged cuida do resto (carregar app)
+  } catch(e) {
+    errEl.style.display = 'block';
+    if (e.code === 'auth/email-already-in-use') {
+      errEl.textContent = 'Este e-mail já está cadastrado. Faça login.';
+    } else {
+      errEl.textContent = 'Erro ao criar conta: ' + e.message;
+    }
+    btn.textContent = 'Criar conta grátis'; btn.disabled = false;
+  }
+}
+
+async function doGoogleLogin() {
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('btn-google-login');
+  btn.textContent = 'Aguarde...'; btn.disabled = true;
+  try {
+    const { GoogleAuthProvider, signInWithPopup } = window._fbFns;
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(window._auth, provider);
+    errEl.style.display = 'none';
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Erro ao entrar com Google. Tente novamente.';
+    btn.textContent = 'Entrar com Google'; btn.disabled = false;
+  }
+}
+
 async function doLogout() {
   const { signOut } = window._fbFns;
   await signOut(window._auth);
@@ -2400,9 +3354,9 @@ async function doLogout() {
 
 // ─── ROLES & NAV CONTROL ─────────────────────────────────────────────────────
 var ROLE_NAV = {
-  admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios'],
-  vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios'],
-  visualizador: ['dashboard','relatorios'],
+  admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta'],
+  vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','minha-conta'],
+  visualizador: ['dashboard','relatorios','minha-conta'],
 };
 var ROLE_LABELS = { admin:'Admin', vendedor:'Vendedor', visualizador:'Visualizador' };
 var ROLE_COLORS = { admin:'var(--amber)', vendedor:'var(--blue)', visualizador:'var(--muted)' };
@@ -2666,40 +3620,64 @@ function renderPedidos(){
         <button class="btn btn-primary" onclick="openPedidoModal()">+ Novo Pedido</button>
       </div>
     </div>
+    <div id="ped-status-pills" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div class="card" style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>Número</th><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Número</th><th>Data</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody id="ped-tbody"></tbody>
       </table>
     </div>`;
   filterPedidos();
 }
+if(!window._pedStatusFilter) window._pedStatusFilter = '';
 function filterPedidos(){
   const tbody=el("ped-tbody"); if(!tbody) return;
   const q=norm((el("ped-search")||{value:""}).value);
-  const statusLabel={rascunho:"Rascunho",confirmado:"Confirmado",faturado:"Faturado",cancelado:"Cancelado"};
-  const statusColor={rascunho:"var(--muted)",confirmado:"var(--blue)",faturado:"var(--green)",cancelado:"var(--red)"};
-  const filtered=(state.orders||[]).filter(o=>{
+  const sf=window._pedStatusFilter;
+  const allOrders=state.orders||[];
+
+  // Contagem por status para pills
+  const counts={rascunho:0,confirmado:0,faturado:0,cancelado:0};
+  allOrders.forEach(o=>{ if(counts[o.status]!==undefined) counts[o.status]++; });
+  const pillsEl=el("ped-status-pills");
+  if(pillsEl){
+    const pills=[['','Todos',allOrders.length],['rascunho','Rascunho',counts.rascunho],['confirmado','Confirmado',counts.confirmado],['faturado','Faturado',counts.faturado],['cancelado','Cancelado',counts.cancelado]];
+    pillsEl.innerHTML=pills.map(([val,lbl,cnt])=>`
+      <button class="btn btn-sm${sf===val?' btn-amber':''}" onclick="window._pedStatusFilter='${val}';filterPedidos()" style="font-size:12px">
+        ${lbl} <span style="opacity:.7">(${cnt})</span>
+      </button>`).join('');
+  }
+
+  const statusBadge={rascunho:'bg-gray',confirmado:'bg-blue',faturado:'bg-green',cancelado:'bg-red'};
+  const statusLabel={rascunho:'Rascunho',confirmado:'Confirmado',faturado:'Faturado',cancelado:'Cancelado'};
+  const filtered=allOrders.filter(o=>{
     const c=getClient(o.clientId);
-    return !q||norm(o.number).includes(q)||(c&&norm(c.name).includes(q));
+    const matchQ=!q||norm(o.number).includes(q)||(c&&norm(c.name).includes(q));
+    const matchS=!sf||o.status===sf;
+    return matchQ&&matchS;
   }).sort((a,b)=>b.id-a.id);
+
   tbody.innerHTML=filtered.length?filtered.map(o=>{
     const c=getClient(o.clientId);
+    // Monta resumo de produtos
+    const prodNames=o.items.map(it=>{ const p=getProd(it.productId); return p?`${p.name} ×${it.qty}`:it.name||'?'; });
+    const prodSummary=prodNames.length<=2?prodNames.join(', '):`${prodNames[0]}, ${prodNames[1]} +${prodNames.length-2}`;
     return `<tr>
-      <td><span class="badge">${o.number}</span></td>
+      <td class="mono text-amber">${o.number}</td>
       <td>${fmtDate(o.date)}</td>
-      <td>${c?c.name:"—"}</td>
-      <td>${o.items.length} item(s)</td>
-      <td>${fmt(o.total)}</td>
-      <td><span style="color:${statusColor[o.status]||"var(--muted)"}">${statusLabel[o.status]||o.status}</span></td>
-      <td><div class="row" style="gap:4px">
-        <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px" onclick="viewPedido('${o.id}')">Ver</button>
-        ${o.status==="rascunho"||o.status==="confirmado"?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:12px" onclick="editarPedidoModal('${o.id}')">Editar</button>`:""}
-        ${o.status==="rascunho"?`<button class="btn btn-primary" style="padding:4px 8px;font-size:12px" onclick="confirmarPedido('${o.id}')">Confirmar</button>`:""}
-        ${o.status==="confirmado"?`<button class="btn btn-primary" style="padding:4px 8px;font-size:12px;background:var(--green)" onclick="faturarPedido('${o.id}')">Faturar</button>`:""}
-        ${o.status==="rascunho"||o.status==="confirmado"?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;color:var(--red)" onclick="cancelarPedido('${o.id}')">Cancelar</button>`:""}
+      <td class="text-white fw-bold">${c?c.name:"—"}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:12px">${prodSummary}</td>
+      <td class="mono fw-bold">${fmt(o.total)}</td>
+      <td><span class="badge ${statusBadge[o.status]||'bg-gray'}">${statusLabel[o.status]||o.status}</span></td>
+      <td><div class="row" style="gap:4px;flex-wrap:nowrap">
+        <button class="btn-sm" onclick="viewPedido('${o.id}')">Ver</button>
+        ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-amber" onclick="editarPedidoModal('${o.id}')">Editar</button>`:''}
+        ${o.status==='rascunho'?`<button class="btn-sm btn-green" onclick="confirmarPedido('${o.id}')">✓ Confirmar</button>`:''}
+        ${o.status==='confirmado'?`<button class="btn-sm btn-green" onclick="faturarPedido('${o.id}')">↗ Faturar</button>`:''}
+        <span style="flex:1"></span>
+        ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-red" onclick="cancelarPedido('${o.id}')" title="Cancelar pedido">✕</button>`:''}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Nenhum pedido encontrado</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhum pedido encontrado.</td></tr>`;
 }
 
 function openPedidoModal(prefill){
@@ -2716,7 +3694,7 @@ function openPedidoModal(prefill){
       </div>
     </div>
     <div class="form-group"><label class="form-label">Cliente</label>
-      <select id="ped-client" class="form-input">
+      <select id="ped-client" class="form-input" onchange="pedidoPreencheCliente(this.value)">
         <option value="">Selecione cliente...</option>
         ${clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}
       </select>
@@ -2739,8 +3717,12 @@ function openPedidoModal(prefill){
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DO PEDIDO</div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:8px 12px;margin-bottom:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v3M3 12v3M3 19v2M8 5v3M8 12v3M8 19v2M13 5v3M13 12v3M13 19v2M18 5v10M18 19v2M21 5v10M21 19v2"/></svg>
+      <input id="ped-scan-ean" class="form-input" style="flex:1;background:transparent;border:none;outline:none;padding:0;font-family:var(--font-m);font-size:13px" placeholder="Scanner EAN — aponte e leia o código (Enter para adicionar)" onkeydown="scanKeyHandler(event,'ped')" autocomplete="off">
+    </div>
     <div style="margin-bottom:10px">
-      <input id="ped-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="🔍 Buscar produto pelo nome..." oninput="pedidoRenderProdList(this.value)" autocomplete="off">
+      <input id="ped-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="Buscar produto pelo nome..." oninput="pedidoRenderProdList(this.value)" autocomplete="off">
       <div id="ped-prod-list" style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
     </div>
     <div id="ped-items-list"></div>
@@ -2752,6 +3734,7 @@ function openPedidoModal(prefill){
     </div>`,true);
   pedidoRenderItems();
   pedidoRenderProdList("");
+  setTimeout(()=>{ const s=el("ped-scan-ean"); if(s) s.focus(); },100);
 }
 function pedidoRenderProdList(search){
   const listEl=el("ped-prod-list");
@@ -2811,10 +3794,27 @@ function pedidoRenderItems(){
   listEl.innerHTML=state.pedidoItems.length?`<table class="table" style="margin-bottom:8px"><thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desc%</th><th>Subtotal</th><th></th></tr></thead><tbody>${state.pedidoItems.map((it,i)=>`<tr><td>${it.name}</td><td>${it.qty} ${it.unit}</td><td>${fmt(it.price)}</td><td>${it.itemDiscount||0}%</td><td>${fmt(it.qty*it.price*(1-(it.itemDiscount||0)/100))}</td><td><button class="btn btn-ghost" style="padding:2px 6px;font-size:11px;color:var(--red)" onclick="pedidoRemItem(${i})">✕</button></td></tr>`).join("")}</tbody></table>`:"<p style='color:var(--muted);font-size:13px;text-align:center;padding:12px 0'>Nenhum item adicionado</p>";
   totEl.innerHTML=`<div style="text-align:right;font-size:13px;color:var(--muted)">Subtotal: <b style="color:var(--text)">${fmt(sub)}</b> &nbsp; Desconto: <b style="color:var(--red)">-${fmt(discAmt)}</b> &nbsp; Frete: <b style="color:var(--text)">+${fmt(freight)}</b> &nbsp; <span style="font-size:15px;font-weight:700;color:var(--amber)">Total: ${fmt(total)}</span></div>`;
 }
+function pedidoPreencheCliente(clientId){
+  const c=getClient(parseInt(clientId));
+  if(!c) return;
+  // Pré-preenche condição de pagamento padrão do cliente
+  if(c.payterm){
+    const sel=el("ped-terms");
+    if(sel){ [...sel.options].forEach(opt=>{ opt.selected=opt.value===c.payterm||opt.text===c.payterm; }); }
+  }
+  // Mostra limite de crédito se houver
+  const overdueRec=state.receivables.filter(r=>r.clientId==clientId&&r.status==='aberta'&&isOverdue(r.dueDate));
+  if(overdueRec.length){
+    const total=overdueRec.reduce((s,r)=>s+r.amount,0);
+    showSyncStatus(`⚠ ${c.name} tem ${fmt(total)} vencido`,true);
+  }
+}
+
 async function salvarPedido(num, confirmar=false){
   if(!_guardSave()) return;
   if(!state.pedidoItems.length){ _doneSave(); alert("Adicione pelo menos um item ao pedido."); return; }
   const clientId=parseInt(el("ped-client").value)||0;
+  if(!clientId){ _doneSave(); alert("Selecione um cliente para o pedido."); return; }
   const disc=parseFloat(el("ped-disc").value)||0;
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
@@ -2888,8 +3888,12 @@ function editarPedidoModal(id){
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DO PEDIDO</div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:8px 12px;margin-bottom:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v3M3 12v3M3 19v2M8 5v3M8 12v3M8 19v2M13 5v3M13 12v3M13 19v2M18 5v10M18 19v2M21 5v10M21 19v2"/></svg>
+      <input id="ped-scan-ean" class="form-input" style="flex:1;background:transparent;border:none;outline:none;padding:0;font-family:var(--font-m);font-size:13px" placeholder="Scanner EAN — aponte e leia o código (Enter para adicionar)" onkeydown="scanKeyHandler(event,'ped')" autocomplete="off">
+    </div>
     <div style="margin-bottom:10px">
-      <input id="ped-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="🔍 Buscar produto pelo nome..." oninput="pedidoRenderProdList(this.value)" autocomplete="off">
+      <input id="ped-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="Buscar produto pelo nome..." oninput="pedidoRenderProdList(this.value)" autocomplete="off">
       <div id="ped-prod-list" style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
     </div>
     <div id="ped-items-list"></div>
@@ -2901,6 +3905,7 @@ function editarPedidoModal(id){
     </div>`,true);
   pedidoRenderItems();
   pedidoRenderProdList("");
+  setTimeout(()=>{ const s=el("ped-scan-ean"); if(s) s.focus(); },100);
 }
 async function salvarEditPedido(id,confirmar=false){
   if(!_guardSave()) return;
@@ -2959,14 +3964,21 @@ function faturarPedido(id){
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="nf-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="${o.discount||0}" oninput="nfUpdateTotals()">
       </div>
-      <div class="form-group"><label class="form-label">Frete no PDF (R$)</label>
-        <input id="nf-freight" type="number" min="0" step="0.01" class="form-input" value="${o.freight||0}" oninput="nfUpdateTotals()">
+      <div class="form-group">
+        <label class="form-label">Frete (R$) — Quem paga?</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="nf-freight-val" type="number" min="0" step="0.01" class="form-input" value="${o.freight||0}" oninput="nfFreightUpdate()" style="flex:1">
+          <div style="display:flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button id="nf-ft-cli" type="button" class="nf-ft-btn nf-ft-active" onclick="nfFreightWho('cli')">Cliente</button>
+            <button id="nf-ft-emp" type="button" class="nf-ft-btn" onclick="nfFreightWho('emp')">Empresa</button>
+          </div>
+        </div>
+        <div id="nf-freight-hint" style="font-size:11px;color:var(--muted);margin-top:4px">Incluso no valor da NF — cliente paga</div>
+        <input id="nf-freight" type="hidden" value="${o.freight||0}">
+        <input id="nf-freight-int" type="hidden" value="0">
       </div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Frete Interno (R$) <span class="text-muted" style="font-size:10px;font-weight:400">— não aparece no PDF</span></label>
-        <input id="nf-freight-int" type="number" min="0" step="0.01" class="form-input" value="0">
-      </div>
       <div class="form-group"><label class="form-label">Observações <span class="text-muted" style="font-size:10px;font-weight:400">— aparece no PDF</span></label>
         <input id="nf-obs" class="form-input" placeholder="Observações da nota..." value="${obsVal}">
       </div>
@@ -2981,10 +3993,14 @@ function faturarPedido(id){
     <div id="nf-totals"></div>
     <div class="divider"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em">CUSTOS OPERACIONAIS</div>
-      <button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="nfAddCost()">+ Adicionar Custo</button>
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleNfCosts()">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em">CUSTOS E TAXAS ADICIONAIS</div>
+        <span id="nf-costs-toggle" style="font-size:11px;color:var(--muted)">▸</span>
+        <span style="font-size:10px;color:var(--muted);font-weight:400">(logística, embalagem, taxas — opcional)</span>
+      </div>
+      <button class="btn btn-ghost" id="nf-costs-add-btn" style="padding:3px 10px;font-size:12px;display:none" onclick="nfAddCost()">+ Adicionar</button>
     </div>
-    <div id="nf-costs-list"></div>
+    <div id="nf-costs-list" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="emitirNFdePedido('${nextNum}','${o.id}')">Emitir Nota</button>
@@ -2992,6 +4008,7 @@ function faturarPedido(id){
   nfRenderItems();
   nfRenderProdList("");
   nfRenderCosts();
+  setTimeout(()=>{ const s=el("nf-scan-ean"); if(s) s.focus(); },100);
 }
 async function emitirNFdePedido(nfNum, pedidoId){
   if(!_guardSave()) return;
@@ -3121,11 +4138,11 @@ async function cancelarDevolucao(id){
   if(d.status==="cancelada"){ alert("Esta devolução já está cancelada."); return; }
   if(!confirm("Cancelar devolução "+d.number+"? O estoque será revertido.")) return;
   const date=today();
-  // Reverse stock
+  // Reverse stock: cancelar devolução remove o item que havia retornado ao estoque
   d.items.forEach(it=>{ const p=getProd(it.productId); if(p) p.stock=Math.max(0,p.stock-it.qty); });
   // Stock movement for reversal
   if(!state.stockMovements) state.stockMovements=[];
-  d.items.forEach(it=>state.stockMovements.push({id:uid(),date,productId:it.productId,type:"saida",qty:it.qty,reason:"Cancelamento devolução",reference:d.number}));
+  d.items.forEach(it=>state.stockMovements.push({id:uid(),date,productId:it.productId,type:"saida",qty:it.qty,reason:"Cancelamento de devolução",reference:d.number}));
   // Reverse caixa entry
   if(!state.transactions) state.transactions=[];
   state.transactions.push({id:uid(),date,type:"saida",category:"Devolução",description:`Estorno ${d.number} — NF ${d.nfNumber}`,amount:d.total});
@@ -3270,6 +4287,7 @@ function renderCurvaABC(){
         <div class="tabs" style="margin-bottom:0;border-bottom:none">
           <div class="tab ${state.relTab==="geral"?"active":""}" onclick="state.relTab='geral';renderRelatorios()">Visão Geral</div>
           <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
+          <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
           <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
@@ -3313,6 +4331,109 @@ function renderCurvaABC(){
     </div>`;
 }
 
+function renderCurvaABCClientes(){
+  const {label, filter} = getRelPeriod();
+  const filteredInv = state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const byClient = {};
+  filteredInv.forEach(n=>{
+    byClient[n.clientId] = (byClient[n.clientId]||0) + n.total;
+  });
+  const total = Object.values(byClient).reduce((s,v)=>s+v,0);
+  let acc = 0;
+  const items = Object.entries(byClient)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([cid,val])=>{
+      acc += val;
+      const pct = total>0?(val/total*100):0;
+      const accPct = total>0?(acc/total*100):0;
+      const cls = accPct<=80?'A':accPct<=95?'B':'C';
+      const c = getClient(parseInt(cid));
+      return {client:c, val, pct, accPct, cls};
+    });
+  const months=new Set();
+  state.invoices.forEach(n=>{ if(n.date) months.add(n.date.slice(0,7)); });
+  state.transactions&&state.transactions.forEach(t=>{ if(t.date) months.add(t.date.slice(0,7)); });
+  const sortedMonths=[...months].sort().reverse();
+  el("content").innerHTML=`
+    <div class="section-header">
+      <div class="section-title">Relatórios — ABC Clientes</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <div class="tabs" style="margin-bottom:0;border-bottom:none">
+          <div class="tab ${state.relTab==="geral"?"active":""}" onclick="state.relTab='geral';renderRelatorios()">Visão Geral</div>
+          <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
+          <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
+          <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
+        </div>
+        <span class="text-muted" style="font-size:13px">Período:</span>
+        <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
+          <option value="all" ${(!state.relPeriod||state.relPeriod==='all')?' selected':''}>Todo o período</option>
+          ${sortedMonths.map(m=>{const [y,mo]=m.split("-");const ml=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?"selected":""}>${ml}/${y}</option>`;}).join("")}
+        </select>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="exportABCClientesCSV()" title="Exportar CSV">↓ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi"><div class="kpi-label">Classe A</div><div class="kpi-value" style="color:var(--green)">${items.filter(x=>x.cls==="A").length} clientes</div><div class="kpi-sub">top 80% da receita</div></div>
+      <div class="kpi"><div class="kpi-label">Classe B</div><div class="kpi-value" style="color:var(--amber)">${items.filter(x=>x.cls==="B").length} clientes</div><div class="kpi-sub">80–95% da receita</div></div>
+      <div class="kpi"><div class="kpi-label">Classe C</div><div class="kpi-value" style="color:var(--muted)">${items.filter(x=>x.cls==="C").length} clientes</div><div class="kpi-sub">&gt;95% da receita</div></div>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <table class="table">
+        <thead><tr><th>#</th><th>Cliente</th><th>Receita</th><th>% do Total</th><th>% Acumulado</th><th>Classe</th></tr></thead>
+        <tbody>${items.length?items.map((item,i)=>{
+          const colorMap={A:"var(--green)",B:"var(--amber)",C:"var(--muted)"};
+          return `<tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td>${item.client?item.client.name:'—'}</td>
+            <td>${fmt(item.val)}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:6px;background:var(--bg2);border-radius:3px;min-width:60px">
+                  <div style="height:100%;background:${colorMap[item.cls]};border-radius:3px;width:${item.pct.toFixed(1)}%"></div>
+                </div>
+                <span style="min-width:40px;text-align:right">${item.pct.toFixed(1)}%</span>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:6px;background:var(--bg2);border-radius:3px;min-width:60px">
+                  <div style="height:100%;background:${colorMap[item.cls]};border-radius:3px;width:${Math.min(item.accPct,100).toFixed(1)}%"></div>
+                </div>
+                <span style="min-width:40px;text-align:right">${item.accPct.toFixed(1)}%</span>
+              </div>
+            </td>
+            <td><span class="badge" style="background:${colorMap[item.cls]}22;color:${colorMap[item.cls]};font-weight:700">${item.cls}</span></td>
+          </tr>`;
+        }).join(""):`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhuma venda no período selecionado</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function exportABCClientesCSV(){
+  const {filter} = getRelPeriod();
+  const filteredInv = state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const byClient={};
+  filteredInv.forEach(n=>{ byClient[n.clientId]=(byClient[n.clientId]||0)+n.total; });
+  const total=Object.values(byClient).reduce((s,v)=>s+v,0);
+  let acc=0;
+  const rows=[['#','Cliente','CNPJ','Receita','% Total','% Acumulado','Classe']];
+  Object.entries(byClient).sort((a,b)=>b[1]-a[1]).forEach(([cid,val],i)=>{
+    acc+=val;
+    const pct=total>0?(val/total*100):0;
+    const accPct=total>0?(acc/total*100):0;
+    const cls=accPct<=80?'A':accPct<=95?'B':'C';
+    const c=getClient(parseInt(cid));
+    rows.push([i+1,c?c.name:'—',c?c.cnpj||'':'',val.toFixed(2),pct.toFixed(1)+'%',accPct.toFixed(1)+'%',cls]);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='abc-clientes.csv'; a.click(); URL.revokeObjectURL(url);
+  showSyncStatus('✓ CSV exportado');
+}
+
 // ─── SIDEBAR RESPONSIVA ──────────────────────────────────────────────────────
 function toggleSidebar(){
   const sb=document.getElementById('sidebar');
@@ -3331,23 +4452,181 @@ document.addEventListener('click',function(e){
 </script>
 </div><!-- #app -->
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">2R Comércio</div>
-    <div class="login-sub">GESTÃO EMPRESARIAL</div>
-    <div class="login-err" id="login-err">E-mail ou senha incorretos.</div>
-    <div class="form-group">
-      <label class="form-label">E-mail</label>
-      <input id="login-email" type="email" class="form-input" placeholder="seu@email.com">
+  <!-- Painel esquerdo: branding -->
+  <div class="ls-brand">
+    <div class="ls-brand-inner">
+      <div class="ls-logo">
+        <div class="ls-logo-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="10" width="16" height="10" rx="2" fill="#f0c040" opacity=".9"/>
+            <path d="M18 13h4.5l3 4.5V20H18v-7z" fill="#f0c040" opacity=".7"/>
+            <circle cx="7" cy="21" r="2" fill="#f0c040"/>
+            <circle cx="21" cy="21" r="2" fill="#f0c040"/>
+            <rect x="5" y="6" width="8" height="6" rx="1.5" fill="#58a6ff" opacity=".6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="ls-logo-text">ERP Distribuidora</div>
+          <div class="ls-logo-sub">GESTÃO EMPRESARIAL</div>
+        </div>
+      </div>
+      <div class="ls-tagline">Gestão completa para<br><span>distribuidoras</span></div>
+      <div class="ls-desc">Controle total do seu negócio em uma plataforma simples, rápida e acessível de qualquer lugar.</div>
+      <ul class="ls-benefits">
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Controle de estoque em tempo real
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Emissão de pedidos e notas fiscais
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Fluxo de caixa integrado
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Acesso em qualquer dispositivo
+        </li>
+      </ul>
+      <span class="ls-cta-link" onclick="showSignup()">
+        Criar conta grátis
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div class="ls-trial-badge">Teste grátis por 14 dias &nbsp;·&nbsp; Sem cartão de crédito</div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Senha</label>
-      <input id="login-pass" type="password" class="form-input" placeholder="••••••••">
+  </div>
+
+  <!-- Painel direito: formulário -->
+  <div class="ls-form-side">
+    <div class="ls-form-wrap">
+
+      <!-- Formulário de Login -->
+      <div id="ls-login-panel" class="ls-panel">
+        <div class="ls-form-title">Bem-vindo de volta</div>
+        <div class="ls-form-sub">Entre com sua conta para continuar</div>
+        <div class="ls-err" id="login-err">E-mail ou senha incorretos.</div>
+        <div class="ls-field">
+          <label class="ls-label">E-MAIL</label>
+          <input id="login-email" type="email" class="ls-input" placeholder="seu@email.com">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SENHA</label>
+          <input id="login-pass" type="password" class="ls-input" placeholder="••••••••">
+        </div>
+        <button class="ls-btn-primary" onclick="doLogin()">Entrar</button>
+        <div class="ls-divider"><span>ou</span></div>
+        <button id="btn-google-login" class="ls-btn-google" onclick="doGoogleLogin()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Entrar com Google
+        </button>
+        <div class="ls-footer-links">
+          <span class="ls-link" onclick="doResetPassword()">Esqueci minha senha</span>
+          <span class="ls-link-amber" onclick="showSignup()">Criar conta grátis →</span>
+        </div>
+      </div>
+
+      <!-- Formulário de Cadastro -->
+      <div id="signup-box" class="ls-panel ls-hidden">
+        <div class="ls-form-title">Crie sua conta</div>
+        <div class="ls-form-sub">Teste grátis por 14 dias · Sem cartão de crédito</div>
+        <div class="ls-err" id="signup-err"></div>
+        <div class="ls-field">
+          <label class="ls-label">NOME DA EMPRESA</label>
+          <input id="signup-company" type="text" class="ls-input" placeholder="Ex: Distribuidora Silva Ltda">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SEU NOME</label>
+          <input id="signup-name" type="text" class="ls-input" placeholder="Nome completo">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">E-MAIL</label>
+          <input id="signup-email" type="email" class="ls-input" placeholder="seu@email.com">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SENHA</label>
+          <input id="signup-pass" type="password" class="ls-input" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SEU SEGMENTO</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:4px;max-height:260px;overflow-y:auto;padding-right:2px">
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="distribuidor" checked style="display:none">
+              <div class="seg-card seg-active" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Distribuidora</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="construcao" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 12 2 21 9 21 20 3 20"/><rect x="9" y="14" width="6" height="6"/></svg><span>Construção</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="alimentos" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg><span>Alimentos</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="bebidas" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="8" y2="8"/><line x1="16" y1="2" x2="16" y2="8"/><path d="M5 8h14l-1.5 9A2 2 0 0 1 15.5 19h-7a2 2 0 0 1-2-1.8L5 8z"/></svg><span>Bebidas</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="laticinios" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3 13h12l3-13"/><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/></svg><span>Laticínios</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="hortifruti" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12"/><path d="M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10"/><path d="M12 2C9.5 4.5 8 8 8 12s1.5 7.5 4 10"/><line x1="2" y1="12" x2="22" y2="12"/></svg><span>Hortifruti</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="padaria" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Padaria</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="autopecas" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M14.83 9.17a4 4 0 0 1 0 5.66M9.17 9.17a4 4 0 0 0 0 5.66"/></svg><span>Auto Peças</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="ferragens" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Ferragens</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="agricola" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M17.47 3.64a4 4 0 0 1 5 5C21.55 10.63 15.1 11.2 12 12c-.8-3.1-.23-9.55 5.47-8.36z"/></svg><span>Agrícola</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="descartaveis" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>Embalagens</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="pet" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5"/><path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.96-1.45-2.344-2.5"/><path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75z"/><path d="M4.42 20A2 2 0 0 0 6 22h12a2 2 0 0 0 1.58-.8l3.37-4.49c.33-.44-.06-1.23-.63-.99a4.93 4.93 0 0 1-3.11.18c-1.38-.35-2.64-1.23-3.63-2.62a4.96 4.96 0 0 0-7.97 0C6.63 14.55 5.37 15.43 4 15.78a4.93 4.93 0 0 1-3.1-.18c-.57-.24-.96.55-.63.99L4.42 20z"/></svg><span>Pet Shop</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="informatica" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Informática</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="tecidos" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg><span>Moda/Tecidos</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="papelaria" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Papelaria</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="outro" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Outro</span></div>
+            </label>
+          </div>
+        </div>
+        <button class="ls-btn-primary" onclick="doSignup()">Criar conta grátis</button>
+        <div class="ls-footer-links" style="justify-content:center;margin-top:16px">
+          <span class="ls-link" onclick="showLogin()">← Voltar ao login</span>
+        </div>
+      </div>
+
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:11px" onclick="doLogin()">Entrar</button>
-    <div style="text-align:center;margin-top:14px">
-      <span style="font-size:12px;color:var(--amber);cursor:pointer;text-decoration:underline" onclick="doResetPassword()">Esqueci minha senha</span>
+  </div>
+</div>
+
+<div id="trial-block-screen" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg3);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+  <div class="ls-trial-card">
+    <div class="ls-trial-icon">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="26" cy="26" r="25" stroke="rgba(240,192,64,.25)" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="18" fill="rgba(240,192,64,.08)"/>
+        <rect x="19" y="22" width="14" height="12" rx="2" fill="none" stroke="#f0c040" stroke-width="1.8"/>
+        <path d="M22 22v-3a4 4 0 0 1 8 0v3" stroke="#f0c040" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="26" cy="28" r="1.5" fill="#f0c040"/>
+        <path d="M26 29.5v2.5" stroke="#f0c040" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
     </div>
-    <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted)">Distribuidora Martins · Sistema de Gestão</div>
+    <div class="ls-trial-title">Seu período de teste encerrou</div>
+    <div class="ls-trial-sub" id="trial-block-msg">Seu acesso foi suspenso. Entre em contato com nossa equipe para continuar usando o ERP Distribuidora.</div>
+    <a href="mailto:contato@erp-distribuidora.com.br" class="ls-trial-btn">Falar com o suporte</a>
+    <span class="ls-trial-logout" onclick="window._fbFns.signOut(window._auth)">Sair da conta</span>
   </div>
 </div>
 </body>

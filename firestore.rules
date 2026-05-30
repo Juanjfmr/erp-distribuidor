@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: busca o perfil do usuário autenticado
+    function userProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Helper: verifica se o usuário pertence ao tenant
+    function belongsToCompany(companyId) {
+      return request.auth != null && userProfile().companyId == companyId;
+    }
+
+    // Helper: verifica se é admin do tenant
+    function isAdmin(companyId) {
+      return belongsToCompany(companyId) && userProfile().role == 'admin';
+    }
+
+    // ── Dados da empresa (single-document por tenant) ──────────────────────
+    match /empresas/{companyId} {
+      allow read, write: if belongsToCompany(companyId);
+    }
+
+    // ── Configuração global da instância ──────────────────────────────────
+    // Apenas leitura para qualquer autenticado (necessário para resolver companyId)
+    match /config/{docId} {
+      allow read: if request.auth != null;
+      // Apenas o admin do tenant pode escrever na config da sua empresa
+      allow write: if request.auth != null
+        && userProfile().role == 'admin';
+    }
+
+    // ── Usuários ───────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // Cada usuário lê o próprio perfil
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Admin pode ler qualquer usuário do mesmo tenant
+      allow read: if request.auth != null
+        && userProfile().companyId == resource.data.companyId
+        && userProfile().role == 'admin';
+
+      // Usuário pode atualizar o próprio perfil (exceto role e companyId)
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'companyId']);
+
+      // Admin pode criar/atualizar usuários do mesmo tenant
+      allow create, update: if request.auth != null
+        && userProfile().role == 'admin'
+        && request.resource.data.companyId == userProfile().companyId;
+
+      // Criação inicial: usuário criando o próprio perfil (signup)
+      // Permitido apenas se o documento ainda não existe
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && !exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    // ── Subcoleções futuras por módulo (Fase 1b do roadmap) ───────────────
+    // Quando migrar do single-document para subcoleções, descomentar:
+    //
+    // match /empresas/{companyId}/products/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+    // match /empresas/{companyId}/orders/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+    // match /empresas/{companyId}/invoices/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+    // match /empresas/{companyId}/transactions/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+    // match /empresas/{companyId}/clients/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+    // match /empresas/{companyId}/suppliers/{docId} {
+    //   allow read, write: if belongsToCompany(companyId);
+    // }
+
+    // ── Bloqueia tudo que não foi explicitamente permitido ─────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
