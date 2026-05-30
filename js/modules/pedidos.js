@@ -311,14 +311,13 @@ async function salvarEditPedido(id,confirmar=false){
   closeModal(); renderPedidos();
   showSyncStatus(confirmar?"✓ Pedido confirmado":"✓ Pedido atualizado");
 }
-function faturarPedido(id){
+async function faturarPedido(id){
   const o=state.orders.find(x=>x.id==id);
   if(!o) return;
   state.nfItems=o.items.map(it=>({productId:it.productId,qty:it.qty,price:it.price,itemDiscount:it.itemDiscount||0}));
   state.nfCosts=[];
   const clients=state.clients||[];
-  const invoices=state.invoices||[];
-  const nextNum="NF-"+String(invoices.length+1).padStart(4,"0");
+  const nextNum=await getNextNFNumber();
   const obsVal=(o.notes||"").replace(/"/g,"&quot;");
   openModal(`<div class="modal-title">Emitir NF — Pedido ${o.number}</div>
     <div class="form-grid-2">

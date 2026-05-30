@@ -1,4 +1,25 @@
 // ─── FIREBASE SYNC ────────────────────────────────────────────────────────────
+
+async function getNextNFNumber() {
+  const db = window._db;
+  const { doc, runTransaction } = window._fbFns;
+  const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
+  const ref = doc(db, 'empresas', uid);
+  try {
+    const nextSeq = await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      const current = (snap.exists() && snap.data().lastNFSeq) || 0;
+      const next = current + 1;
+      tx.update(ref, { lastNFSeq: next });
+      return next;
+    });
+    return "NF-" + String(nextSeq).padStart(4, "0");
+  } catch(e) {
+    // fallback local se offline
+    const fallback = (state.invoices||[]).length + 1;
+    return "NF-" + String(fallback).padStart(4, "0");
+  }
+}
 const _COLS = ['products','clients','suppliers','invoices','purchases',
                'receivables','payables','transactions','stockMovements','orders','returns'];
 

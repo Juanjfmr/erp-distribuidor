@@ -65,10 +65,10 @@ function filterNotas(){
     </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhuma nota encontrada.</td></tr>`;
 }
 
-function openNFModal(){
+async function openNFModal(){
   state.nfItems=[];
   state.nfCosts=[];
-  const nextNum="NF-"+String(state.invoices.length+1).padStart(4,"0");
+  const nextNum=await getNextNFNumber();
   showModal(`
     <div class="modal-title">Emitir Nota Fiscal — <span class="text-amber mono">${nextNum}</span></div>
     <div class="form-grid-2">
