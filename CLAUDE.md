@@ -144,6 +144,20 @@ erp-distribuidor/
 - **App Mobile:** React Native ou Flutter, mesma camada de serviços
 - **API:** quando PDV/mobile demandarem backend próprio
 
+## Roadmap v2 (pós 30 clientes)
+- **Open Finance / Conciliação bancária automática**
+  - Integração via intermediário: Pluggy ou TecnoSpeed (sandbox gratuito para dev)
+  - Feature exclusiva do plano Empresarial ou add-on R$29/mês
+  - Custo estimado: R$0–200/mês até 30 tenants, escala por volume
+  - Contatar Pluggy e TecnoSpeed para cotação quando atingir 30 clientes ativos
+  - Consentimento por tenant — cada empresa autoriza explicitamente quais bancos conectar
+- **Inteligência operacional proativa (agente IA Fase C)**
+  - Alertas de estoque mínimo com sugestão de ordem de compra
+  - Cobranças automáticas de inadimplentes via WhatsApp
+  - Feature opcional ativada pelo tenant nas configurações
+- **WhatsApp Business API** — agente de IA fora do sistema
+- **Gerador de conteúdo automatizado** — integração com GitHub Actions pós deploy
+
 ## Decisões Técnicas Tomadas
 - ES Modules nativos (projeto roda via HTTP, não file://)
 - Firebase como único backend por ora — sem API intermediária
