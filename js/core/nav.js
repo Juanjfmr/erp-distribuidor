@@ -25,7 +25,7 @@ function navigate(v){
   render();
 }
 function render(){
-  ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:renderConfig,usuarios:renderUsuarios,'minha-conta':renderMinhaConta})[state.currentView]();
+  ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:renderConfig,usuarios:renderUsuarios,'minha-conta':renderMinhaConta,onboarding:renderOnboarding})[state.currentView]?.();
   applyRoleUI();
 }
 

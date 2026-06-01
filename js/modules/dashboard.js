@@ -33,7 +33,40 @@ function renderDashboard(){
   const vencendoVal = vencendo.reduce((s,r)=>s+r.amount,0);
   const lowStock=state.products.filter(p=>p.active!==false&&p.stock<=p.minStock);
   const recentNF=[...state.invoices].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const ob = state.onboarding;
+  const onboardingHtml = (!ob || ob.complete) ? '' : (() => {
+    const items = [
+      { key:'empresa',      label:'Dados da empresa configurados' },
+      { key:'dados',        label:'Produtos e clientes importados' },
+      { key:'pedido',       label:'Primeiro pedido criado' },
+      { key:'nfe',          label:'Primeira NF-e emitida' },
+      { key:'recebimento',  label:'Primeiro recebimento registrado' },
+    ];
+    const done = items.filter(i => ob.checklist?.[i.key]).length;
+    const pct = Math.round(done/items.length*100);
+    return `
+      <div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700">Configure sua conta — ${pct}% concluído</div>
+          <button class="btn btn-sm" onclick="navigate('onboarding')">Continuar configuração</button>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:6px;margin-bottom:12px">
+          <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:4px;transition:width .4s"></div>
+        </div>
+        ${items.map(i => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px">
+            <span style="color:${ob.checklist?.[i.key]?'var(--green)':'var(--border)'}">
+              ${ob.checklist?.[i.key]?'✅':'⬜'}
+            </span>
+            <span style="color:${ob.checklist?.[i.key]?'var(--text)':'var(--text2)'}">${i.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  })();
+
   el("content").innerHTML=`
+    ${onboardingHtml}
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button class="btn-sm${period==='hoje'?' btn-amber':''}" onclick="window._dashPeriod='hoje';renderDashboard()">Hoje</button>
       <button class="btn-sm${period==='semana'?' btn-amber':''}" onclick="window._dashPeriod='semana';renderDashboard()">7 dias</button>

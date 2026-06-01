@@ -6,5 +6,8 @@
   const now=new Date();
   el("topbar-date").textContent=`${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]} de ${now.getFullYear()}`;
   el("sb-footer").textContent=`v2.0 · ${state.company&&state.company.name?state.company.name:"2R Comércio"}`;
+  if (shouldShowOnboarding && shouldShowOnboarding()) {
+    state.currentView = 'onboarding';
+  }
   render();
 })();
