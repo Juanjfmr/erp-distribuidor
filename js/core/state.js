@@ -1,5 +1,59 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const STORAGE_KEY = "distribuidorms_v2";
+const STORAGE_KEY = "erp_distribuidor_v1";
+
+// ─── PLANOS ───────────────────────────────────────────────────────────────────
+const PLAN_LIMITS = {
+  trial:        { users: 1, products: 50,    nfMonth: 10,   modules: ['basic'] },
+  basico:       { users: 1, products: 300,   nfMonth: 100,  modules: ['basic'] },
+  profissional: { users: 3, products: 2000,  nfMonth: 500,  modules: ['basic','pro'] },
+  empresarial:  { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
+};
+
+const MODULE_PLAN = {
+  devolucoes:   'pro',
+  relatorios:   'pro',
+  comissoes:    'pro',
+  tabelaPreco:  'pro',
+  estoqueMin:   'pro',
+  pdv:          'enterprise',
+  api:          'enterprise',
+};
+
+function checkPlan(module) {
+  const plan = window._plan || 'trial';
+  const required = MODULE_PLAN[module];
+  if (!required) return true;
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.trial;
+  return limits.modules.includes(required);
+}
+
+function getPlanLimit(key) {
+  const plan = window._plan || 'trial';
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.trial;
+  return limits[key];
+}
+
+function showPlanBlockModal(module) {
+  const msgs = {
+    devolucoes:  'Devoluções',
+    relatorios:  'Relatórios avançados e Curva ABC',
+    comissoes:   'Comissão de vendedores',
+    tabelaPreco: 'Tabela de preços por cliente',
+    estoqueMin:  'Estoque mínimo e alertas',
+    pdv:         'PDV (Ponto de Venda)',
+    api:         'Acesso via API',
+  };
+  const nome = msgs[module] || module;
+  showModal(`
+    <div style="text-align:center;padding:24px">
+      <div style="font-size:32px;margin-bottom:12px">🔒</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Recurso bloqueado</div>
+      <div style="color:var(--text2);margin-bottom:20px"><b>${nome}</b> está disponível a partir do plano <b>Profissional</b>.</div>
+      <button class="btn btn-primary" onclick="navigate('minha-conta');closeModal()">Ver planos</button>
+      <button class="btn" onclick="closeModal()" style="margin-left:8px">Fechar</button>
+    </div>
+  `);
+}
 const defaultState = {
   company:{ name:"2R Comércio", cnpj:"", address:"", city:"", uf:"MS", phone:"", email:"" },
   products:[], clients:[], suppliers:[],
