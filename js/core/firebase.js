@@ -111,13 +111,18 @@ async function loadFromFirebase() {
     } else if (snap.exists()) {
       const data = snap.data();
       if (Array.isArray(data.products)) {
+        // Formato antigo (single-document) — migrar para subcoleções
         Object.assign(state, data);
         window._lastSaved = {};
         await saveToFirebase();
         showSyncStatus('✓ Dados migrados para novo formato');
+      } else {
+        // Formato novo: documento existe mas dados estão em subcoleções (ainda não migradas)
+        // Carrega apenas company do Firebase e preserva o restante do localStorage
+        if (data.company) state.company = data.company;
       }
     } else {
-      state = JSON.parse(JSON.stringify(defaultState));
+      // Documento não existe ainda — inicializa com o state do localStorage (já carregado)
       window._lastSaved = {};
       await saveToFirebase();
     }

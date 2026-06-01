@@ -73,9 +73,9 @@ function _onboardingStep0() {
         <label class="form-label">Segmento de negócio</label>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
           ${segments.map(s => `
-            <div onclick="document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('ob-segment').value='${s.key}'"
+            <div onclick="document.querySelectorAll('.seg-btn').forEach(b=>{b.style.borderColor='var(--border)';b.style.background='';b.style.color=''});this.style.borderColor='var(--blue)';this.style.background='rgba(59,130,246,0.1)';document.getElementById('ob-segment').value='${s.key}'"
               class="seg-btn" data-seg="${s.key}"
-              style="border:2px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;${(co.segment===s.key)?'border-color:var(--blue);background:var(--blue)15':''}">
+              style="border:2px solid ${(co.segment===s.key)?'var(--blue)':'var(--border)'};background:${(co.segment===s.key)?'rgba(59,130,246,0.1)':''};border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">
               <div style="font-size:20px">${s.icon}</div>
               <div style="font-size:11px;margin-top:4px">${s.label}</div>
             </div>
@@ -91,6 +91,8 @@ function _onboardingStep0() {
 }
 
 function _onboardingSave0() {
+  try {
+  if (!state.onboarding) { alert('Erro: state.onboarding indefinido'); return; }
   const name = el('ob-name').value.trim();
   if (!name) { alert('Informe o nome da empresa.'); return; }
   state.company = {
@@ -113,6 +115,7 @@ function _onboardingSave0() {
   state.onboarding.step = 1;
   completeOnboardingStep('empresa');
   renderOnboarding();
+  } catch(e) { alert('Erro _onboardingSave0: ' + e.message); }
 }
 
 function _onboardingStep1() {

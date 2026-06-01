@@ -59,27 +59,10 @@ service cloud.firestore {
         && !exists(/databases/$(database)/documents/users/$(uid));
     }
 
-    // ── Subcoleções futuras por módulo (Fase 1b do roadmap) ───────────────
-    // Quando migrar do single-document para subcoleções, descomentar:
-    //
-    // match /empresas/{companyId}/products/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
-    // match /empresas/{companyId}/orders/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
-    // match /empresas/{companyId}/invoices/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
-    // match /empresas/{companyId}/transactions/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
-    // match /empresas/{companyId}/clients/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
-    // match /empresas/{companyId}/suppliers/{docId} {
-    //   allow read, write: if belongsToCompany(companyId);
-    // }
+    // ── Subcoleções por módulo ────────────────────────────────────────────
+    match /empresas/{companyId}/{collection}/{docId} {
+      allow read, write: if belongsToCompany(companyId);
+    }
 
     // ── Bloqueia tudo que não foi explicitamente permitido ─────────────────
     match /{document=**} {
