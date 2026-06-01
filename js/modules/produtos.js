@@ -95,6 +95,27 @@ function openProdModal(id){
     </div>`);
 }
 function saveProd(id){
+  // Verificar limite do plano para novo produto
+  const isNew = !id;
+  if (isNew) {
+    const limite = getPlanLimit('products');
+    const ativos = state.products.filter(p => p.active !== false).length;
+    if (ativos >= limite) {
+      showModal(`
+        <div style="text-align:center;padding:24px">
+          <div style="font-size:32px;margin-bottom:12px">🔒</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px">Limite atingido</div>
+          <div style="color:var(--text2);margin-bottom:20px">
+            Seu plano permite até <b>${limite} produtos</b>. Você tem <b>${ativos}</b> cadastrados.<br>
+            Faça upgrade para cadastrar mais.
+          </div>
+          <button class="btn btn-primary" onclick="navigate('minha-conta');closeModal()">Ver planos</button>
+          <button class="btn" onclick="closeModal()" style="margin-left:8px">Fechar</button>
+        </div>
+      `);
+      return;
+    }
+  }
   const name=el("f-name").value.trim();
   if(!name) return alert("Informe o nome do produto.");
   const newSale=parseFloat(el("f-price").value)||0;

@@ -100,6 +100,14 @@ async function createNewUser() {
   const errEl = el('nu-err');
   if (!name || !email || !pass) { errEl.style.display='block'; errEl.textContent='Preencha todos os campos.'; return; }
   if (pass.length < 6) { errEl.style.display='block'; errEl.textContent='A senha deve ter pelo menos 6 caracteres.'; return; }
+  // Verificar limite do plano para novos usuários
+  const limiteUsers = getPlanLimit('users');
+  const totalUsers = (window._users || []).length;
+  if (totalUsers >= limiteUsers) {
+    errEl.style.display='block';
+    errEl.textContent=`Seu plano permite até ${limiteUsers} usuário(s). Faça upgrade para adicionar mais.`;
+    return;
+  }
   const btn = document.querySelector('#modal-box .btn-primary');
   btn.textContent='Criando...'; btn.disabled=true;
   try {
