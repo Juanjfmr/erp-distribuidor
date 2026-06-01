@@ -84,6 +84,11 @@ function openProdModal(id){
       <div class="form-group"><label class="form-label">NCM</label><input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}"></div>
       <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?p.cfop||'':''}"></div>
     </div>
+    <div class="form-group"><label class="form-label">Origem da Mercadoria</label><select id="f-origem" class="form-input">
+      <option value="0" ${(!p||!p.origem||p.origem==='0')?'selected':''}>0 — Nacional</option>
+      <option value="1" ${p&&p.origem==='1'?'selected':''}>1 — Estrangeira (importação direta)</option>
+      <option value="2" ${p&&p.origem==='2'?'selected':''}>2 — Estrangeira (adquirida no mercado interno)</option>
+    </select></div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Estoque Atual</label><input id="f-stock" class="form-input" type="number" value="${p?p.stock:0}"></div>
       <div class="form-group"><label class="form-label">Estoque Mínimo</label><input id="f-min" class="form-input" type="number" value="${p?p.minStock:0}"></div>
@@ -133,10 +138,10 @@ function saveProd(id){
     if(newSale!==p.salePrice||newCost!==p.costPrice){
       ph.push({date:today(),salePrice:newSale,costPrice:newCost,note:el("f-note")?el("f-note").value||"Atualização":"Atualização"});
     }
-    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim()}:x);
+    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value}:x);
   }else{
     savedId=uid();
-    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim()});
+    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value});
   }
   saveState();
   showSyncStatus(id?"✓ Produto atualizado":"✓ Produto cadastrado");
