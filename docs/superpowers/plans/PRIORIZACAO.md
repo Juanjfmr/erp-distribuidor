@@ -138,7 +138,7 @@ Atualizar após cada plano concluído:
 | Plano | Status | Data | Observações |
 |---|---|---|---|
 | Plano A | ✅ Concluído | 2026-05-31 | checkPlan, trial 30d, strings renomeadas |
-| Plano B | ⏳ Pendente | — | Aguarda token Focus NFe |
+| Plano B | ✅ Concluído | 2026-06-01 | Focus NFe integrado; configurar token em Configurações → Dados Fiscais |
 | Plano C | ✅ Concluído | 2026-05-31 | Wizard onboarding 4 etapas + csvImport.js (Bling, Conta Azul, genérico) |
 | Plano D | ⏳ Pendente | — | — |
 | Plano E2 | ⏳ Pendente | — | Aguarda Firebase Blaze + token MP |
