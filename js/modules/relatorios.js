@@ -29,6 +29,7 @@ function renderRelatorios(){
   if(state.relTab==="abc"){ renderCurvaABC(); return; }
   if(state.relTab==="nf"){ renderRelatorioNF(); return; }
   if(state.relTab==="abc-cli"){ renderCurvaABCClientes(); return; }
+  if(state.relTab==="dre"){ renderDRE(); return; }
   const {label,filter}=getRelPeriod();
   const filteredInv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
   const filteredTx=state.transactions.filter(t=>filter(t.date));
@@ -88,6 +89,7 @@ function renderRelatorios(){
           <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
           <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
           <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
+          <div class="tab ${state.relTab==="dre"?"active":""}" onclick="state.relTab='dre';renderRelatorios()">DRE</div>
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
         <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
@@ -189,6 +191,7 @@ function renderRelatorioNF(){
           <div class="tab" onclick="state.relTab='geral';renderRelatorios()">Visão Geral</div>
           <div class="tab" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
           <div class="tab active">Por NF</div>
+          <div class="tab" onclick="state.relTab='dre';renderRelatorios()">DRE</div>
         </div>
       </div>
     </div>
@@ -338,6 +341,7 @@ function renderCurvaABC(){
           <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
           <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
           <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
+          <div class="tab ${state.relTab==="dre"?"active":""}" onclick="state.relTab='dre';renderRelatorios()">DRE</div>
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
         <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
@@ -410,6 +414,7 @@ function renderCurvaABCClientes(){
           <div class="tab ${state.relTab==="abc"?"active":""}" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
           <div class="tab ${state.relTab==="abc-cli"?"active":""}" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
           <div class="tab ${state.relTab==="nf"?"active":""}" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
+          <div class="tab ${state.relTab==="dre"?"active":""}" onclick="state.relTab='dre';renderRelatorios()">DRE</div>
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
         <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
@@ -452,6 +457,84 @@ function renderCurvaABCClientes(){
             <td><span class="badge" style="background:${colorMap[item.cls]}22;color:${colorMap[item.cls]};font-weight:700">${item.cls}</span></td>
           </tr>`;
         }).join(""):`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhuma venda no período selecionado</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderDRE(){
+  const {label,filter}=getRelPeriod();
+  const inv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const receitaBruta=inv.reduce((s,n)=>s+n.total,0);
+  const devolucoes=(state.returns||[]).filter(r=>filter(r.date)).reduce((s,r)=>s+(r.total||0),0);
+  const receitaLiq=receitaBruta-devolucoes;
+  let cmv=0,hasMissingCost=false;
+  inv.forEach(n=>(n.items||[]).forEach(it=>{
+    const p=getProd(it.productId);
+    if(p&&p.costPrice>0) cmv+=it.qty*(p.costPrice||0);
+    else hasMissingCost=true;
+  }));
+  const lucroBruto=receitaLiq-cmv;
+  const margBruta=receitaLiq>0?(lucroBruto/receitaLiq*100):0;
+  const despByCat={};
+  (state.transactions||[]).filter(t=>t.type==="saida"&&filter(t.date)).forEach(t=>{
+    despByCat[t.category]=(despByCat[t.category]||0)+t.amount;
+  });
+  const despArr=Object.entries(despByCat).sort((a,b)=>b[1]-a[1]);
+  const totalDesp=despArr.reduce((s,[,v])=>s+v,0);
+  const lucroLiq=lucroBruto-totalDesp;
+  const margLiq=receitaLiq>0?(lucroLiq/receitaLiq*100):0;
+  const months=new Set();
+  state.invoices.forEach(n=>{if(n.date)months.add(n.date.slice(0,7));});
+  const sortedMonths=[...months].sort().reverse();
+  const row=(label,val,indent,bold,color)=>`
+    <tr style="${bold?"font-weight:700":""}">
+      <td style="padding-left:${indent?24:8}px;color:var(--text2)">${label}</td>
+      <td class="mono" style="text-align:right;color:${color||"var(--text)"};padding-right:12px">${fmt(val)}</td>
+      <td style="text-align:right;padding-right:12px;color:var(--muted);font-size:12px">${receitaBruta>0?(val/receitaBruta*100).toFixed(1)+"%":""}</td>
+    </tr>`;
+  el("content").innerHTML=`
+    <div class="section-header">
+      <div class="section-title">Relatórios — DRE</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <div class="tabs" style="margin-bottom:0;border-bottom:none">
+          <div class="tab" onclick="state.relTab='geral';renderRelatorios()">Visão Geral</div>
+          <div class="tab" onclick="state.relTab='abc';renderRelatorios()">Curva ABC</div>
+          <div class="tab" onclick="state.relTab='abc-cli';renderRelatorios()">ABC Clientes</div>
+          <div class="tab" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
+          <div class="tab active">DRE</div>
+        </div>
+        <span class="text-muted" style="font-size:13px">Período:</span>
+        <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
+          <option value="all" ${state.relPeriod==="all"?"selected":""}>Todo o período</option>
+          ${sortedMonths.map(m=>{const[y,mo]=m.split("-");const ml=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?"selected":""}>${ml}/${y}</option>`;}).join("")}
+        </select>
+      </div>
+    </div>
+    ${hasMissingCost?`<div class="alert-yellow" style="margin-bottom:12px">⚠ Há produtos sem preço de custo — o CMV está subestimado.</div>`:""}
+    <div class="card" style="max-width:640px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">DRE — ${label}</div>
+      <table style="width:100%">
+        <thead><tr>
+          <th style="text-align:left">Descrição</th>
+          <th style="text-align:right;padding-right:12px">Valor</th>
+          <th style="text-align:right;padding-right:12px">% Receita</th>
+        </tr></thead>
+        <tbody>
+          ${row("(+) Receita Bruta de Vendas",receitaBruta,false,true,"var(--amber)")}
+          ${devolucoes>0?row("(-) Devoluções",-devolucoes,true,false,"var(--red)"):""}
+          ${row("(=) Receita Líquida",receitaLiq,false,true,receitaLiq>=0?"var(--text)":"var(--red)")}
+          <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
+          ${row("(-) CMV — Custo das Mercadorias Vendidas",-cmv,true,false,"var(--red)")}
+          ${row("(=) Lucro Bruto",lucroBruto,false,true,lucroBruto>=0?"var(--green)":"var(--red)")}
+          <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem Bruta: ${margBruta.toFixed(1)}%</td></tr>
+          <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
+          <tr><td colspan="3" style="padding:4px 8px;font-size:11px;font-weight:700;color:var(--muted)">(-) DESPESAS OPERACIONAIS</td></tr>
+          ${despArr.map(([cat,val])=>row(cat,-val,true,false,"var(--red)")).join("")}
+          ${despArr.length===0?`<tr><td colspan="3" style="padding:4px 8px;color:var(--muted);font-size:12px">Nenhuma despesa no período</td></tr>`:""}
+          <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
+          ${row("(=) LUCRO LÍQUIDO",lucroLiq,false,true,lucroLiq>=0?"var(--green)":"var(--red)")}
+          <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem Líquida: ${margLiq.toFixed(1)}%</td></tr>
         </tbody>
       </table>
     </div>`;
