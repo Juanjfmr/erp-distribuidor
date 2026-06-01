@@ -336,7 +336,7 @@ async function emitirNF(num){
     });
     if(terms==="À Vista") nf.status="emitida";
 
-    if(state.company.focusToken){
+    if(window._focusToken){
       showSyncStatus('Emitindo NF-e na SEFAZ...');
       const resultado = await emitirNFe(nf, state.company, state.products, state.clients);
       if(!resultado.success){
@@ -355,7 +355,7 @@ async function emitirNF(num){
 
     state.invoices.push(nf);
     await saveToFirebase(); closeModal(); filterNotas();
-    if(!state.company.focusToken) showSyncStatus("✓ Nota fiscal emitida");
+    if(!window._focusToken) showSyncStatus("✓ Nota fiscal emitida");
   }finally{ _doneSave(); }
 }
 function viewNF(id){

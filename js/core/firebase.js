@@ -88,6 +88,16 @@ async function loadFromFirebase() {
     const { doc, getDoc, collection, getDocs } = window._fbFns;
     const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
 
+    // Carregar config global do operador (token Focus NFe centralizado)
+    try {
+      const globalCfg = await getDoc(doc(db, 'config', 'focusNfe'));
+      if (globalCfg.exists()) {
+        window._focusToken = globalCfg.data().token || null;
+        window._focusEnv   = globalCfg.data().env   || 'homologacao';
+      }
+    } catch(_) {}
+
+
     const snap = await getDoc(doc(db, 'empresas', uid));
 
     const colSnaps = await Promise.all(
