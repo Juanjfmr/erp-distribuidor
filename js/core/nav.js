@@ -9,10 +9,19 @@ const openModal = showModal;
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 const PAGE_TITLES={dashboard:"Dashboard",produtos:"Produtos",clientes:"Clientes",fornecedores:"Fornecedores",pedidos:"Pedidos de Venda",notas:"Nota Fiscal",devolucoes:"Devoluções",compras:"Compras",contas:"Contas",caixa:"Fluxo de Caixa",relatorios:"Relatórios",config:"Configurações"};
+const MODULE_GUARD = {
+  devolucoes: 'devolucoes',
+  relatorios: 'relatorios',
+};
+
 function navigate(v){
+  if (MODULE_GUARD[v] && !checkPlan(MODULE_GUARD[v])) {
+    showPlanBlockModal(MODULE_GUARD[v]);
+    return;
+  }
   state.currentView=v;
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.toggle("active",n.dataset.view===v));
-  el("page-title").textContent=PAGE_TITLES[v];
+  el("page-title").textContent=PAGE_TITLES[v]||v;
   render();
 }
 function render(){
@@ -42,6 +51,21 @@ function applyRoleUI() {
     document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm.btn-red, .btn-sm.btn-amber').forEach(b => b.style.display='none');
   }
   if (!allowed.includes(state.currentView)) { navigate('dashboard'); }
+  // Marcar visualmente itens de nav bloqueados por plano
+  document.querySelectorAll('.nav-item[data-view]').forEach(n => {
+    const guard = MODULE_GUARD[n.dataset.view];
+    const locked = guard && !checkPlan(guard);
+    const existing = n.querySelector('.plan-lock');
+    if (locked && !existing) {
+      const lock = document.createElement('span');
+      lock.className = 'plan-lock';
+      lock.textContent = ' 🔒';
+      lock.style.fontSize = '10px';
+      n.appendChild(lock);
+    } else if (!locked && existing) {
+      existing.remove();
+    }
+  });
 }
 
 // ─── SIDEBAR RESPONSIVA ──────────────────────────────────────────────────────
