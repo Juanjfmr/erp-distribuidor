@@ -187,6 +187,12 @@ function renderConfig(){
       <div style="margin-top:12px">
         <button class="btn btn-danger" style="background:rgba(248,81,73,.08)" onclick="resetData()">⚠ Resetar todos os dados</button>
       </div>
+      <!-- ⚠ TEMPORÁRIO — remover após testes do onboarding -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">DEV: Reiniciar wizard de onboarding</div>
+        <button class="btn" style="font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="state.onboarding={complete:false,step:0,checklist:{empresa:false,dados:false,pedido:false,nfe:false,recebimento:false,certificado:false}};saveState();navigate('onboarding')">↩ Reiniciar onboarding</button>
+      </div>
+      <!-- /TEMPORÁRIO -->
     </div>`;
 }
 function saveConfig(){

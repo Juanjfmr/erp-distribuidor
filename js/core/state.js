@@ -7,6 +7,7 @@ const PLAN_LIMITS = {
   basico:       { users: 1, products: 300,   nfMonth: 100,  modules: ['basic'] },
   profissional: { users: 3, products: 2000,  nfMonth: 500,  modules: ['basic','pro'] },
   empresarial:  { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
+  owner:        { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
 };
 
 const MODULE_PLAN = {
