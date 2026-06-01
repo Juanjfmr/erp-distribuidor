@@ -154,6 +154,21 @@ function renderConfig(){
       </div>
       <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${co.email||""}"></div>
       <div class="form-group"><label class="form-label">Saldo de Abertura do Caixa (R$)</label><input id="cfg-opening" class="form-input" type="number" step="0.01" value="${co.openingBalance||0}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Saldo bancário/caixa no momento em que começou a usar o sistema.</div></div>
+      <div class="divider"></div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">DADOS FISCAIS E NF-e</div>
+      <div class="form-grid-2">
+        <div class="form-group"><label class="form-label">Inscrição Estadual (IE)</label><input id="cfg-ie" class="form-input" placeholder="Somente números ou ISENTO" value="${co.ie||''}"></div>
+        <div class="form-group"><label class="form-label">Regime Tributário</label><select id="cfg-regime" class="form-input">
+          <option value="1" ${(!co.regime||co.regime==='1')?'selected':''}>1 — Simples Nacional</option>
+          <option value="2" ${co.regime==='2'?'selected':''}>2 — Simples Nacional (excesso sublimite)</option>
+          <option value="3" ${co.regime==='3'?'selected':''}>3 — Regime Normal (Lucro Presumido/Real)</option>
+        </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Token Focus NFe</label><input id="cfg-focustoken" class="form-input" type="password" placeholder="Token da API Focus NFe" value="${co.focusToken||''}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Obtido em app.focusnfe.com.br → Configurações → Token</div></div>
+      <div class="form-group"><label class="form-label">Ambiente Focus NFe</label><select id="cfg-focusenv" class="form-input">
+        <option value="homologacao" ${(!co.focusEnv||co.focusEnv==='homologacao')?'selected':''}>Homologação (testes)</option>
+        <option value="producao" ${co.focusEnv==='producao'?'selected':''}>Produção</option>
+      </select></div>
       <button class="btn btn-primary" onclick="saveConfig()">Salvar Configurações</button>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
@@ -197,7 +212,7 @@ function renderConfig(){
 }
 function saveConfig(){
   const prev = state.company||{};
-  state.company={...prev,name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value,openingBalance:parseFloat(el("cfg-opening").value)||0};
+  state.company={...prev,name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value,openingBalance:parseFloat(el("cfg-opening").value)||0,ie:el("cfg-ie").value,regime:el("cfg-regime").value,focusToken:el("cfg-focustoken").value,focusEnv:el("cfg-focusenv").value};
   saveState(); showSyncStatus("✓ Configurações salvas"); updateTopbar();
 }
 function saveCatUnits(){
