@@ -137,7 +137,7 @@ Atualizar após cada plano concluído:
 
 | Plano | Status | Data | Observações |
 |---|---|---|---|
-| Plano A | ⏳ Pendente | — | — |
+| Plano A | ✅ Concluído | 2026-05-31 | checkPlan, trial 30d, strings renomeadas |
 | Plano B | ⏳ Pendente | — | Aguarda token Focus NFe |
 | Plano C | ⏳ Pendente | — | — |
 | Plano D | ⏳ Pendente | — | — |
