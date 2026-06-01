@@ -295,7 +295,7 @@ async function doSignup() {
     const { createUserWithEmailAndPassword, doc, setDoc } = window._fbFns;
     const cred = await createUserWithEmailAndPassword(window._auth, email, pass);
     const uid = cred.user.uid;
-    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await setDoc(window._fbFns.doc(window._db, 'users', uid), {
       name, email, role: 'admin', active: true,

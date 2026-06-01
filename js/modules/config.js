@@ -13,7 +13,7 @@ function renderMinhaConta(){
   if(plan==='trial' && trialEndsAt){
     const msLeft = new Date(trialEndsAt) - new Date();
     trialDaysLeft = Math.max(0, Math.ceil(msLeft/86400000));
-    trialPct = Math.round((trialDaysLeft/14)*100);
+    trialPct = Math.round((trialDaysLeft/30)*100);
   }
 
   const planLabel = {trial:'Teste Gratuito', basico:'Básico', profissional:'Profissional', empresarial:'Empresarial'}[plan] || plan;
@@ -41,7 +41,7 @@ function renderMinhaConta(){
         <div style="margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted)">
             <span>Período de teste</span>
-            <span>${trialDaysLeft} dias restantes de 14</span>
+            <span>${trialDaysLeft} dias restantes de 30</span>
           </div>
           <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${trialPct}%;background:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};border-radius:4px;transition:width .4s"></div>
