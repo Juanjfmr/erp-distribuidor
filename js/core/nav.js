@@ -8,7 +8,7 @@ function closeModal(){ el("modal").style.display="none"; state.nfItems=[]; state
 const openModal = showModal;
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
-const PAGE_TITLES={dashboard:"Dashboard",produtos:"Produtos",clientes:"Clientes",fornecedores:"Fornecedores",pedidos:"Pedidos de Venda",notas:"Nota Fiscal",devolucoes:"Devoluções",compras:"Compras",contas:"Contas",caixa:"Fluxo de Caixa",relatorios:"Relatórios",config:"Configurações"};
+const PAGE_TITLES={dashboard:"Dashboard",produtos:"Produtos",clientes:"Clientes",fornecedores:"Fornecedores",pedidos:"Pedidos de Venda",notas:"Nota Fiscal",devolucoes:"Devoluções",compras:"Compras",contas:"Contas",caixa:"Fluxo de Caixa",relatorios:"Relatórios",config:"Configurações",onboarding:"Configuração Inicial"};
 const MODULE_GUARD = {
   devolucoes: 'devolucoes',
   relatorios: 'relatorios',
@@ -31,9 +31,9 @@ function render(){
 
 // ─── ROLES & NAV CONTROL ─────────────────────────────────────────────────────
 var ROLE_NAV = {
-  admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta'],
-  vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','minha-conta'],
-  visualizador: ['dashboard','relatorios','minha-conta'],
+  admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta','onboarding'],
+  vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','minha-conta','onboarding'],
+  visualizador: ['dashboard','relatorios','minha-conta','onboarding'],
 };
 var ROLE_LABELS = { admin:'Admin', vendedor:'Vendedor', visualizador:'Visualizador' };
 var ROLE_COLORS = { admin:'var(--amber)', vendedor:'var(--blue)', visualizador:'var(--muted)' };
