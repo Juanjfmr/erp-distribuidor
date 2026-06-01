@@ -59,6 +59,7 @@ function filterNotas(){
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="viewNF(${n.id})">Ver</button>
         <button class="btn-sm" onclick="printNF(${n.id})" title="Imprimir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        ${n.danfeUrl?`<a href="${n.danfeUrl}" target="_blank" class="btn-sm" style="background:var(--blue);color:#fff;text-decoration:none">DANFE</a>`:''}
         ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm btn-green" onclick="darBaixaNF(${n.id})">↓ Receber</button>`:""}
         ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn-sm btn-red" onclick="cancelNF(${n.id})">Cancelar</button>`:""}
       </div></td>
@@ -334,9 +335,27 @@ async function emitirNF(num){
       state.transactions.push({id:uid(),date,type:"saida",category:"Operacional",description:`${c.description||"Custo operacional"} — ${num}`,amount:parseFloat(c.value)||0});
     });
     if(terms==="À Vista") nf.status="emitida";
+
+    if(state.company.focusToken){
+      showSyncStatus('Emitindo NF-e na SEFAZ...');
+      const resultado = await emitirNFe(nf, state.company, state.products, state.clients);
+      if(!resultado.success){
+        // Reverter estoque e recebíveis antes de abortar
+        nf.items.forEach(it=>{ const p=state.products.find(x=>x.id===it.productId); if(p) p.stock+=it.qty; });
+        state.stockMovements=state.stockMovements.filter(m=>m.reference!==num);
+        state.receivables=state.receivables.filter(r=>r.invoiceId!==nf.id);
+        _doneSave();
+        return alert('Erro ao emitir NF-e:\n' + resultado.error);
+      }
+      nf.chaveNFe = resultado.chave;
+      nf.danfeUrl = resultado.danfeUrl;
+      nf.focusRef = resultado.focusRef;
+      showSyncStatus('✓ NF-e autorizada — chave: ...' + (resultado.chave||'').slice(-8));
+    }
+
     state.invoices.push(nf);
     await saveToFirebase(); closeModal(); filterNotas();
-    showSyncStatus("✓ Nota fiscal emitida");
+    if(!state.company.focusToken) showSyncStatus("✓ Nota fiscal emitida");
   }finally{ _doneSave(); }
 }
 function viewNF(id){
@@ -393,11 +412,24 @@ function viewNF(id){
     </div>`,true);
 }
 async function cancelNF(id){
-  if(!confirm("Cancelar esta nota fiscal? O estoque será restaurado.")) return;
   if(!_guardSave()) return;
   const n=state.invoices.find(x=>x.id==id);
   if(!n){ _doneSave(); return; }
+
+  if(n.focusRef){
+    const justificativa=prompt("Justificativa do cancelamento (mín. 15 caracteres):");
+    if(!justificativa||justificativa.length<15){ _doneSave(); return alert("Justificativa deve ter no mínimo 15 caracteres."); }
+    if(!confirm("Cancelar esta nota fiscal na SEFAZ? O estoque será restaurado.")) { _doneSave(); return; }
+    showSyncStatus("Cancelando na SEFAZ...");
+    const result=await cancelarNFe(n.focusRef,justificativa,state.company);
+    if(!result.success){ _doneSave(); showSyncStatus("⚠ Erro: "+result.error,true); return alert("Erro ao cancelar NF-e:\n"+result.error); }
+    n.justificativaCancelamento=justificativa;
+  } else {
+    if(!confirm("Cancelar esta nota fiscal? O estoque será restaurado.")) { _doneSave(); return; }
+  }
+
   n.status="cancelada";
+  n.canceladaEm=new Date().toISOString();
   n.items.forEach(it=>{
     const p=state.products.find(x=>x.id===it.productId);
     if(p){ p.stock+=it.qty; state.stockMovements.push({id:uid(),date:today(),productId:it.productId,type:"entrada",qty:it.qty,reason:"Cancelamento NF",reference:n.number}); }
