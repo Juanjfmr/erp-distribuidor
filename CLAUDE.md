@@ -7,7 +7,7 @@ Sistema de gestão empresarial multi-tenant voltado inicialmente para distribuid
 - **Frontend:** HTML + JS puro (sem framework), CSS com variáveis customizadas
 - **Backend:** Firebase (Firestore + Auth)
 - **Hospedagem:** Servidor HTTP (não file://)
-- **Arquivo principal:** `index.html` — 4.633 linhas (monolítico — refatoração pendente)
+- **Arquivo principal:** `index.html` — shell de navegação (refatoração concluída)
 
 ## Firebase
 - **Projeto:** `erp-distribuidora-905ca`
@@ -101,7 +101,7 @@ erp-distribuidor/
 ## Gaps Identificados (por prioridade)
 ### Crítico
 - [ ] Numeração de NF com controle atômico no Firestore (hoje usa `invoices.length + 1` — quebra com usuários simultâneos)
-- [ ] Refatoração da estrutura monolítica (bloqueia escalabilidade)
+- [x] Refatoração da estrutura monolítica (concluída)
 
 ### Alto
 - [ ] DRE (Demonstrativo de Resultado) — só há visão de caixa, não de lucro líquido real
@@ -138,7 +138,7 @@ erp-distribuidor/
 - Sem framework de UI — JS puro mantém bundle zero e carregamento rápido
 
 ## Estado Atual da Sessão
-- ✅ Refatoração estrutural concluída e commitada
+- ✅ Refatoração estrutural concluída — `index.html` é só shell; lógica em `js/core/` e `js/modules/`
 - ✅ `CLAUDE.md` criado para preservar contexto entre sessões
 - ✅ `firestore.rules` corrigido e no repositório — aguardando publicação no Firebase Console
 - ⚠️ `renderMinhaConta` ainda está dentro de `config.js` — extrair para `minha-conta.js` quando evoluir o módulo
