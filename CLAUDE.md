@@ -113,6 +113,17 @@ state = {
 - **Inteligência operacional proativa (agente IA Fase C)** — alertas, cobranças via WhatsApp
 - **Gerador de conteúdo automatizado** — integração com GitHub Actions pós deploy
 
+## Gatilhos de Migração (monitorar ativamente)
+
+| Gatilho | Ação |
+|---|---|
+| Qualquer documento `/empresas/{id}` atingir **~500KB** | Iniciar migração para subcoleções |
+| Cliente reportar lentidão ao carregar dados | Verificar tamanho do doc no Firebase Console |
+| Distribuidora com >3.000 produtos ou >5.000 NFs | Avaliar imediatamente |
+
+> **Como verificar:** Firebase Console → Firestore → `/empresas/{companyId}` → o tamanho aparece no canto superior direito ao abrir o documento.
+> Migração estimada: 1-2 dias. Não é urgente antes de clientes pagantes.
+
 ## Decisões Técnicas Tomadas
 - ES Modules nativos (projeto roda via HTTP, não file://)
 - Firebase como único backend por ora — sem API intermediária
