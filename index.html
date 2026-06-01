@@ -94,7 +94,7 @@ onAuthStateChanged(auth, async (user) => {
     const isActive = companyData.active !== false;
     const trialExpired = plan === 'trial' && trialEndsAt && new Date() > trialEndsAt;
 
-    if (!isActive || trialExpired) {
+    if (plan !== 'owner' && (!isActive || trialExpired)) {
       document.getElementById('login-screen').style.setProperty('display','none','important');
       document.getElementById('app').style.setProperty('display','none','important');
       document.getElementById('trial-block-screen').style.setProperty('display','flex','important');
