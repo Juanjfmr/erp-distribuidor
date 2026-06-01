@@ -7,7 +7,9 @@ Sistema de gestão empresarial multi-tenant voltado inicialmente para distribuid
 - **Frontend:** HTML + JS puro (sem framework), CSS com variáveis customizadas
 - **Backend:** Firebase (Firestore + Auth)
 - **Hospedagem:** Servidor HTTP (não file://)
-- **Estrutura:** modular — 18 arquivos JS em `js/core/` e `js/modules/`, `index.html` é só shell
+- **Estrutura:** modular — arquivos JS em `js/core/`, `js/modules/` e `js/services/`, `index.html` é só shell
+  - `js/services/invoiceService.js` — NF-e: comunicação com Focus NFe API (emissão, cancelamento, consulta)
+  - `js/services/csvImport.js` — importação de dados via CSV (Bling, Conta Azul, genérico)
 
 ## Firebase
 - **Projeto:** `erp-distribuidora-905ca`
@@ -19,7 +21,7 @@ Sistema de gestão empresarial multi-tenant voltado inicialmente para distribuid
 ## Estrutura de Dados (state)
 ```js
 state = {
-  company: { name, cnpj, address, city, uf, phone, email, categories[], units[] },
+  company: { name, cnpj, address, city, uf, phone, email, categories[], units[], ie, regime, focusToken, focusEnv },
   products: [], clients: [], suppliers: [],
   invoices: [], purchases: [],
   receivables: [], payables: [], transactions: [],
@@ -65,8 +67,8 @@ state = {
 - ✅ `firestore.rules` corrigido e no repositório — aguardando publicação no Firebase Console
 - ✅ Planos de implantação em `docs/superpowers/plans/` — ver `PRIORIZACAO.md`
 - ⚠️ `renderMinhaConta` ainda está dentro de `config.js` — extrair para `minha-conta.js` quando evoluir o módulo
-- ⚠️ Camada `services/` pendente — priorizar quando PDV/mobile entrar em pauta
-- ⚠️ NF-e via Focus NFe: pré-requisito de lançamento — ver Plano B
+- ✅ Camada `services/` criada: `invoiceService.js` (Focus NFe) + `csvImport.js` (onboarding CSV)
+- ✅ NF-e via Focus NFe implementada — configurar token em Configurações → Dados Fiscais
 - ⚠️ Strings do projeto antigo ainda presentes (cosmético):
   - `js/core/state.js` linha 2: `STORAGE_KEY = "distribuidorms_v2"` → renomear para `erp_distribuidora_v1`
   - `js/modules/config.js` linha 210: nome do arquivo de backup `distribuidorms_backup_...` → renomear
