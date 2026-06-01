@@ -168,14 +168,22 @@ async function _onboardingImport(entity) {
   const fileEl = el(entity === 'produtos' ? 'ob-file-prod' : 'ob-file-cli');
   const resultEl = el(entity === 'produtos' ? 'ob-import-result-prod' : 'ob-import-result-cli');
   if (!fileEl.files[0]) { resultEl.textContent = 'Selecione um arquivo primeiro.'; return; }
-  resultEl.textContent = 'Processando...';
+  resultEl.innerHTML = '<span style="color:var(--text2)">⏳ Processando...</span>';
   const { data, errors, system } = await parseCSV(fileEl.files[0], entity);
   if (data.length === 0) {
-    resultEl.innerHTML = `<span style="color:var(--red)">Nenhum dado encontrado. Erros: ${errors.join(', ')}</span>`;
+    resultEl.innerHTML = `<span style="color:var(--red)">✗ Nenhum dado encontrado.</span>
+      ${errors.length ? `<div style="margin-top:6px;font-size:11px;color:var(--red)">${errors.slice(0,5).map(e=>`• ${e}`).join('<br>')}</div>` : ''}`;
     return;
   }
-  const { imported, skipped } = importToState(data, entity);
-  resultEl.innerHTML = `<span style="color:var(--green)">✓ ${imported} importados</span>${skipped ? ` · ${skipped} ignorados (duplicatas)` : ''} · Sistema detectado: <b>${system}</b>`;
+  const { imported, skipped, skippedReasons } = importToState(data, entity);
+  const sistemaLabel = { bling:'Bling', contaazul:'Conta Azul', omie:'Omie', generico:'Genérico' }[system] || system;
+  resultEl.innerHTML = `
+    <span style="color:var(--green)">✓ ${imported} importados</span>
+    ${skipped ? ` · <span style="color:var(--amber)">${skipped} ignorados (duplicatas)</span>` : ''}
+    · <span style="color:var(--text2)">Sistema: <b>${sistemaLabel}</b></span>
+    ${errors.length ? `<div style="margin-top:6px;font-size:11px;color:var(--amber)">${errors.slice(0,5).map(e=>`• ${e}`).join('<br>')}${errors.length>5?`<br>• … e mais ${errors.length-5} avisos`:''}</div>` : ''}
+    ${skippedReasons.length ? `<details style="margin-top:4px;font-size:11px;color:var(--text2)"><summary style="cursor:pointer">Ver duplicatas ignoradas</summary>${skippedReasons.slice(0,10).map(r=>`• ${r}`).join('<br>')}</details>` : ''}
+  `;
   if (entity === 'produtos' && imported > 0) completeOnboardingStep('dados');
 }
 
