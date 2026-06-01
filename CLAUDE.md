@@ -8,6 +8,7 @@ Sistema de gestão empresarial multi-tenant voltado inicialmente para distribuid
 - **Backend:** Firebase (Firestore + Auth)
 - **Hospedagem:** Servidor HTTP (não file://)
 - **Arquivo principal:** `index.html` — shell de navegação (refatoração concluída)
+- **Estrutura:** modular — 18 arquivos JS separados em `js/core/` e `js/modules/`
 
 ## Firebase
 - **Projeto:** `erp-distribuidora-905ca`
@@ -55,8 +56,8 @@ state = {
 - **Multi-tenant:** isolamento por `companyId` no Firestore e nas regras de segurança
 - **Roles:** admin vê tudo; vendedor sem config/usuários; visualizador só dashboard/relatórios
 - **Programa de afiliados:** link personalizado, comissão de 20% recorrente
-- **Planos:** trial (14 dias), Básico R$97, Profissional R$197, Empresarial R$397
-- **Assinatura via WhatsApp** (backend de pagamento ainda não implementado)
+- **Planos:** trial (30 dias), Básico R$79, Profissional R$149, Empresarial R$299
+- **Assinatura via Mercado Pago** (integração planejada — Planos E1/E2/E3)
 
 ## Resquícios do Projeto Antigo (cosmético — sem impacto funcional)
 - Linha 421: `STORAGE_KEY = "distribuidorms_v2"` → renomear para `erp_distribuidora_v1`
@@ -125,10 +126,38 @@ erp-distribuidor/
 - [ ] Atalhos de teclado
 - [ ] Favoritos/fixar módulos por ramo
 
+
+## Requisitos de Produto Registrados (implementar após lançamento)
+
+### Migração de dados (CRÍTICO para adoção)
+- Nenhuma empresa vai cadastrar produto por produto ao migrar de outro sistema
+- Importação via CSV/Excel dos concorrentes: Bling, Conta Azul, Omie, Tiny
+- Mapeamento automático de colunas + validação antes de importar
+- Entidades prioritárias: produtos (NCM, unidade, preço), clientes (CNPJ, endereço, limite de crédito), fornecedores
+- Entidades secundárias: contas a receber/pagar em aberto, saldo inicial de caixa
+- Interface: upload → preview → confirmação → importação com relatório de erros
+
+### Trial
+- Ampliar de 14 para 30 dias — cliente precisa de tempo para cadastrar dados e sentir valor antes de pagar
+
 ## Roadmap Futuro
 - **PDV:** consumirá `services/` diretamente
 - **App Mobile:** React Native ou Flutter, mesma camada de serviços
 - **API:** quando PDV/mobile demandarem backend próprio
+
+## Roadmap v2 (pós 30 clientes)
+- **Open Finance / Conciliação bancária automática**
+  - Integração via intermediário: Pluggy ou TecnoSpeed (sandbox gratuito para dev)
+  - Feature exclusiva do plano Empresarial ou add-on R$29/mês
+  - Custo estimado: R$0–200/mês até 30 tenants, escala por volume
+  - Contatar Pluggy e TecnoSpeed para cotação quando atingir 30 clientes ativos
+  - Consentimento por tenant — cada empresa autoriza explicitamente quais bancos conectar
+- **Inteligência operacional proativa (agente IA Fase C)**
+  - Alertas de estoque mínimo com sugestão de ordem de compra
+  - Cobranças automáticas de inadimplentes via WhatsApp
+  - Feature opcional ativada pelo tenant nas configurações
+- **WhatsApp Business API** — agente de IA fora do sistema
+- **Gerador de conteúdo automatizado** — integração com GitHub Actions pós deploy
 
 ## Decisões Técnicas Tomadas
 - ES Modules nativos (projeto roda via HTTP, não file://)
@@ -143,13 +172,64 @@ erp-distribuidor/
 - ✅ `firestore.rules` corrigido e no repositório — aguardando publicação no Firebase Console
 - ⚠️ `renderMinhaConta` ainda está dentro de `config.js` — extrair para `minha-conta.js` quando evoluir o módulo
 - ⚠️ Camada `services/` pendente — priorizar quando PDV/mobile entrar em pauta
+- ⚠️ NF-e via Focus NFe: pré-requisito de lançamento — campos fiscais (NCM, CFOP, IE, regime tributário), numeração atômica, emissão/cancelamento/CCe, DANFE PDF
 - ⚠️ Strings do projeto antigo ainda presentes (cosmético):
   - `state.js` linha ~1: `STORAGE_KEY = "distribuidorms_v2"` → renomear para `erp_distribuidora_v1`
   - `config.js`: nome do arquivo de backup `distribuidorms_backup_...` → renomear
 
+
+## Regras de Skills (seguir sempre)
+
+> Estas regras são obrigatórias em todas as sessões. Não pular etapas.
+
+### Ao iniciar qualquer sessão
+- SEMPRE ler este `CLAUDE.md` completo antes de qualquer ação
+- SEMPRE invocar `smart-effort` para calibrar modelo e esforço antes de responder
+- SE a tarefa for nova ou complexa → invocar `brainstorming` antes de qualquer código
+
+### Ao receber uma tarefa de implementação
+| Situação | Skill obrigatória |
+|---|---|
+| Tarefa nova sem spec | `brainstorming` → `writing-plans` |
+| Spec aprovado, sem plano | `writing-plans` |
+| Plano escrito, tasks independentes | `subagent-driven-development` |
+| Plano escrito, tasks sequenciais | `executing-plans` |
+| Bug ou comportamento inesperado | `systematic-debugging` |
+
+### Durante implementação
+- A cada task concluída → invocar `verification-before-completion` antes de commitar
+- Nunca declarar "feito" sem rodar e confirmar a saída real
+- Commitar ao final de cada task — nunca acumular mais de 1 task sem commit
+- Ao atingir ~60% do contexto → rodar `/compact`
+
+### Ao finalizar trabalho
+- Antes de mergear → `requesting-code-review`
+- Ao receber feedback de review → `receiving-code-review`
+- Ao concluir branch → `finishing-a-development-branch`
+
+### Ao trabalhar com textos da interface
+- Qualquer texto voltado ao usuário final → `humanizer-ptbr`
+
+### Regras de carregamento de arquivos
+- Nunca carregar todos os arquivos de uma vez
+- Carregar apenas os arquivos da task atual
+- Máximo por sessão: 3-4 arquivos de módulo + core necessário
+- Arquivos grandes (>300 linhas): carregar por seção quando possível
+
+### Combinações mais usadas neste projeto
+| Objetivo | Sequência de skills |
+|---|---|
+| Nova feature | `smart-effort` → `brainstorming` → `writing-plans` → `subagent-driven-development` |
+| Executar plano existente | `smart-effort` → `executing-plans` → `verification-before-completion` |
+| Corrigir bug | `systematic-debugging` → `verification-before-completion` |
+| Revisar e mergear | `requesting-code-review` → `finishing-a-development-branch` |
+| Criar documentação | `writing-plans` (para specs) ou direto (para docs simples) |
+
 ## Como Iniciar Nova Sessão
-1. Leia este arquivo primeiro (`CLAUDE.md`)
-2. Carregue apenas os arquivos do módulo em que vai trabalhar — nunca tudo de uma vez
-3. Use `/compact` quando o contexto atingir ~60%
-4. Faça commit ao finalizar cada módulo
-5. Nunca deixe uma sessão longa sem commitar — se o contexto estourar, o código não commitado se perde
+1. Leia este `CLAUDE.md` completo
+2. Invoque `smart-effort` para calibrar o esforço
+3. Consulte a seção **Regras de Skills** acima para a skill correta para a tarefa
+4. Carregue apenas os arquivos do módulo em que vai trabalhar — nunca tudo de uma vez
+5. Use `/compact` quando o contexto atingir ~60%
+6. Faça commit ao finalizar cada task — não ao finalizar o dia
+7. Nunca declare "feito" sem rodar `verification-before-completion`
