@@ -63,6 +63,18 @@ const defaultState = {
   currentView:"dashboard", contasTab:"receber", cashFilter:"todos",
   nfItems:[], compraItems:[], pedidoItems:[], nfCosts:[], relPeriod:"all", relTab:"geral",
   orders:[], returns:[],
+  onboarding: {
+    complete: false,
+    step: 0,
+    checklist: {
+      empresa: false,
+      dados: false,
+      pedido: false,
+      nfe: false,
+      recebimento: false,
+      certificado: false,
+    }
+  },
 };
 
 let state = {};
@@ -80,6 +92,10 @@ function loadState(){
     if(!state.company) state.company=defaultState.company;
     if(!state.orders) state.orders=[];
     if(!state.returns) state.returns=[];
+    if (!state.onboarding) state.onboarding = {
+      complete: false, step: 0,
+      checklist: { empresa:false, dados:false, pedido:false, nfe:false, recebimento:false, certificado:false }
+    };
     state.nfItems=[]; state.compraItems=[]; state.pedidoItems=[]; state.nfCosts=[];
   }catch(e){ state = JSON.parse(JSON.stringify(defaultState)); }
 }
@@ -88,6 +104,14 @@ function saveState(){
   delete toSave.nfItems; delete toSave.compraItems; delete toSave.pedidoItems; delete toSave.nfCosts;
   localStorage.setItem(STORAGE_KEY,JSON.stringify(toSave));
   saveToFirebase();
+}
+
+function completeOnboardingStep(step) {
+  if (!state.onboarding) return;
+  state.onboarding.checklist[step] = true;
+  const all = Object.values(state.onboarding.checklist);
+  if (all.every(Boolean)) state.onboarding.complete = true;
+  saveState();
 }
 
 // ─── SCANNER DE CÓDIGO DE BARRAS ─────────────────────────────────────────────
