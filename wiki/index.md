@@ -22,6 +22,7 @@
 - [[pages/dominio/multi-tenant]]
 - [[pages/dominio/planos-saas]]
 - [[pages/dominio/afiliados]]
+- [[pages/dominio/wiki-setup]]
 
 ## Decisões de Arquitetura (ADRs)
 - [[pages/decisoes/ADR-001-firebase-single-doc]]
