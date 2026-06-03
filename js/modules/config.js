@@ -149,9 +149,10 @@ function renderConfig(){
       </div>
       <div class="form-group"><label class="form-label">Endereço</label><input id="cfg-addr" class="form-input" value="${co.address||""}"></div>
       <div class="form-grid-2">
-        <div class="form-group"><label class="form-label">Cidade</label><input id="cfg-city" class="form-input" value="${co.city||""}"></div>
+        <div class="form-group"><label class="form-label">CEP</label><input id="cfg-cep" class="form-input" placeholder="00000-000" maxlength="9" value="${co.cep||""}"></div>
         <div class="form-group"><label class="form-label">UF</label><input id="cfg-uf" class="form-input" value="${co.uf||"MS"}"></div>
       </div>
+      <div class="form-group"><label class="form-label">Cidade</label><input id="cfg-city" class="form-input" value="${co.city||""}"></div>
       <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${co.email||""}"></div>
       <div class="form-group"><label class="form-label">Saldo de Abertura do Caixa (R$)</label><input id="cfg-opening" class="form-input" type="number" step="0.01" value="${co.openingBalance||0}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Saldo bancário/caixa no momento em que começou a usar o sistema.</div></div>
       <div class="divider"></div>
@@ -165,6 +166,26 @@ function renderConfig(){
         </select></div>
       </div>
       <button class="btn btn-primary" onclick="saveConfig()">Salvar Configurações</button>
+    </div>
+    <div class="card" style="max-width:580px;margin-top:0">
+      <div class="section-title" style="margin-bottom:4px">Integração Focus NFe</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Token da API Focus NFe para emissão de NF-e. Obtenha em <b>app.focusnfe.com.br</b>.</div>
+      <div class="form-group">
+        <label class="form-label">Token da API</label>
+        <input id="cfg-focus-token" class="form-input" type="password" placeholder="Cole seu token aqui" value="${window._focusToken||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ambiente</label>
+        <select id="cfg-focus-env" class="form-input">
+          <option value="homologacao" ${(window._focusEnv||'homologacao')==='homologacao'?'selected':''}>Homologação (testes)</option>
+          <option value="producao" ${window._focusEnv==='producao'?'selected':''}>Produção</option>
+        </select>
+      </div>
+      <div id="cfg-focus-status" style="font-size:12px;margin-bottom:10px;display:none"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveFocusToken()">Salvar token</button>
+        <button class="btn" onclick="testFocusToken()">Testar conexão</button>
+      </div>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:4px">Categorias de Produtos</div>
@@ -207,7 +228,7 @@ function renderConfig(){
 }
 function saveConfig(){
   const prev = state.company||{};
-  state.company={...prev,name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value,openingBalance:parseFloat(el("cfg-opening").value)||0,ie:el("cfg-ie").value,regime:el("cfg-regime").value};
+  state.company={...prev,name:el("cfg-name").value,cnpj:el("cfg-cnpj").value,phone:el("cfg-phone").value,address:el("cfg-addr").value,cep:el("cfg-cep").value.replace(/\D/g,''),city:el("cfg-city").value,uf:el("cfg-uf").value,email:el("cfg-email").value,openingBalance:parseFloat(el("cfg-opening").value)||0,ie:el("cfg-ie").value,regime:el("cfg-regime").value};
   saveState(); showSyncStatus("✓ Configurações salvas"); updateTopbar();
 }
 function saveCatUnits(){
@@ -234,6 +255,49 @@ function importData(){
     r.readAsText(f);
   }; inp.click();
 }
+async function saveFocusToken() {
+  const token = el('cfg-focus-token').value.trim();
+  const env = el('cfg-focus-env').value;
+  const statusEl = el('cfg-focus-status');
+  if (!token) { statusEl.style.display='block'; statusEl.style.color='var(--red)'; statusEl.textContent='Informe o token.'; return; }
+  try {
+    const { doc, setDoc } = window._fbFns;
+    await setDoc(doc(window._db, 'config', 'focusNfe'), { token, env });
+    window._focusToken = token;
+    window._focusEnv = env;
+    statusEl.style.display='block'; statusEl.style.color='var(--green)';
+    statusEl.textContent='✓ Token salvo com sucesso.';
+    showSyncStatus('✓ Token Focus NFe salvo');
+  } catch(e) {
+    statusEl.style.display='block'; statusEl.style.color='var(--red)';
+    statusEl.textContent='Erro ao salvar: ' + e.message;
+  }
+}
+
+async function testFocusToken() {
+  const token = el('cfg-focus-token').value.trim() || window._focusToken;
+  const env = el('cfg-focus-env').value || window._focusEnv || 'homologacao';
+  const statusEl = el('cfg-focus-status');
+  if (!token) { statusEl.style.display='block'; statusEl.style.color='var(--red)'; statusEl.textContent='Nenhum token para testar.'; return; }
+  statusEl.style.display='block'; statusEl.style.color='var(--muted)'; statusEl.textContent='Testando conexão...';
+  try {
+    const baseUrl = env === 'producao' ? 'https://api.focusnfe.com.br' : 'https://homologacao.focusnfe.com.br';
+    const resp = await fetch(`${baseUrl}/v2/nfe?ref=ping_test`, {
+      method: 'GET',
+      headers: { 'Authorization': 'Basic ' + btoa(token + ':') },
+    });
+    if (resp.status === 200 || resp.status === 404) {
+      statusEl.style.color='var(--green)'; statusEl.textContent=`✓ Conexão OK (${env}).`;
+    } else if (resp.status === 401) {
+      statusEl.style.color='var(--red)'; statusEl.textContent='Token inválido ou sem permissão.';
+    } else {
+      statusEl.style.color='var(--amber)'; statusEl.textContent=`Resposta inesperada: HTTP ${resp.status}.`;
+    }
+  } catch(e) {
+    statusEl.style.color='var(--red)'; statusEl.textContent='Erro de conexão: ' + e.message;
+  }
+}
+
 async function resetData(){
   const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\n\nEsta operação não pode ser desfeita. Deseja continuar?");
   if(!confirm1) return;
