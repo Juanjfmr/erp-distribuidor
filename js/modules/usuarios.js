@@ -35,7 +35,9 @@ async function loadUsers() {
 async function renderUsuarios() {
   if (window._userRole !== 'admin') { navigate('dashboard'); return; }
   el("content").innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Carregando usuários...</div>`;
-  const users = await loadUsers();
+  const allUsers = await loadUsers();
+  const users = allUsers.filter(u => !u.isExternal);
+  const contadores = allUsers.filter(u => u.isExternal && u.role === 'contador');
   el("content").innerHTML = `
     <div class="section-header">
       <div class="section-title">Gestão de Usuários</div>
@@ -46,10 +48,11 @@ async function renderUsuarios() {
     </tr></thead><tbody>
       ${users.map(u => {
         const isMe = window._currentUser && u.uid === window._currentUser.uid;
+        const roleBg = u.role==='admin'?'bg-amber':u.role==='vendedor'?'bg-blue':'bg-gray';
         return `<tr>
           <td class="text-white fw-bold">${u.name||'—'}${isMe?' <span class="badge bg-amber" style="font-size:10px">Você</span>':''}</td>
           <td class="mono">${u.email||'—'}</td>
-          <td><span class="badge ${u.role==='admin'?'bg-amber':u.role==='vendedor'?'bg-blue':'bg-gray'}">${ROLE_LABELS[u.role]||u.role}</span></td>
+          <td><span class="badge ${roleBg}">${ROLE_LABELS[u.role]||u.role}</span></td>
           <td class="mono text-muted">${u.createdAt?fmtDate(u.createdAt.slice(0,10)):'—'}</td>
           <td><span class="badge ${u.active!==false?'bg-green':'bg-red'}">${u.active!==false?'Ativo':'Inativo'}</span></td>
           <td><div class="row">
@@ -59,12 +62,34 @@ async function renderUsuarios() {
         </tr>`;
       }).join('')||`<tr><td colspan="6" class="empty">Nenhum usuário.</td></tr>`}
     </tbody></table></div>
+    <div class="card" style="padding:16px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-weight:700">Acesso do Contador</div>
+          <div style="font-size:12px;color:var(--text2)">Acesso somente leitura — não conta no limite de usuários do plano</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showConvidarContador()">+ Convidar contador</button>
+      </div>
+      ${contadores.length === 0
+        ? '<div style="color:var(--text2);font-size:13px">Nenhum contador convidado ainda.</div>'
+        : contadores.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-weight:600">${c.name||'—'}</div>
+                <div style="font-size:12px;color:var(--text2)">${c.email||'—'}</div>
+              </div>
+              <button class="btn-sm btn-red" onclick="toggleUserActive('${c.uid}',${c.active!==false})">${c.active!==false?'Revogar acesso':'Reativar'}</button>
+            </div>
+          `).join('')
+      }
+    </div>
     <div class="card" style="background:rgba(240,192,64,.05);border-color:rgba(240,192,64,.2)">
       <div class="section-title" style="margin-bottom:10px;font-size:14px">Níveis de Acesso</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:13px">
         <div><div class="badge bg-amber" style="margin-bottom:6px">Admin</div><div class="text-muted" style="font-size:12px">Acesso total — todas as telas, configurações e gestão de usuários.</div></div>
         <div><div class="badge bg-blue" style="margin-bottom:6px">Vendedor</div><div class="text-muted" style="font-size:12px">Produtos, clientes, notas, compras, contas e caixa. Sem config e usuários.</div></div>
         <div><div class="badge bg-gray" style="margin-bottom:6px">Visualizador</div><div class="text-muted" style="font-size:12px">Somente dashboard e relatórios. Sem edição.</div></div>
+        <div><div class="badge bg-green" style="margin-bottom:6px">Contador</div><div class="text-muted" style="font-size:12px">Relatórios, notas, caixa e contas. Somente leitura. Externo — sem consumir slot de usuário.</div></div>
       </div>
     </div>`;
 }
@@ -102,7 +127,7 @@ async function createNewUser() {
   if (pass.length < 6) { errEl.style.display='block'; errEl.textContent='A senha deve ter pelo menos 6 caracteres.'; return; }
   // Verificar limite do plano para novos usuários
   const limiteUsers = getPlanLimit('users');
-  const totalUsers = (window._users || []).length;
+  const totalUsers = (window._users || []).filter(u => !u.isExternal).length;
   if (totalUsers >= limiteUsers) {
     errEl.style.display='block';
     errEl.textContent=`Seu plano permite até ${limiteUsers} usuário(s). Faça upgrade para adicionar mais.`;
@@ -168,4 +193,51 @@ async function toggleUserActive(uid, currentlyActive) {
     await setDoc(doc(window._db, 'users', uid), {...snap.data(), active: !currentlyActive});
   }
   renderUsuarios(); showSyncStatus(`✓ Usuário ${action}do`);
+}
+
+// ─── CONTADOR EXTERNO ─────────────────────────────────────────────────────────
+function showConvidarContador() {
+  showModal(`
+    <div class="modal-title">Convidar Contador</div>
+    <div class="form-group"><label class="form-label">Nome do contador *</label><input id="cc-name" class="form-input" placeholder="Ex: João Silva"></div>
+    <div class="form-group"><label class="form-label">E-mail *</label><input id="cc-email" class="form-input" type="email" placeholder="contador@escritorio.com.br"></div>
+    <div class="alert-warn" style="margin-bottom:12px">O contador receberá um e-mail para criar sua senha. Terá acesso somente leitura a: Relatórios, Notas, Caixa e Contas.</div>
+    <div id="cc-err" class="alert-red" style="display:none;margin-bottom:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarContador()">Enviar convite</button>
+    </div>`);
+}
+
+async function salvarContador() {
+  const name = el('cc-name').value.trim();
+  const email = el('cc-email').value.trim();
+  const errEl = el('cc-err');
+  if (!name || !email) { errEl.style.display='block'; errEl.textContent='Preencha nome e e-mail.'; return; }
+  const btn = document.querySelector('#modal-box .btn-primary');
+  btn.textContent='Enviando...'; btn.disabled=true;
+  try {
+    const { createUserWithEmailAndPassword, sendPasswordResetEmail, initSecondaryApp } = window._fbFns;
+    const { doc, setDoc, getAuth } = window._fbFns;
+    const secondaryApp = initSecondaryApp(window._firebaseConfig, 'secondary-cnt-'+Date.now());
+    const { getAuth: getAuthModule } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    const secondaryAuth = getAuthModule(secondaryApp);
+    const tempPass = Math.random().toString(36).slice(-10) + 'A1!';
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPass);
+    const newUid = cred.user.uid;
+    await secondaryAuth.signOut();
+    await secondaryApp.delete();
+    await window._fbFns.setDoc(
+      window._fbFns.doc(window._db, 'users', newUid),
+      { name, email, role: 'contador', companyId: window._companyId, isExternal: true, active: true, createdAt: new Date().toISOString() }
+    );
+    await sendPasswordResetEmail(window._auth, email);
+    closeModal();
+    renderUsuarios();
+    showSyncStatus('✓ Convite enviado para ' + email);
+  } catch(e) {
+    errEl.style.display='block';
+    errEl.textContent = e.code==='auth/email-already-in-use'?'Este e-mail já está cadastrado no sistema.':'Erro: '+e.message;
+    btn.textContent='Enviar convite'; btn.disabled=false;
+  }
 }

@@ -94,10 +94,10 @@ Resolver antes de iniciar o Bloco 2:
 
 O produto está pronto para cobrar clientes quando:
 
-- [ ] Plano A concluído — `checkPlan()` bloqueando corretamente
-- [ ] Plano B concluído — NF-e emitindo em produção
-- [ ] Plano C concluído — importação CSV funcionando
-- [ ] Plano D concluído — contador com acesso somente leitura
+- [x] Plano A concluído — `checkPlan()` bloqueando corretamente
+- [x] Plano B concluído — NF-e emitindo em produção
+- [x] Plano C concluído — importação CSV funcionando
+- [x] Plano D concluído — contador com acesso somente leitura
 - [ ] Plano E2 concluído — webhook MP ativando tenants
 - [ ] Plano E1 concluído — admin.html operacional
 - [ ] Plano E3 concluído — checkout MP funcionando end-to-end
@@ -137,10 +137,10 @@ Atualizar após cada plano concluído:
 
 | Plano | Status | Data | Observações |
 |---|---|---|---|
-| Plano A | ⏳ Pendente | — | — |
-| Plano B | ⏳ Pendente | — | Aguarda token Focus NFe |
-| Plano C | ⏳ Pendente | — | — |
-| Plano D | ⏳ Pendente | — | — |
+| Plano A | ✅ Concluído | 2026-06-02 | checkPlan, PLAN_LIMITS, bloqueio nav, limites prod/user, trial 30d, strings renomeadas |
+| Plano B | ✅ Concluído | 2026-06-02 | NF-e via Focus NFe implementada (invoiceService.js) |
+| Plano C | ✅ Concluído | 2026-06-02 | csvImport.js + onboarding.js + checklist dashboard implementados |
+| Plano D | ✅ Concluído | 2026-06-02 | Role contador em ROLE_NAV, convite por email, isExternal exclui do limite de usuários |
 | Plano E2 | ⏳ Pendente | — | Aguarda Firebase Blaze + token MP |
 | Plano E1 | ⏳ Pendente | — | — |
 | Plano E3 | ⏳ Pendente | — | — |

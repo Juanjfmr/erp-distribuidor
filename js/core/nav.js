@@ -34,9 +34,10 @@ var ROLE_NAV = {
   admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta','onboarding'],
   vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','minha-conta','onboarding'],
   visualizador: ['dashboard','relatorios','minha-conta','onboarding'],
+  contador:     ['dashboard','relatorios','notas','caixa','contas','minha-conta'],
 };
-var ROLE_LABELS = { admin:'Admin', vendedor:'Vendedor', visualizador:'Visualizador' };
-var ROLE_COLORS = { admin:'var(--amber)', vendedor:'var(--blue)', visualizador:'var(--muted)' };
+var ROLE_LABELS = { admin:'Admin', vendedor:'Vendedor', visualizador:'Visualizador', contador:'Contador' };
+var ROLE_COLORS = { admin:'var(--amber)', vendedor:'var(--blue)', visualizador:'var(--muted)', contador:'var(--green)' };
 
 function applyRoleUI() {
   if (!ROLE_NAV) return;
@@ -47,7 +48,7 @@ function applyRoleUI() {
   });
   const badge = document.getElementById('role-badge');
   if (badge) { badge.textContent = ROLE_LABELS[role]||role; badge.style.color = ROLE_COLORS[role]||'var(--muted)'; }
-  if (role === 'visualizador') {
+  if (role === 'visualizador' || role === 'contador') {
     document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm.btn-red, .btn-sm.btn-amber').forEach(b => b.style.display='none');
   }
   if (!allowed.includes(state.currentView)) { navigate('dashboard'); }
