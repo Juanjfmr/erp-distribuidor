@@ -96,7 +96,7 @@ function renderMinhaConta(){
         <span class="badge bg-green">Ativo</span>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">
-        Indique o ERP Distribuidora e ganhe <b style="color:var(--amber)">20% de comissão</b> recorrente enquanto o indicado for cliente ativo.
+        Indique o Stoqio e ganhe <b style="color:var(--amber)">20% de comissão</b> recorrente enquanto o indicado for cliente ativo.
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.06em">SEU LINK DE AFILIADO</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -117,9 +117,9 @@ function renderMinhaConta(){
           <div style="font-size:11px;color:var(--muted);margin-top:2px">Comissão/mês</div>
         </div>
       </div>
-      ${referredBy?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">Você foi indicado por um afiliado. Obrigado por escolher o ERP Distribuidora!</div>`:''}
+      ${referredBy?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">Você foi indicado por um afiliado. Obrigado por escolher o Stoqio!</div>`:''}
       <div style="margin-top:12px;font-size:12px;color:var(--muted)">
-        Para receber suas comissões, entre em contato: <a href="mailto:contato@erp-distribuidora.com.br" style="color:var(--amber)">contato@erp-distribuidora.com.br</a>
+        Para receber suas comissões, entre em contato: <a href="mailto:contato@stoqio.com.br" style="color:var(--amber)">contato@stoqio.com.br</a>
       </div>
     </div>
 
@@ -132,7 +132,7 @@ function copyAffiliateLink(){
 }
 
 function assinarPlano(key, name, price){
-  const msg = encodeURIComponent(`Olá! Quero assinar o plano ${name} (${price}) do ERP Distribuidora. Minha empresa: ${state.company?.name||'—'}`);
+  const msg = encodeURIComponent(`Olá! Quero assinar o plano ${name} (${price}) do Stoqio. Minha empresa: ${state.company?.name||'—'}`);
   window.open(`https://wa.me/55?text=${msg}`, '_blank');
 }
 

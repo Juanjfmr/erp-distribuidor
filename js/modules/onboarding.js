@@ -31,7 +31,7 @@ function renderOnboarding() {
   el('content').innerHTML = `
     <div style="max-width:640px;margin:0 auto;padding:24px 0">
       <div style="text-align:center;margin-bottom:28px">
-        <div style="font-size:22px;font-weight:700;margin-bottom:4px">Bem-vindo ao ERP Distribuidora 👋</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px">Bem-vindo ao Stoqio 👋</div>
         <div style="color:var(--text2)">Vamos configurar tudo em menos de 15 minutos</div>
       </div>
       <div style="display:flex;align-items:flex-start;margin-bottom:32px;gap:0">${progressBar}</div>
@@ -290,5 +290,5 @@ function _onboardingFinish() {
   state.onboarding.complete = true;
   saveState();
   navigate('dashboard');
-  showSyncStatus('✓ Configuração concluída! Bem-vindo ao ERP Distribuidora.');
+  showSyncStatus('✓ Configuração concluída! Bem-vindo ao Stoqio.');
 }
