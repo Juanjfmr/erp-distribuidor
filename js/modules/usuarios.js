@@ -1,25 +1,3 @@
-// ─── PASSWORD RESET ──────────────────────────────────────────────────────────
-async function doResetPassword() {
-  const emailEl = document.getElementById('login-email');
-  const email = emailEl ? emailEl.value.trim() : '';
-  if (!email) {
-    const errEl = document.getElementById('login-err');
-    errEl.style.display='block'; errEl.textContent='Digite seu e-mail acima para redefinir a senha.';
-    emailEl && emailEl.focus(); return;
-  }
-  try {
-    const { sendPasswordResetEmail } = window._fbFns;
-    await sendPasswordResetEmail(window._auth, email);
-    const errEl = document.getElementById('login-err');
-    errEl.style.display='block'; errEl.style.color='var(--green)';
-    errEl.style.background='rgba(63,185,80,.1)'; errEl.style.borderColor='rgba(63,185,80,.3)';
-    errEl.textContent='✓ E-mail de redefinição enviado! Verifique sua caixa de entrada.';
-  } catch(e) {
-    const errEl = document.getElementById('login-err');
-    errEl.style.display='block'; errEl.textContent='E-mail não encontrado no sistema.';
-  }
-}
-
 // ─── USUÁRIOS ────────────────────────────────────────────────────────────────
 async function loadUsers() {
   try {

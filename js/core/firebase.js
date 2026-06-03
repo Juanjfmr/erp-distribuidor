@@ -310,13 +310,12 @@ async function doSignup() {
     const { createUserWithEmailAndPassword, doc, setDoc } = window._fbFns;
     const cred = await createUserWithEmailAndPassword(window._auth, email, pass);
     const uid = cred.user.uid;
-    const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
     await setDoc(window._fbFns.doc(window._db, 'users', uid), {
       name, email, role: 'admin', active: true,
       createdAt: new Date().toISOString(), companyId: uid
     });
-    await setDoc(window._fbFns.doc(window._db, 'config', 'global'), { companyId: uid });
     const segKey = document.querySelector('input[name="signup-segment"]:checked')?.value || 'distribuidor';
     const preset = SEGMENT_PRESETS[segKey] || SEGMENT_PRESETS.distribuidor;
     const refCode = new URLSearchParams(window.location.search).get('ref') || localStorage.getItem('_ref') || null;
@@ -351,6 +350,27 @@ async function doGoogleLogin() {
     errEl.style.display = 'block';
     errEl.textContent = 'Erro ao entrar com Google. Tente novamente.';
     btn.textContent = 'Entrar com Google'; btn.disabled = false;
+  }
+}
+
+async function doResetPassword() {
+  const emailEl = document.getElementById('login-email');
+  const email = emailEl ? emailEl.value.trim() : '';
+  if (!email) {
+    const errEl = document.getElementById('login-err');
+    errEl.style.display='block'; errEl.textContent='Digite seu e-mail acima para redefinir a senha.';
+    emailEl && emailEl.focus(); return;
+  }
+  try {
+    const { sendPasswordResetEmail } = window._fbFns;
+    await sendPasswordResetEmail(window._auth, email);
+    const errEl = document.getElementById('login-err');
+    errEl.style.display='block'; errEl.style.color='var(--green)';
+    errEl.style.background='rgba(63,185,80,.1)'; errEl.style.borderColor='rgba(63,185,80,.3)';
+    errEl.textContent='✓ E-mail de redefinição enviado! Verifique sua caixa de entrada.';
+  } catch(e) {
+    const errEl = document.getElementById('login-err');
+    errEl.style.display='block'; errEl.textContent='E-mail não encontrado no sistema.';
   }
 }
 
