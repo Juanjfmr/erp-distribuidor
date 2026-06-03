@@ -1,4 +1,4 @@
-# Wiki Schema — ERP Distribuidora
+# Wiki Schema — Stoqio
 
 > Padrão llm-wiki de Andrej Karpathy (gist: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 >

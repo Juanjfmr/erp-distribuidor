@@ -244,7 +244,7 @@ function saveCatUnits(){
 function exportData(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download=`erp_distribuidor_backup_${today()}.json`; a.click();
+  a.download=`stoqio_backup_${today()}.json`; a.click();
 }
 function importData(){
   const inp=document.createElement("input"); inp.type="file"; inp.accept=".json";

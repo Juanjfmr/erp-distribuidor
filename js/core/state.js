@@ -1,5 +1,5 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const STORAGE_KEY = "erp_distribuidor_v1";
+const STORAGE_KEY = "stoqio_v1";
 
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLAN_LIMITS = {

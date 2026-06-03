@@ -1,7 +1,7 @@
-# ERP Distribuidora — Contexto do Projeto
+# Stoqio — Contexto do Projeto
 
 ## Visão Geral
-Sistema de gestão empresarial multi-tenant voltado inicialmente para distribuidoras, evoluindo para múltiplos ramos de negócio. SaaS com planos de assinatura, programa de afiliados e roadmap para PDV e app mobile.
+Stoqio — sistema de gestão empresarial multi-tenant voltado inicialmente para distribuidoras, evoluindo para múltiplos ramos de negócio. SaaS com planos de assinatura, programa de afiliados e roadmap para PDV e app mobile.
 
 ## Stack Atual
 - **Frontend:** HTML + JS puro (sem framework), CSS com variáveis customizadas

@@ -1,5 +1,5 @@
 # Guia de Priorização — Tasks para Claude Code
-**Projeto:** ERP Distribuidora
+**Projeto:** Stoqio
 **Atualizado:** 2026-05-30
 
 ---

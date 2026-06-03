@@ -1,4 +1,4 @@
-# Índice do Wiki — ERP Distribuidora
+# Índice do Wiki — Stoqio
 
 ## Módulos
 - [[pages/modulos/dashboard]]
