@@ -66,12 +66,15 @@ state = {
 - ✅ Numeração atômica de NF implementada (commit `151396a`)
 - ✅ `firestore.rules` corrigido e no repositório — aguardando publicação no Firebase Console
 - ✅ Planos de implantação em `docs/superpowers/plans/` — ver `PRIORIZACAO.md`
-- ⚠️ `renderMinhaConta` ainda está dentro de `config.js` — extrair para `minha-conta.js` quando evoluir o módulo
 - ✅ Camada `services/` criada: `invoiceService.js` (Focus NFe) + `csvImport.js` (onboarding CSV)
 - ✅ NF-e via Focus NFe implementada — configurar token em Configurações → Dados Fiscais
-- ⚠️ Strings do projeto antigo ainda presentes (cosmético):
-  - `js/core/state.js` linha 2: `STORAGE_KEY = "distribuidorms_v2"` → renomear para `erp_distribuidora_v1`
-  - `js/modules/config.js` linha 210: nome do arquivo de backup `distribuidorms_backup_...` → renomear
+- ✅ PLAN_LIMITS, checkPlan(), MODULE_GUARD implementados — bloqueio por plano ativo
+- ✅ Trial de 30 dias e strings do projeto antigo renomeadas (STORAGE_KEY, backup)
+- ✅ Wizard de onboarding (4 etapas) + checklist no dashboard + importação CSV implementados
+- ✅ Role `contador` implementada — acesso somente leitura, convite por email, isExternal
+- ✅ **Bloco 1 completo** (Planos A, B, C, D) — commit `513e786`
+- ⚠️ `renderMinhaConta` ainda está dentro de `config.js` — extrair para `minha-conta.js` quando evoluir o módulo
+- ⏳ Bloco 2 aguarda pré-requisitos externos: Firebase Blaze + token Mercado Pago
 
 ## Gaps Pendentes (por prioridade)
 ### Alto
@@ -82,7 +85,7 @@ state = {
 - [ ] Comissão de vendedores
 - [ ] Despesas fixas/recorrentes automáticas
 - [ ] Saldo inicial de caixa (migração de sistemas)
-- [ ] Backend de pagamento — Planos E1/E2/E3
+- [ ] Backend de pagamento — Planos E1/E2/E3 (Bloco 2 — aguarda Firebase Blaze + token MP)
 
 ### Médio
 - [ ] Histórico de compras por cliente
