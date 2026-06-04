@@ -79,7 +79,7 @@ async function emitirNFe(invoice, company, products, clients) {
 
     const data = await resp.json();
 
-    if (resp.ok || resp.status === 201 || data.status === 'autorizado') {
+    if (data.status === 'autorizado') {
       return {
         success: true,
         chave: data.chave_nfe || data.chave,
@@ -89,6 +89,12 @@ async function emitirNFe(invoice, company, products, clients) {
         focusRef: ref,
       };
     }
+
+    // Focus NFe retorna 202 quando a NF entra na fila de processamento da SEFAZ
+    if (resp.status === 202 || data.status === 'processando' || data.status === 'aguardando_autorizacao') {
+      return await _aguardarAutorizacao(ref, token, baseUrl);
+    }
+
     return { success: false, error: data.mensagem || (data.erros && data.erros[0] && data.erros[0].mensagem) || 'Erro ao emitir NF-e.' };
   } catch (e) {
     return { success: false, error: 'Erro de conexão com Focus NFe: ' + e.message };
@@ -139,4 +145,34 @@ async function consultarNFe(focusRef, company) {
   } catch (e) {
     return { error: e.message };
   }
+}
+
+// Aguarda autorização da SEFAZ via polling (Focus NFe é assíncrono por padrão).
+async function _aguardarAutorizacao(ref, token, baseUrl, maxTentativas = 10, intervalo = 3000) {
+  for (let i = 0; i < maxTentativas; i++) {
+    await new Promise(r => setTimeout(r, intervalo));
+    try {
+      const resp = await fetch(`${baseUrl}/v2/nfe/${ref}`, {
+        headers: { 'Authorization': 'Basic ' + btoa(token + ':') },
+      });
+      const data = await resp.json();
+      if (data.status === 'autorizado') {
+        return {
+          success: true,
+          chave: data.chave_nfe || data.chave,
+          danfeUrl: data.caminho_danfe || data.danfe_url || null,
+          numero: data.numero,
+          serie: data.serie,
+          focusRef: ref,
+        };
+      }
+      if (data.status === 'erro' || data.status === 'cancelado' || data.status === 'denegado') {
+        return { success: false, error: data.mensagem || `NF-e retornou status: ${data.status}` };
+      }
+      // status 'processando' ou 'aguardando_autorizacao' → continua polling
+    } catch (e) {
+      return { success: false, error: 'Erro de conexão durante polling: ' + e.message };
+    }
+  }
+  return { success: false, error: 'Tempo esgotado aguardando autorização da SEFAZ. Consulte a NF-e manualmente.' };
 }

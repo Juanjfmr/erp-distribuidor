@@ -337,7 +337,7 @@ async function emitirNF(num){
     if(terms==="À Vista") nf.status="emitida";
 
     if(window._focusToken){
-      showSyncStatus('Emitindo NF-e na SEFAZ...');
+      showSyncStatus('Emitindo NF-e na SEFAZ… aguarde (pode levar até 30s).');
       const resultado = await emitirNFe(nf, state.company, state.products, state.clients);
       if(!resultado.success){
         // Reverter estoque e recebíveis antes de abortar
