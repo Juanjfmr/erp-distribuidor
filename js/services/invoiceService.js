@@ -113,7 +113,7 @@ async function cancelarNFe(focusRef, justificativa, company) {
       ? 'https://api.focusnfe.com.br'
       : 'https://homologacao.focusnfe.com.br';
 
-    const resp = await fetch(`${baseUrl}/v2/nfe/${focusRef}`, {
+    const resp = await fetch(`${baseUrl}/v2/nfe?ref=${focusRef}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ async function consultarNFe(focusRef, company) {
     : 'https://homologacao.focusnfe.com.br';
 
   try {
-    const resp = await fetch(`${baseUrl}/v2/nfe/${focusRef}`, {
+    const resp = await fetch(`${baseUrl}/v2/nfe?ref=${focusRef}`, {
       headers: { 'Authorization': 'Basic ' + btoa(token + ':') },
     });
     return await resp.json();
@@ -152,7 +152,7 @@ async function _aguardarAutorizacao(ref, token, baseUrl, maxTentativas = 10, int
   for (let i = 0; i < maxTentativas; i++) {
     await new Promise(r => setTimeout(r, intervalo));
     try {
-      const resp = await fetch(`${baseUrl}/v2/nfe/${ref}`, {
+      const resp = await fetch(`${baseUrl}/v2/nfe?ref=${ref}`, {
         headers: { 'Authorization': 'Basic ' + btoa(token + ':') },
       });
       const data = await resp.json();
