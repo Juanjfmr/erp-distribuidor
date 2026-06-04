@@ -53,22 +53,31 @@ function renderMinhaConta(){
           <div class="section-title" style="font-size:14px;margin-bottom:12px">Escolha seu plano</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
             ${[
-              {key:'basico', name:'Básico', price:'R$ 97/mês', features:['1 usuário','500 produtos','Pedidos + NF + Caixa']},
-              {key:'profissional', name:'Profissional', price:'R$ 197/mês', features:['5 usuários','Ilimitado','Todos os módulos'], highlight:true},
-              {key:'empresarial', name:'Empresarial', price:'R$ 397/mês', features:['15 usuários','API','Suporte prioritário']}
-            ].map(p=>`
+              {key:'basico', name:'Básico', price:'R$ 79/mês', features:['1 usuário','500 produtos','Pedidos + NF + Caixa']},
+              {key:'profissional', name:'Profissional', price:'R$ 149/mês', features:['5 usuários','Ilimitado','Todos os módulos'], highlight:true},
+              {key:'empresarial', name:'Empresarial', price:'R$ 299/mês', features:['15 usuários','API','Suporte prioritário']}
+            ].map(p=>{
+              const isCurrent = plan === p.key;
+              return `
               <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
                 ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
                 <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
                 <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:10px">${p.price}</div>
                 ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">✓ ${f}</div>`).join('')}
-                <button class="btn ${p.highlight?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:12px;padding:9px" onclick="assinarPlano('${p.key}','${p.name}','${p.price}')">Assinar</button>
-              </div>`).join('')}
+                ${isCurrent ? `
+                  <div style="text-align:center;padding:9px;background:rgba(34,197,94,.1);border-radius:6px;color:var(--green);font-weight:700;margin-top:12px;font-size:13px">
+                    ✓ Plano atual
+                  </div>
+                ` : `
+                  <button class="btn ${p.highlight?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:12px;padding:9px" onclick="assinarPlano('${p.key}')">Assinar ${p.name}</button>
+                `}
+              </div>`;
+            }).join('')}
           </div>
         </div>`:`
         <div class="row-between">
           <div style="font-size:13px;color:var(--text2)">Próximo vencimento: <b>${trialEndsAt?new Date(trialEndsAt).toLocaleDateString('pt-BR'):'—'}</b></div>
-          <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('upgrade','Upgrade','')">Gerenciar assinatura</button>
+          <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('${plan}')">Gerenciar assinatura</button>
         </div>`}
     </div>
 
@@ -131,9 +140,48 @@ function copyAffiliateLink(){
   if(inp){ inp.select(); document.execCommand('copy'); showSyncStatus('✓ Link copiado!'); }
 }
 
-function assinarPlano(key, name, price){
-  const msg = encodeURIComponent(`Olá! Quero assinar o plano ${name} (${price}) do Stoqio. Minha empresa: ${state.company?.name||'—'}`);
-  window.open(`https://wa.me/55?text=${msg}`, '_blank');
+async function assinarPlano(plan) {
+  const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net';
+
+  const btn = event.currentTarget;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Redirecionando...';
+
+  try {
+    const token = await window._currentUser.getIdToken();
+    const resp = await fetch(`${FUNCTIONS_BASE}/createSubscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        plan,
+        backUrl: window.location.href,
+      }),
+    });
+
+    const data = await resp.json();
+
+    if (!data.success) {
+      alert('Erro ao gerar checkout: ' + (data.error || 'Tente novamente.'));
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return;
+    }
+
+    // Salvar subscriptionId localmente antes de redirecionar
+    localStorage.setItem('pendingSubscriptionId', data.subscriptionId);
+
+    // Redirecionar para checkout MP
+    window.location.href = data.checkoutUrl;
+
+  } catch(e) {
+    alert('Erro de conexão: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────

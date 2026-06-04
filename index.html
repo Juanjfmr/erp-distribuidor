@@ -87,24 +87,69 @@ onAuthStateChanged(auth, async (user) => {
         window._companyId = companyId;
       }
     } catch(e) {
-      window._userRole = 'admin'; // fallback
+      window._userRole = 'visualizador'; // fallback seguro — nunca assumir admin
       window._companyId = user.uid;
     }
-    // ── Verificação de plano / trial ─────────────────────────────────────────
+    // ── Verificação de plano / trial / inadimplência ─────────────────────────
     const companySnap = await getDoc(doc(db, 'empresas', window._companyId)).catch(()=>null);
     const companyData = companySnap && companySnap.exists() ? companySnap.data() : {};
     const plan = companyData.plan || 'trial';
     const trialEndsAt = companyData.trialEndsAt ? new Date(companyData.trialEndsAt) : null;
     const isActive = companyData.active !== false;
     const trialExpired = plan === 'trial' && trialEndsAt && new Date() > trialEndsAt;
+    const isBlocked = companyData.status === 'bloqueado';
 
-    if (plan !== 'owner' && (!isActive || trialExpired)) {
+    if (plan !== 'owner' && (!isActive || trialExpired || isBlocked)) {
       document.getElementById('login-screen').style.setProperty('display','none','important');
       document.getElementById('app').style.setProperty('display','none','important');
-      document.getElementById('trial-block-screen').style.setProperty('display','flex','important');
-      if (trialExpired) {
-        document.getElementById('trial-block-msg').textContent =
-          'Seu período de teste de 14 dias encerrou. Entre em contato para ativar sua assinatura.';
+      
+      const trialBlockScreen = document.getElementById('trial-block-screen');
+      trialBlockScreen.style.setProperty('display','flex','important');
+      
+      const titleEl = trialBlockScreen.querySelector('.ls-trial-title');
+      const msgEl = document.getElementById('trial-block-msg');
+      const btnEl = trialBlockScreen.querySelector('.ls-trial-btn');
+      
+      if (isBlocked) {
+        titleEl.textContent = 'Acesso suspenso';
+        msgEl.textContent = 'Seu acesso foi suspenso por falta de pagamento ou trial expirado. Renove sua assinatura para continuar usando o sistema.';
+        btnEl.textContent = 'Renovar assinatura';
+        btnEl.removeAttribute('href');
+        btnEl.style.cursor = 'pointer';
+        btnEl.onclick = (e) => {
+          e.preventDefault();
+          trialBlockScreen.style.setProperty('display','none','important');
+          document.getElementById('app').style.setProperty('display','flex','important');
+          if (window.navigate) {
+            window.navigate('minha-conta');
+          } else {
+            state.currentView = 'minha-conta';
+            render();
+          }
+        };
+      } else if (trialExpired) {
+        titleEl.textContent = 'Seu período de teste encerrou';
+        msgEl.textContent = 'Seu período de teste de 14 dias encerrou. Renove sua assinatura para continuar usando o sistema.';
+        btnEl.textContent = 'Escolher plano';
+        btnEl.removeAttribute('href');
+        btnEl.style.cursor = 'pointer';
+        btnEl.onclick = (e) => {
+          e.preventDefault();
+          trialBlockScreen.style.setProperty('display','none','important');
+          document.getElementById('app').style.setProperty('display','flex','important');
+          if (window.navigate) {
+            window.navigate('minha-conta');
+          } else {
+            state.currentView = 'minha-conta';
+            render();
+          }
+        };
+      } else {
+        titleEl.textContent = 'Empresa inativa';
+        msgEl.textContent = 'Esta empresa foi desativada pelo administrador.';
+        btnEl.textContent = 'Falar com o suporte';
+        btnEl.setAttribute('href', 'mailto:contato@stoqio.com.br');
+        btnEl.onclick = null;
       }
       return;
     }
@@ -121,6 +166,7 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     window._currentUser = null;
     window._userRole = null;
+    window._plan = null;
     const loginEl2 = document.getElementById('login-screen');
     const appEl2 = document.getElementById('app');
     appEl2.style.setProperty('display','none','important');

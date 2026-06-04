@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP Distribuidora — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── Variáveis ── */
+:root {
+  --bg:#0a0a0f; --surface:#111118; --surface2:#1a1a24;
+  --border:#2a2a38; --accent:#4f6ef7; --accent2:#7c3aed;
+  --green:#22c55e; --amber:#f59e0b; --red:#ef4444;
+  --text:#f0f0f8; --text2:#8888aa;
+  --mono:'IBM Plex Mono',monospace; --sans:'Syne',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+
+/* ── Login ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:360px;}
+.login-logo{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:4px;}
+.login-sub{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:28px;}
+.form-label{font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;margin-bottom:16px;}
+.form-input:focus{border-color:var(--accent);}
+.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:700;font-family:var(--sans);cursor:pointer;letter-spacing:.02em;}
+.btn-login:hover{opacity:.85;}
+.err{color:var(--red);font-size:12px;font-family:var(--mono);margin-top:8px;display:none;}
+
+/* ── App layout ── */
+#app{display:none;min-height:100vh;}
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;height:100vh;}
+.logo{padding:0 20px 24px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;}
+.logo span{display:block;color:var(--text2);font-size:10px;font-weight:400;margin-top:2px;font-family:var(--mono);}
+.nav{padding:16px 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:600;letter-spacing:.02em;transition:all .15s;border-left:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:var(--surface2);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,110,247,.08);}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:var(--mono);}
+.main{margin-left:220px;flex:1;min-height:100vh;}
+.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:10;}
+.topbar h1{font-size:15px;font-weight:700;letter-spacing:.03em;flex:1;}
+.badge-admin{background:rgba(79,110,247,.15);color:var(--accent);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono);}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--text2);font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;font-family:var(--sans);}
+.content{padding:28px;}
+
+/* ── KPIs ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+.kpi.green::before{background:var(--green);}
+.kpi.amber::before{background:var(--amber);}
+.kpi.red::before{background:var(--red);}
+.kpi.purple::before{background:var(--accent2);}
+.kpi-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:8px;}
+.kpi-value{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+.kpi-sub{font-size:11px;color:var(--text2);margin-top:4px;font-family:var(--mono);}
+
+/* ── Tabelas ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
+.table-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px;}
+.table-header h2{font-size:14px;font-weight:700;flex:1;}
+.search{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;width:200px;}
+.search::placeholder{color:var(--text2);}
+table{width:100%;border-collapse:collapse;}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-family:var(--mono);padding:10px 20px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:12px 20px;font-size:13px;border-bottom:1px solid rgba(42,42,56,.5);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+
+/* ── Badges ── */
+.status{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+.status.ativo{background:rgba(34,197,94,.12);color:var(--green);}
+.status.trial{background:rgba(79,110,247,.12);color:var(--accent);}
+.status.inadimplente{background:rgba(239,68,68,.12);color:var(--red);}
+.status.bloqueado{background:rgba(136,136,170,.12);color:var(--text2);}
+.status.pendente{background:rgba(245,158,11,.12);color:var(--amber);}
+.plan{font-size:11px;font-family:var(--mono);font-weight:500;}
+.plan.basico{color:#60a5fa;}
+.plan.profissional{color:#a78bfa;}
+.plan.empresarial{color:var(--amber);}
+.plan.trial{color:var(--text2);}
+
+/* ── Botões ── */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:var(--sans);letter-spacing:.02em;transition:all .15s;}
+.btn-ghost{background:var(--surface2);color:var(--text2);}
+.btn-ghost:hover{color:var(--text);background:var(--border);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:.85;}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-success{background:rgba(34,197,94,.15);color:var(--green);}
+.btn-success:hover{background:rgba(34,197,94,.25);}
+.actions{display:flex;gap:4px;}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:480px;max-width:90vw;overflow:hidden;}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-head h3{font-size:15px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.detail-row{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:var(--text2);font-family:var(--mono);font-size:11px;width:140px;flex-shrink:0;}
+.detail-value{font-weight:600;}
+.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;margin-bottom:16px;}
+
+/* ── Pages ── */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── Loading ── */
+.loading{text-align:center;padding:60px;color:var(--text2);font-family:var(--mono);font-size:13px;}
+.empty{text-align:center;padding:40px;color:var(--text2);font-size:13px;}
+
+/* ── Alertas ── */
+.alerts-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.alert-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.alert-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);margin-bottom:12px;font-family:var(--mono);}
+.alert-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.alert-item:last-child{border-bottom:none;}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dot.red{background:var(--red);}
+.dot.amber{background:var(--amber);}
+.dot.green{background:var(--green);}
+.alert-name{flex:1;font-weight:600;}
+.alert-meta{font-size:11px;color:var(--text2);font-family:var(--mono);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ERP Distribuidora</div>
+    <div class="login-sub">Painel Administrativo</div>
+    <label class="form-label">E-mail</label>
+    <input id="adm-email" class="form-input" type="email" placeholder="seu@email.com">
+    <label class="form-label">Senha</label>
+    <input id="adm-pass" class="form-input" type="password" placeholder="••••••••">
+    <button class="btn-login" onclick="adminLogin()">Entrar</button>
+    <div id="adm-err" class="err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="logo">ERP Admin<span>Painel de Gestão</span></div>
+    <nav class="nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard',this)"><span class="icon">◈</span>Dashboard</div>
+      <div class="nav-item" data-page="tenants" onclick="navigate('tenants',this)"><span class="icon">◉</span>Tenants</div>
+      <div class="nav-item" data-page="afiliados" onclick="navigate('afiliados',this)"><span class="icon">◎</span>Afiliados</div>
+      <div class="nav-item" data-page="pagamentos" onclick="navigate('pagamentos',this)"><span class="icon">◇</span>Pagamentos</div>
+    </nav>
+    <div class="sidebar-footer" id="adm-user-info">—</div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <span class="badge-admin">Superadmin</span>
+      <button class="btn-logout" onclick="adminLogout()">Sair</button>
+    </div>
+    <div class="content">
+      <div class="page active" id="page-dashboard"><div class="loading">Carregando...</div></div>
+      <div class="page" id="page-tenants"><div class="loading">Carregando...</div></div>
+      <div class="page" id="page-afiliados"><div class="loading">Carregando...</div></div>
+      <div class="page" id="page-pagamentos"><div class="loading">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TENANT -->
+<div class="modal-overlay" id="modal-tenant">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="mt-nome">—</h3>
+      <button class="modal-close" onclick="closeModal('modal-tenant')">×</button>
+    </div>
+    <div class="modal-body" id="mt-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="mt-btn-bloquear">Bloquear</button>
+      <button class="btn btn-primary" id="mt-btn-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMISSÃO -->
+<div class="modal-overlay" id="modal-comissao">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Aprovar pagamento de comissão</h3>
+      <button class="modal-close" onclick="closeModal('modal-comissao')">×</button>
+    </div>
+    <div class="modal-body" id="mc-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-comissao')">Cancelar</button>
+      <button class="btn btn-success" id="mc-btn-aprovar">Aprovar e transferir</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const ADMIN_EMAIL = 'juanjfmr1@gmail.com';
+const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net';
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, updateDoc, orderBy, query, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
+  authDomain: "erp-distribuidora-905ca.firebaseapp.com",
+  projectId: "erp-distribuidora-905ca",
+  storageBucket: "erp-distribuidora-905ca.firebasestorage.app",
+  messagingSenderId: "1081428850259",
+  appId: "1:1081428850259:web:6e3d83b13a033e0154b8a6"
+};
+
+const app = initializeApp(firebaseConfig, 'admin');
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const el = id => document.getElementById(id);
+const fmt = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+const today = () => new Date().toISOString().slice(0,10);
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+}
+
+function statusBadge(status) {
+  const map = { ativo:'ativo', trial:'trial', inadimplente:'inadimplente', bloqueado:'bloqueado' };
+  return `<span class="status ${map[status]||'bloqueado'}">${status||'—'}</span>`;
+}
+
+function planBadge(plan) {
+  const map = { basico:'Básico', profissional:'Profissional', empresarial:'Empresarial', trial:'Trial' };
+  return `<span class="plan ${plan||'trial'}">${map[plan]||plan||'Trial'}</span>`;
+}
+
+function planMRR(plan) {
+  return { basico:79, profissional:149, empresarial:299 }[plan] || 0;
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+window.adminLogin = async function() {
+  const email = el('adm-email').value.trim();
+  const pass = el('adm-pass').value;
+  const errEl = el('adm-err');
+  errEl.style.display = 'none';
+
+  if (email !== ADMIN_EMAIL) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Acesso não autorizado.';
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'E-mail ou senha incorretos.';
+  }
+};
+
+window.adminLogout = async function() {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  if (user && user.email === ADMIN_EMAIL) {
+    el('login-screen').style.display = 'none';
+    el('app').style.display = 'flex';
+    el('adm-user-info').textContent = user.email;
+    loadDashboard();
+  } else {
+    el('login-screen').style.display = 'flex';
+    el('app').style.display = 'none';
+  }
+});
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────────
+const PAGE_TITLES = { dashboard:'Dashboard', tenants:'Tenants', afiliados:'Afiliados', pagamentos:'Pagamentos' };
+const PAGE_LOADERS = { dashboard:loadDashboard, tenants:loadTenants, afiliados:loadAfiliados, pagamentos:loadPagamentos };
+
+window.navigate = function(page, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el('page-' + page).classList.add('active');
+  el('page-title').textContent = PAGE_TITLES[page];
+  navEl.classList.add('active');
+  PAGE_LOADERS[page]?.();
+};
+
+window.closeModal = function(id) { el(id).classList.remove('open'); };
+
+// ── LOAD TENANTS (compartilhado) ──────────────────────────────────────────────
+let _tenants = [];
+let _afiliados = [];
+
+async function fetchTenants() {
+  const snap = await getDocs(collection(db, 'empresas'));
+  _tenants = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return _tenants;
+}
+
+async function fetchAfiliados() {
+  const snap = await getDocs(collection(db, 'afiliados'));
+  _afiliados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return _afiliados;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  el('page-dashboard').innerHTML = '<div class="loading">Carregando...</div>';
+  await fetchTenants();
+  await fetchAfiliados();
+
+  const ativos = _tenants.filter(t => t.status === 'ativo');
+  const trials = _tenants.filter(t => t.status === 'trial');
+  const inadimplentes = _tenants.filter(t => t.status === 'inadimplente');
+  const mrr = ativos.reduce((s,t) => s + planMRR(t.plan), 0);
+  const trialsExp7 = trials.filter(t => { const d = daysUntil(t.trialEndsAt); return d !== null && d <= 7; });
+  const comissaoDevida = _afiliados.reduce((s,a) => s + (a.comissaoDevida||0), 0);
+  const afiliadosPend = _afiliados.filter(a => (a.comissaoDevida||0) > 0).length;
+
+  const alertasTenants = [
+    ...inadimplentes.map(t => ({ dot:'red', name:t.name, meta:`Inadimplente · ${Math.abs(daysUntil(t.nextDue)||0)}d` })),
+    ...trialsExp7.map(t => { const d = daysUntil(t.trialEndsAt); return { dot:'amber', name:t.name, meta:`Trial expira em ${d<=0?'hoje':`${d}d`}` }; }),
+  ].slice(0,6);
+
+  const novos = _tenants
+    .filter(t => t.createdAt && daysUntil(t.createdAt) > -7)
+    .slice(0,5);
+
+  el('page-dashboard').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">MRR</div><div class="kpi-value">${fmt(mrr)}</div><div class="kpi-sub">${ativos.length} assinantes ativos</div></div>
+      <div class="kpi"><div class="kpi-label">Tenants Ativos</div><div class="kpi-value">${ativos.length}</div><div class="kpi-sub">${_tenants.length} total</div></div>
+      <div class="kpi purple"><div class="kpi-label">Em Trial</div><div class="kpi-value">${trials.length}</div><div class="kpi-sub">${trialsExp7.length} expiram em 7 dias</div></div>
+      <div class="kpi ${inadimplentes.length>0?'red':'amber'}"><div class="kpi-label">Inadimplentes</div><div class="kpi-value">${inadimplentes.length}</div><div class="kpi-sub">${fmt(inadimplentes.reduce((s,t)=>s+planMRR(t.plan),0))} em risco</div></div>
+      <div class="kpi"><div class="kpi-label">Comissões Devidas</div><div class="kpi-value">${fmt(comissaoDevida)}</div><div class="kpi-sub">${afiliadosPend} afiliados</div></div>
+    </div>
+    <div class="alerts-row">
+      <div class="alert-card">
+        <h3>⚠ Requer atenção</h3>
+        ${alertasTenants.length === 0
+          ? '<div class="empty">Nenhum alerta</div>'
+          : alertasTenants.map(a => `<div class="alert-item"><div class="dot ${a.dot}"></div><div class="alert-name">${a.name}</div><div class="alert-meta">${a.meta}</div></div>`).join('')}
+      </div>
+      <div class="alert-card">
+        <h3>Novos cadastros (7 dias)</h3>
+        ${novos.length === 0
+          ? '<div class="empty">Nenhum novo cadastro</div>'
+          : novos.map(t => `<div class="alert-item"><div class="dot green"></div><div class="alert-name">${t.name}</div><div class="alert-meta">${planBadge(t.plan)} · ${fmtDate(t.createdAt)}</div></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── TENANTS ───────────────────────────────────────────────────────────────────
+async function loadTenants() {
+  el('page-tenants').innerHTML = '<div class="loading">Carregando...</div>';
+  await fetchTenants();
+  renderTenants(_tenants);
+}
+
+function renderTenants(list) {
+  el('page-tenants').innerHTML = `
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Tenants (${list.length})</h2>
+        <input class="search" placeholder="Buscar..." oninput="filterTenants(this.value)">
+      </div>
+      <table>
+        <thead><tr><th>Empresa</th><th>Plano</th><th>Status</th><th>MRR</th><th>Cadastro</th><th>Trial restante</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${list.map(t => {
+            const trialDays = t.status==='trial' ? daysUntil(t.trialEndsAt) : null;
+            const mrr = t.status==='ativo' ? fmt(planMRR(t.plan)) : '—';
+            return `<tr>
+              <td><div style="font-weight:600">${t.name||'—'}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${t.email||t.id}</div></td>
+              <td>${planBadge(t.plan)}</td>
+              <td>${statusBadge(t.status)}</td>
+              <td><span style="font-family:var(--mono)">${mrr}</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${fmtDate(t.createdAt)}</span></td>
+              <td>${trialDays!==null ? `<span style="font-family:var(--mono);font-size:12px;color:${trialDays<=3?'var(--red)':trialDays<=7?'var(--amber)':'var(--text2)'}">${trialDays<=0?'Expirado':trialDays+'d'}</span>` : '—'}</td>
+              <td><div class="actions">
+                <button class="btn btn-ghost" onclick="showTenantModal('${t.id}')">Detalhes</button>
+                ${t.status==='bloqueado'
+                  ? `<button class="btn btn-success" onclick="setTenantStatus('${t.id}','ativo')">Reativar</button>`
+                  : `<button class="btn btn-danger" onclick="setTenantStatus('${t.id}','bloqueado')">Bloquear</button>`}
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+window.filterTenants = function(q) {
+  const filtered = _tenants.filter(t =>
+    (t.name||'').toLowerCase().includes(q.toLowerCase()) ||
+    (t.email||'').toLowerCase().includes(q.toLowerCase())
+  );
+  renderTenants(filtered);
+};
+
+window.showTenantModal = function(id) {
+  const t = _tenants.find(x => x.id === id);
+  if (!t) return;
+  el('mt-nome').textContent = t.name || id;
+  el('mt-body').innerHTML = `
+    <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${t.email||'—'}</span></div>
+    <div class="detail-row"><span class="detail-label">CNPJ</span><span class="detail-value">${t.cnpj||'—'}</span></div>
+    <div class="detail-row"><span class="detail-label">Plano</span><span class="detail-value">${planBadge(t.plan)}</span></div>
+    <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(t.status)}</span></div>
+    <div class="detail-row"><span class="detail-label">MRR</span><span class="detail-value" style="font-family:var(--mono)">${fmt(planMRR(t.plan))}/mês</span></div>
+    <div class="detail-row"><span class="detail-label">Cadastro</span><span class="detail-value" style="font-family:var(--mono)">${fmtDate(t.createdAt)}</span></div>
+    <div class="detail-row"><span class="detail-label">Trial até</span><span class="detail-value" style="font-family:var(--mono)">${fmtDate(t.trialEndsAt)}</span></div>
+    <br>
+    <label class="form-label" style="font-size:11px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block">Alterar plano</label>
+    <select class="form-select" id="mt-plano">
+      <option value="trial" ${t.plan==='trial'?'selected':''}>Trial</option>
+      <option value="basico" ${t.plan==='basico'?'selected':''}>Básico — R$79/mês</option>
+      <option value="profissional" ${t.plan==='profissional'?'selected':''}>Profissional — R$149/mês</option>
+      <option value="empresarial" ${t.plan==='empresarial'?'selected':''}>Empresarial — R$299/mês</option>
+    </select>
+  `;
+  el('mt-btn-bloquear').onclick = () => { setTenantStatus(id, t.status==='bloqueado'?'ativo':'bloqueado'); closeModal('modal-tenant'); };
+  el('mt-btn-bloquear').textContent = t.status==='bloqueado' ? 'Reativar' : 'Bloquear';
+  el('mt-btn-bloquear').className = `btn ${t.status==='bloqueado'?'btn-success':'btn-danger'}`;
+  el('mt-btn-salvar').onclick = () => saveTenantPlan(id);
+  el('modal-tenant').classList.add('open');
+};
+
+window.setTenantStatus = async function(id, status) {
+  if (!confirm(`Confirma: ${status} o tenant ${id}?`)) return;
+  await updateDoc(doc(db, 'empresas', id), { status });
+  await loadTenants();
+};
+
+window.saveTenantPlan = async function(id) {
+  const plan = el('mt-plano').value;
+  const status = plan === 'trial' ? 'trial' : 'ativo';
+  await updateDoc(doc(db, 'empresas', id), { plan, status });
+  closeModal('modal-tenant');
+  await loadTenants();
+};
+
+// ── AFILIADOS ─────────────────────────────────────────────────────────────────
+async function loadAfiliados() {
+  el('page-afiliados').innerHTML = '<div class="loading">Carregando...</div>';
+  await fetchAfiliados();
+  await fetchTenants();
+
+  const comissaoTotal = _afiliados.reduce((s,a) => s + (a.comissaoDevida||0), 0);
+  const mrrAfiliados = _afiliados.reduce((s,a) => s + (a.mrrGerado||0), 0);
+  const pagos = _afiliados.reduce((s,a) => s + (a.totalPago||0), 0);
+
+  el('page-afiliados').innerHTML = `
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi green"><div class="kpi-label">Comissões Devidas</div><div class="kpi-value">${fmt(comissaoTotal)}</div><div class="kpi-sub">${_afiliados.filter(a=>(a.comissaoDevida||0)>0).length} pendentes</div></div>
+      <div class="kpi"><div class="kpi-label">MRR via Afiliados</div><div class="kpi-value">${fmt(mrrAfiliados)}</div><div class="kpi-sub">—</div></div>
+      <div class="kpi"><div class="kpi-label">Afiliados Ativos</div><div class="kpi-value">${_afiliados.length}</div><div class="kpi-sub">—</div></div>
+      <div class="kpi amber"><div class="kpi-label">Pago Total</div><div class="kpi-value">${fmt(pagos)}</div><div class="kpi-sub">—</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><h2>Afiliados</h2></div>
+      <table>
+        <thead><tr><th>Afiliado</th><th>Clientes</th><th>MRR gerado</th><th>Comissão devida</th><th>Total pago</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${_afiliados.length === 0
+            ? '<tr><td colspan="7"><div class="empty">Nenhum afiliado cadastrado.</div></td></tr>'
+            : _afiliados.map(a => {
+                // CORREÇÃO: Filtrar pelo afiliado que indicou o tenant (referredBy == a.code)
+                const clientes = _tenants.filter(t => t.referredBy === a.code).length;
+                const mrr = _tenants.filter(t => t.referredBy === a.code && t.status==='ativo').reduce((s,t)=>s+planMRR(t.plan),0);
+                const devida = a.comissaoDevida || 0;
+                return `<tr>
+                  <td><div style="font-weight:600">${a.name}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${a.email}</div></td>
+                  <td><span style="font-family:var(--mono)">${clientes}</span></td>
+                  <td><span style="font-family:var(--mono)">${fmt(mrr)}</span></td>
+                  <td><span style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(devida)}</span></td>
+                  <td><span style="font-family:var(--mono);color:var(--text2)">${fmt(a.totalPago||0)}</span></td>
+                  <td>${devida>0?'<span class="status pendente">Pendente</span>':'<span class="status ativo">Em dia</span>'}</td>
+                  <td>${devida>0
+                    ? `<button class="btn btn-success" onclick="showComissaoModal('${a.id}')">Pagar ${fmt(devida)}</button>`
+                    : '<button class="btn btn-ghost">Histórico</button>'}</td>
+                </tr>`;
+              }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+window.showComissaoModal = function(id) {
+  const a = _afiliados.find(x => x.id === id);
+  if (!a) return;
+  el('mc-body').innerHTML = `
+    <div class="detail-row"><span class="detail-label">Afiliado</span><span class="detail-value">${a.name}</span></div>
+    <div class="detail-row"><span class="detail-label">Conta MP</span><span class="detail-value" style="font-family:var(--mono)">${a.mpAccount||a.email}</span></div>
+    <div class="detail-row"><span class="detail-label">Comissão (20%)</span><span class="detail-value" style="color:var(--green);font-size:18px;font-family:var(--mono)">${fmt(a.comissaoDevida||0)}</span></div>
+    <br>
+    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;font-size:13px;color:var(--green)">
+      Ao aprovar, a Firebase Function chamará o MP e executará a transferência para a conta do afiliado.
+    </div>
+  `;
+  el('mc-btn-aprovar').textContent = `Aprovar e transferir ${fmt(a.comissaoDevida||0)}`;
+  el('mc-btn-aprovar').onclick = () => pagarComissao(id, a.comissaoDevida||0, a.name);
+  el('modal-comissao').classList.add('open');
+};
+
+window.pagarComissao = async function(afiliadoId, valor, nome) {
+  if (!confirm(`Confirma pagamento de ${fmt(valor)} para ${nome}?`)) return;
+  try {
+    const resp = await fetch(`${FUNCTIONS_BASE}/payAffiliate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await auth.currentUser.getIdToken()}` },
+      body: JSON.stringify({ afiliadoId, valor }),
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error||'Erro desconhecido');
+    closeModal('modal-comissao');
+    alert(`✓ Transferência de ${fmt(valor)} realizada com sucesso.`);
+    await loadAfiliados();
+  } catch(e) {
+    alert('Erro ao pagar comissão: ' + e.message);
+  }
+};
+
+// ── PAGAMENTOS ────────────────────────────────────────────────────────────────
+async function loadPagamentos() {
+  el('page-pagamentos').innerHTML = '<div class="loading">Carregando...</div>';
+  const snap = await getDocs(query(collection(db, 'pagamentos'), orderBy('data','desc'), limit(50)));
+  const pagamentos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  await fetchTenants();
+
+  el('page-pagamentos').innerHTML = `
+    <div class="table-card">
+      <div class="table-header"><h2>Histórico de Pagamentos</h2></div>
+      <table>
+        <thead><tr><th>Empresa</th><th>Plano</th><th>Valor</th><th>Data</th><th>Método</th><th>Status MP</th></tr></thead>
+        <tbody>
+          ${pagamentos.length === 0
+            ? '<tr><td colspan="6"><div class="empty">Nenhum pagamento registrado ainda.</div></td></tr>'
+            : pagamentos.map(p => {
+                const tenant = _tenants.find(t => t.id === p.companyId);
+                return `<tr>
+                  <td style="font-weight:600">${tenant?.name||p.companyId}</td>
+                  <td>${planBadge(p.plan)}</td>
+                  <td><span style="font-family:var(--mono)">${fmt(p.valor)}</span></td>
+                  <td><span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${fmtDate(p.data)}</span></td>
+                  <td><span style="font-size:11px">${p.metodo||'—'}</span></td>
+                  <td>${statusBadge(p.statusMP==='approved'?'ativo':p.statusMP==='pending'?'trial':'inadimplente')}</td>
+                </tr>`;
+              }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

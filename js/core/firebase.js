@@ -348,7 +348,15 @@ async function doGoogleLogin() {
     errEl.style.display = 'none';
   } catch(e) {
     errEl.style.display = 'block';
-    errEl.textContent = 'Erro ao entrar com Google. Tente novamente.';
+    if (e.code === 'auth/unauthorized-domain') {
+      errEl.textContent = 'Domínio não autorizado no Firebase. Adicione stoqio.com.br em Authentication → Settings → Authorized domains.';
+    } else if (e.code === 'auth/popup-blocked') {
+      errEl.textContent = 'Pop-up bloqueado pelo navegador. Permita pop-ups para este site e tente novamente.';
+    } else if (e.code === 'auth/popup-closed-by-user') {
+      errEl.textContent = 'Login cancelado.';
+    } else {
+      errEl.textContent = 'Erro ao entrar com Google: ' + (e.code || e.message);
+    }
     btn.textContent = 'Entrar com Google'; btn.disabled = false;
   }
 }
