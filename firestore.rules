@@ -12,9 +12,29 @@ service cloud.firestore {
       return request.auth != null && userProfile().companyId == companyId;
     }
 
-    // Helper: verifica se é admin do tenant
-    function isAdmin(companyId) {
-      return belongsToCompany(companyId) && userProfile().role == 'admin';
+    // Helper: retorna o plano ativo da empresa
+    function companyPlan(companyId) {
+      return get(/databases/$(database)/documents/empresas/$(companyId)).data.plan;
+    }
+
+    // Helper: verifica se o plano da empresa atinge o nível exigido
+    // Níveis: 'basic' ≤ 'pro' ≤ 'enterprise'
+    function hasPlan(companyId, required) {
+      let plan = companyPlan(companyId);
+      return required == 'basic'
+          || (required == 'pro'        && plan in ['profissional', 'empresarial', 'owner'])
+          || (required == 'enterprise' && plan in ['empresarial', 'owner']);
+    }
+
+    // Coleções que exigem plano acima do básico (mapeadas aos módulos do frontend)
+    // 'pro':        devolucoes, relatorios, comissoes, tabelaPreco, estoqueMin
+    // 'enterprise': pdv, api
+    function requiresPro(collection) {
+      return collection == 'returns';
+    }
+
+    function requiresEnterprise(collection) {
+      return collection == 'pdv_sessions';
     }
 
     // ── Dados da empresa (single-document por tenant) ──────────────────────
@@ -23,45 +43,58 @@ service cloud.firestore {
     }
 
     // ── Configuração global da instância ──────────────────────────────────
-    // Apenas leitura para qualquer autenticado (necessário para resolver companyId)
     match /config/{docId} {
       allow read: if request.auth != null;
-      // Apenas o admin do tenant pode escrever na config da sua empresa
       allow write: if request.auth != null
         && userProfile().role == 'admin';
     }
 
     // ── Usuários ───────────────────────────────────────────────────────────
     match /users/{uid} {
-      // Cada usuário lê o próprio perfil
       allow read: if request.auth != null && request.auth.uid == uid;
 
-      // Admin pode ler qualquer usuário do mesmo tenant
       allow read: if request.auth != null
         && userProfile().companyId == resource.data.companyId
         && userProfile().role == 'admin';
 
-      // Usuário pode atualizar o próprio perfil (exceto role e companyId)
       allow update: if request.auth != null
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(['role', 'companyId']);
 
-      // Admin pode criar/atualizar usuários do mesmo tenant
       allow create, update: if request.auth != null
         && userProfile().role == 'admin'
         && request.resource.data.companyId == userProfile().companyId;
 
-      // Criação inicial: usuário criando o próprio perfil (signup)
-      // Permitido apenas se o documento ainda não existe
       allow create: if request.auth != null
         && request.auth.uid == uid
         && !exists(/databases/$(database)/documents/users/$(uid));
     }
 
-    // ── Subcoleções por módulo ────────────────────────────────────────────
+    // ── Subcoleções por módulo ─────────────────────────────────────────────
     match /empresas/{companyId}/{collection}/{docId} {
-      allow read, write: if belongsToCompany(companyId);
+      // Leitura: qualquer membro do tenant
+      allow read: if belongsToCompany(companyId);
+
+      // Escrita: membro do tenant + plano suficiente para coleções restritas
+      allow write: if belongsToCompany(companyId)
+        && (!requiresPro(collection)        || hasPlan(companyId, 'pro'))
+        && (!requiresEnterprise(collection) || hasPlan(companyId, 'enterprise'));
+    }
+
+    // ── Pagamentos (coleção raiz — lida pelo painel admin) ────────────────
+    match /pagamentos/{docId} {
+      // Leitura: apenas superadmin
+      allow read: if request.auth != null
+        && request.auth.token.email == 'juanjfmr1@gmail.com';
+      // Escrita: bloqueada no client — só Cloud Functions (Admin SDK) gravam
+      allow write: if false;
+    }
+
+    // ── Afiliados (coleção raiz — lida e editada pelo painel admin) ───────
+    match /afiliados/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'juanjfmr1@gmail.com';
     }
 
     // ── Bloqueia tudo que não foi explicitamente permitido ─────────────────

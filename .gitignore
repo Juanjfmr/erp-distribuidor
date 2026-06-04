@@ -1,0 +1,18 @@
+# Firebase
+.firebase/
+functions/node_modules/
+
+# Claude Code
+.claude/
+
+# Obsidian
+.obsidian/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+*.env
