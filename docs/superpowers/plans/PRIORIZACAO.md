@@ -147,3 +147,57 @@ Atualizar após cada plano concluído:
 | Plano F1 | ⏳ Pendente | — | Aguarda Anthropic API Key |
 | Plano F2 | ⏳ Pendente | — | — |
 | Plano F3 | ⏳ Pendente | — | — |
+
+---
+
+## Decisões de Produto
+
+### Emissão de documentos fiscais — comportamento intencional
+
+**Decisão:** O Stoqio emite dois tipos de documento dependendo do
+status fiscal do tenant:
+
+- Status não configurado / parcial → emite **Fatura** (PDF sem valor fiscal)
+- Status `PRODUCAO_ATIVA` → emite **NF-e** via Focus NFe
+
+**Regras:**
+- O PDF de fatura nunca carrega aviso de "sem valor fiscal" — o documento
+  sai limpo para o cliente final do assinante
+- O aviso é exibido apenas no painel do assinante (banner persistente
+  + modal de confirmação no momento da emissão)
+- O banner não pode ser dispensado permanentemente — some somente quando
+  o status fiscal muda para `PRODUCAO_ATIVA`
+- O título do PDF nunca usa o termo "Nota Fiscal" enquanto sem validade fiscal
+- Cada status fiscal tem texto de aviso específico no banner
+
+**Motivação:** Reduz fricção de onboarding — assinante opera desde o
+primeiro dia sem precisar ter a situação fiscal regularizada. Prática
+padrão do mercado (Bling, Omie, Tiny).
+
+**Não é bug. Não alterar sem decisão explícita de produto.**
+
+### Estados fiscais do tenant — enum central
+
+O status fiscal de cada tenant deve ser controlado por um único enum/constante
+central. Toda lógica de emissão e exibição de alertas consulta esse enum.
+Nunca usar condicionais espalhadas no código.
+
+**Estados definidos:**
+
+| Status | Descrição | Emite NF-e? |
+|---|---|---|
+| `NAO_CONFIGURADO` | Tenant nunca acessou configuração fiscal | Não |
+| `BLOQUEADO_CPF` | Assinante é Pessoa Física | Não |
+| `SEM_CERTIFICADO` | Dados cadastrais salvos, sem certificado A1 | Não |
+| `ERRO_REGISTRO` | Falha ao registrar empresa na Focus NFe | Não |
+| `CONFIGURADO` | Registrado na Focus NFe, token salvo | Sim |
+| `CONFIGURADO_NAO_TESTADO` | Configurado, teste de emissão não realizado | Sim (com aviso) |
+| `CONFIGURADO_TESTADO` | Configurado e testado em homologação | Sim |
+| `PRODUCAO_ATIVA` | Ambiente de produção ativo | Sim |
+
+**Regra de alerta:** o banner de aviso no painel do assinante aparece para
+todos os estados exceto `PRODUCAO_ATIVA`.
+
+**Regra de certificado:** monitorar data de expiração do certificado A1.
+Notificar o tenant com 30 dias de antecedência. Certificado expirado
+reverte o status para `SEM_CERTIFICADO` automaticamente.
