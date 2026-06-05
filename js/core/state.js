@@ -56,7 +56,21 @@ function showPlanBlockModal(module) {
   `);
 }
 const defaultState = {
-  company:{ name:"2R Comércio", cnpj:"", address:"", city:"", uf:"MS", phone:"", email:"" },
+  company:{
+    name:"2R Comércio", cnpj:"", address:"", city:"", uf:"MS", phone:"", email:"",
+    ie:"", regime:"1", cep:"",
+    // Fiscal
+    fiscalStatus: "NAO_CONFIGURADO",
+    focusNfeToken: null,
+    focusNfeEnv:   "homologacao",
+    certExpiresAt: null,
+    certAlert:     null,
+    fiscalData: {
+      cnpj:"", razaoSocial:"", nomeFantasia:"", regime:"1", ie:"",
+      cep:"", logradouro:"", cidade:"", uf:"",
+      lastError: null,
+    },
+  },
   products:[], clients:[], suppliers:[],
   invoices:[], purchases:[],
   receivables:[], payables:[], transactions:[],
