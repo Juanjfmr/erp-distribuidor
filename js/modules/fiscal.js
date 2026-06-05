@@ -273,3 +273,134 @@ async function wizardUploadCert() {
   };
   reader.readAsArrayBuffer(fileInput.files[0]);
 }
+
+function renderWizardStep4() {
+  const env = state.company.focusNfeEnv || 'homologacao';
+  return `
+    <h3 class="modal-title">Ambiente de Emissão</h3>
+    <p>Qual ambiente você deseja usar?</p>
+    <div class="row" style="gap:12px;margin-top:16px">
+      <button class="btn ${env==='homologacao'?'':'btn-secondary'}" onclick="wizardSetEnv('homologacao')" style="flex:1;padding:16px;text-align:left">
+        <strong>Homologação</strong><br>
+        <small>NFs de teste, sem validade fiscal. Recomendado para início.</small>
+      </button>
+      <button class="btn ${env==='producao'?'':'btn-secondary'}" onclick="wizardConfirmProducao()" style="flex:1;padding:16px;text-align:left">
+        <strong>Produção</strong><br>
+        <small>NFs com validade fiscal real.</small>
+      </button>
+    </div>
+    <div class="row" style="gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="wizardGoTo(3)">← Voltar</button>
+    </div>`;
+}
+
+async function wizardSetEnv(env) {
+  await saveFiscalStep({ focusNfeEnv: env });
+  wizardGoTo(5);
+}
+
+function wizardConfirmProducao() {
+  if (!confirm('⚠️ As NFs emitidas em produção terão validade fiscal real.\n\nConfirmar ambiente de produção?')) return;
+  wizardSetEnv('producao');
+}
+
+function renderWizardStep5() {
+  const err = state.company.fiscalData?.lastError;
+  return `
+    <h3 class="modal-title">Registro na Focus NFe</h3>
+    <p>Vamos registrar sua empresa na Focus NFe para emissão de NF-e.</p>
+    ${err ? `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:12px;border-radius:8px;margin-bottom:12px">⚠️ Tentativa anterior falhou: ${err.mensagem}</div>` : ''}
+    <div id="wiz-reg-status"></div>
+    <div class="row" style="gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="wizardGoTo(4)">← Voltar</button>
+      <button id="wiz-reg-btn" class="btn" onclick="wizardRegisterFocusNFe()">Registrar empresa</button>
+    </div>`;
+}
+
+async function wizardRegisterFocusNFe() {
+  const statusEl  = document.getElementById('wiz-reg-status');
+  const btn       = document.getElementById('wiz-reg-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Registrando…';
+  if (statusEl) statusEl.innerHTML = '<em style="color:var(--text-secondary)">Conectando à Focus NFe…</em>';
+
+  try {
+    const registerFn = firebase.functions().httpsCallable('registerTenant');
+    const result     = await registerFn({
+      companyId:  state.companyId,
+      fiscalData: state.company.fiscalData,
+      env:        state.company.focusNfeEnv || 'homologacao',
+    });
+
+    if (result.data.success) {
+      state.company.fiscalStatus = 'CONFIGURADO';
+      wizardGoTo(6);
+    } else {
+      state.company.fiscalStatus = 'ERRO_REGISTRO';
+      if (state.company.fiscalData) {
+        state.company.fiscalData.lastError = { mensagem: result.data.mensagem, codigo: result.data.codigo };
+      }
+      if (statusEl) statusEl.innerHTML = `<div style="color:var(--red,#ef4444);margin-top:8px">Erro: ${result.data.mensagem || 'Falha no registro'}</div>`;
+      btn.disabled    = false;
+      btn.textContent = 'Tentar novamente';
+    }
+  } catch (err) {
+    if (statusEl) statusEl.innerHTML = `<div style="color:var(--red,#ef4444);margin-top:8px">Erro de conexão: ${err.message}</div>`;
+    btn.disabled    = false;
+    btn.textContent = 'Tentar novamente';
+  }
+}
+
+function renderWizardStep6() {
+  const isHom = (state.company.focusNfeEnv || 'homologacao') === 'homologacao';
+  if (!isHom) {
+    return `
+      <h3 class="modal-title">✅ Configuração concluída!</h3>
+      <p>Sua empresa está registrada na Focus NFe em ambiente de <strong>produção</strong>.</p>
+      <button class="btn" onclick="renderFiscalTab()">Ver painel fiscal</button>`;
+  }
+  return `
+    <h3 class="modal-title">Teste de Emissão</h3>
+    <p>Quer testar uma NF-e fictícia em homologação para validar a configuração?</p>
+    <div id="wiz-test-status"></div>
+    <div class="row" style="gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="renderFiscalTab()">Pular</button>
+      <button id="wiz-test-btn" class="btn" onclick="wizardRunTest()">Testar agora</button>
+    </div>`;
+}
+
+async function wizardRunTest() {
+  const statusEl  = document.getElementById('wiz-test-status');
+  const btn       = document.getElementById('wiz-test-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Emitindo NF de teste…';
+
+  const testInvoice  = {
+    id: 'teste_' + Date.now(), clientId: null,
+    items: [{ productId: null, qty: 1, price: 1.00, itemDiscount: 0 }],
+    subtotal: 1.00, total: 1.00, discount: 0, freight: 0,
+  };
+  const testProducts = [{
+    id: null, code: 'TESTE001', name: 'Produto Teste Homologação',
+    ncm: '84713012', cfop: '5102', unit: 'UN', origem: '0',
+  }];
+
+  try {
+    const resultado = await emitirNFe(testInvoice, state.company, testProducts, []);
+
+    if (resultado.success) {
+      await saveFiscalStep({ fiscalStatus: 'CONFIGURADO_TESTADO' });
+      if (statusEl) statusEl.innerHTML = '<div style="color:var(--green,#22c55e);margin-top:8px">✅ NF-e de teste autorizada pela SEFAZ!</div>';
+      setTimeout(() => renderFiscalTab(), 2000);
+    } else {
+      await saveFiscalStep({ fiscalStatus: 'CONFIGURADO_NAO_TESTADO' });
+      if (statusEl) statusEl.innerHTML = `<div style="color:var(--amber,#f59e0b);margin-top:8px">⚠️ Rejeitada: ${resultado.error}</div>`;
+      btn.disabled    = false;
+      btn.textContent = 'Tentar novamente';
+    }
+  } catch (err) {
+    if (statusEl) statusEl.innerHTML = `<div style="color:var(--red,#ef4444);margin-top:8px">Erro: ${err.message}</div>`;
+    btn.disabled    = false;
+    btn.textContent = 'Tentar novamente';
+  }
+}
