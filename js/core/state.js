@@ -217,6 +217,7 @@ function getUnits(){ return (state.company?.units?.length ? state.company.units 
 Object.defineProperty(window,'CAT_PROD',{get:()=>getCatProd(),configurable:true});
 Object.defineProperty(window,'UNITS',{get:()=>getUnits(),configurable:true});
 const PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","35 dias","42 dias","30/60","30/60/90"];
+const PAY_METHODS=["PIX","Boleto","Cheque","Dinheiro","Cartão de Débito","Cartão de Crédito","Duplicata","TED/DOC","Outro"];
 const CAT_FIN={entrada:["Vendas","Outros","Financiamento","Juros"],saida:["Compras","Logística","Operacional","Salários","Impostos","Outros"]};
 
 function generateReceivables(invoiceId,invoiceNumber,clientId,total,date,terms){

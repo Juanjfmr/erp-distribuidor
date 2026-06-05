@@ -82,12 +82,20 @@ function openPedidoModal(prefill){
         ${clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}
       </select>
     </div>
-    <div class="form-grid-3">
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Condição de Pagamento</label>
         <select id="ped-terms" class="form-input">
           ${PAY_TERMS.map(t=>`<option>${t}</option>`).join("")}
         </select>
       </div>
+      <div class="form-group"><label class="form-label">Forma de Pagamento</label>
+        <select id="ped-method" class="form-input">
+          <option value="">Não informado</option>
+          ${PAY_METHODS.map(m=>`<option>${m}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="ped-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="0" oninput="pedidoRenderItems()">
       </div>
@@ -204,6 +212,7 @@ async function salvarPedido(num, confirmar=false){
     id:Date.now(), number:num,
     date:el("ped-date").value||today(),
     clientId, paymentTerms:el("ped-terms").value,
+    paymentMethod:el("ped-method")?.value||'',
     discount:disc, freight, notes:el("ped-notes").value,
     items:[...state.pedidoItems],
     subtotal:sub, total,
@@ -251,12 +260,20 @@ function editarPedidoModal(id){
         ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${c.name}</option>`).join("")}
       </select>
     </div>
-    <div class="form-grid-3">
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Condição de Pagamento</label>
         <select id="ped-terms" class="form-input">
           ${PAY_TERMS.map(t=>`<option ${t===o.paymentTerms?"selected":""}>${t}</option>`).join("")}
         </select>
       </div>
+      <div class="form-group"><label class="form-label">Forma de Pagamento</label>
+        <select id="ped-method" class="form-input">
+          <option value="">Não informado</option>
+          ${PAY_METHODS.map(m=>`<option ${m===o.paymentMethod?"selected":""}>${m}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="ped-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="${o.discount||0}" oninput="pedidoRenderItems()">
       </div>
@@ -301,6 +318,7 @@ async function salvarEditPedido(id,confirmar=false){
   o.date=el("ped-date").value||today();
   o.clientId=clientId;
   o.paymentTerms=el("ped-terms").value;
+  o.paymentMethod=el("ped-method")?.value||'';
   o.discount=disc; o.freight=freight;
   o.notes=el("ped-notes").value;
   o.items=[...state.pedidoItems];
@@ -334,12 +352,20 @@ async function faturarPedido(id){
         ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${c.name}</option>`).join("")}
       </select>
     </div>
-    <div class="form-grid-3">
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Condição de Pagamento</label>
         <select id="nf-terms" class="form-input">
           ${PAY_TERMS.map(t=>`<option ${t===o.paymentTerms?"selected":""}>${t}</option>`).join("")}
         </select>
       </div>
+      <div class="form-group"><label class="form-label">Forma de Pagamento</label>
+        <select id="nf-method" class="form-input">
+          <option value="">Não informado</option>
+          ${PAY_METHODS.map(m=>`<option ${m===o.paymentMethod?"selected":""}>${m}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="nf-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="${o.discount||0}" oninput="nfUpdateTotals()">
       </div>

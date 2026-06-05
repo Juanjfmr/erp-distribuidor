@@ -92,12 +92,20 @@ async function openNFModal(){
         <input id="nf-date" type="date" class="form-input" value="${today()}">
       </div>
     </div>
-    <div class="form-grid-3">
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Condição de Pagamento</label>
         <select id="nf-terms" class="form-input">
           ${PAY_TERMS.map(t=>`<option>${t}</option>`).join("")}
         </select>
       </div>
+      <div class="form-group"><label class="form-label">Forma de Pagamento</label>
+        <select id="nf-method" class="form-input">
+          <option value="">Não informado</option>
+          ${PAY_METHODS.map(m=>`<option>${m}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Desconto Geral (%)</label>
         <input id="nf-disc" type="number" min="0" max="100" step="0.1" class="form-input" value="0" oninput="nfUpdateTotals()">
       </div>
@@ -331,6 +339,7 @@ async function emitirNF(num){
   const isAvulso=rawClientId==='avulso';
   const clientId=isAvulso?null:parseInt(rawClientId);
   const terms=el("nf-terms").value;
+  const paymentMethod=el("nf-method")?.value||'';
   const client=clientId?getClient(clientId):null;
   const openAmt=clientId?state.receivables.filter(r=>r.clientId===clientId&&r.status==="aberta").reduce((s,r)=>s+r.amount,0):0;
   if(client&&client.creditLimit>0&&(openAmt+total)>client.creditLimit){
@@ -343,7 +352,7 @@ async function emitirNF(num){
     _doneSave(); return;
   }
   try{
-    const nf={id:uid(),number:num,date,clientId:isAvulso?null:clientId,clientName:isAvulso?"Consumidor Final":null,items:[...state.nfItems],discount:disc,freight,paymentTerms:terms,subtotal:parseFloat(sub.toFixed(2)),total,status:"emitida"};
+    const nf={id:uid(),number:num,date,clientId:isAvulso?null:clientId,clientName:isAvulso?"Consumidor Final":null,items:[...state.nfItems],discount:disc,freight,paymentTerms:terms,paymentMethod,subtotal:parseFloat(sub.toFixed(2)),total,status:"emitida"};
     if(obs) nf.notes=obs;
     if(freightInt>0) nf.internalFreight=freightInt;
     if(costs.length) nf.costs=costs;
@@ -397,7 +406,7 @@ function viewNF(id){
     </div>
     <div class="form-grid-2" style="margin-bottom:16px">
       <div><div class="kpi-label">Cliente</div><div style="font-size:14px;margin-top:4px;font-weight:600">${getNFClientName(n)}</div></div>
-      <div><div class="kpi-label">Data / Pagamento</div><div style="font-size:14px;margin-top:4px">${fmtDate(n.date)} · ${n.paymentTerms}</div></div>
+      <div><div class="kpi-label">Data / Pagamento</div><div style="font-size:14px;margin-top:4px">${fmtDate(n.date)} · ${n.paymentTerms}${n.paymentMethod?` · ${n.paymentMethod}`:''}</div></div>
     </div>
     <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Desc.</th><th>Total</th></tr></thead><tbody>
       ${n.items.map(it=>{const p=getProd(it.productId);const d=it.itemDiscount||0;const t=it.qty*it.price*(1-d/100);return`<tr>
