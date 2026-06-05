@@ -73,12 +73,18 @@ onAuthStateChanged(auth, async (user) => {
           }
         }
       } else {
-        // Nenhum perfil: primeiro usuário criado direto no Firebase Console — vira admin
+        // Nenhum perfil: race condition no cadastro (onAuthStateChanged disparou antes do setDoc em doSignup)
+        // ou primeiro usuário criado direto no Firebase Console.
+        // NUNCA sobrescrever config/global se já existe — cada empresa tem seu próprio companyId.
         const companyId = user.uid;
         const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
         const profile = { name: user.displayName || user.email, email: user.email, role: 'admin', active: true, createdAt: new Date().toISOString(), companyId };
         await setDoc(doc(db, 'users', user.uid), profile);
-        await setDoc(doc(db, 'config', 'global'), { companyId });
+        // Só cria config/global se ainda não existe (evita sobrescrever outro tenant)
+        const existingGlobal = await getDoc(doc(db, 'config', 'global'));
+        if (!existingGlobal.exists()) {
+          await setDoc(doc(db, 'config', 'global'), { companyId });
+        }
         await setDoc(doc(db, 'empresas', companyId), { plan: 'trial', trialEndsAt, active: true }, { merge: true });
         window._userProfile = profile;
         window._userRole = 'admin';
