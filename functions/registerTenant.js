@@ -26,41 +26,45 @@ exports.registerTenant = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', 'Token master Focus NFe não configurado no servidor.');
   }
 
-  const baseUrl = env === 'producao'
-    ? 'https://api.focusnfe.com.br'
-    : 'https://homologacao.focusnfe.com.br';
-
+  // Registro SEMPRE via API de produção — é o único endpoint que aceita POST /v2/empresas.
+  // A escolha de ambiente (homologação/produção) determina qual token salvar, não a URL de registro.
   const payload = {
-    cnpj:                  fiscalData.cnpj.replace(/\D/g, ''),
-    nome:                  fiscalData.razaoSocial,
-    nome_fantasia:         fiscalData.nomeFantasia || fiscalData.razaoSocial,
-    regime_tributario:     fiscalData.regime || '1',
-    inscricao_estadual:    fiscalData.ie || 'ISENTO',
-    logradouro:            fiscalData.logradouro,
-    municipio:             fiscalData.cidade,
-    uf:                    fiscalData.uf,
-    cep:                   (fiscalData.cep || '').replace(/\D/g, ''),
-    email:                 fiscalData.email || '',
-    telefone:              fiscalData.telefone || '',
-    habilita_nfe:          true,
-    ambiente_nfe:          env === 'producao' ? 'producao' : 'homologacao',
+    cnpj:               fiscalData.cnpj.replace(/\D/g, ''),
+    nome:               fiscalData.razaoSocial,
+    nome_fantasia:      fiscalData.nomeFantasia || fiscalData.razaoSocial,
+    regime_tributario:  fiscalData.regime || '1',
+    inscricao_estadual: fiscalData.ie || 'ISENTO',
+    logradouro:         fiscalData.logradouro,
+    municipio:          fiscalData.cidade,
+    uf:                 fiscalData.uf,
+    cep:                (fiscalData.cep || '').replace(/\D/g, ''),
+    email:              fiscalData.email || '',
+    telefone:           fiscalData.telefone || '',
+    habilita_nfe:       true,
   };
 
   try {
-    const resp = await axios.post(`${baseUrl}/v2/empresas`, payload, {
+    const resp = await axios.post('https://api.focusnfe.com.br/v2/empresas', payload, {
       auth: { username: masterToken, password: '' },
     });
 
-    const tenantToken = resp.data?.token || resp.data?.api_token;
-    if (!tenantToken) {
+    // Focus NFe retorna tokens separados para cada ambiente
+    const tokenHomologacao = resp.data?.token_homologacao;
+    const tokenProducao    = resp.data?.token_producao;
+
+    // Salva o token do ambiente escolhido como token ativo
+    const tokenAtivo = env === 'producao' ? tokenProducao : tokenHomologacao;
+    if (!tokenAtivo) {
       throw new functions.https.HttpsError('internal', 'Focus NFe não retornou token do tenant.');
     }
 
     await admin.firestore().doc(`empresas/${companyId}`).update({
-      'company.focusNfeToken':  tenantToken,
-      'company.focusNfeEnv':    env || 'homologacao',
-      'company.fiscalStatus':   'CONFIGURADO',
-      'company.fiscalData':     fiscalData,
+      'company.focusNfeToken':           tokenAtivo,
+      'company.focusNfeTokenHomologacao': tokenHomologacao,
+      'company.focusNfeTokenProducao':    tokenProducao,
+      'company.focusNfeEnv':             env || 'homologacao',
+      'company.fiscalStatus':            'CONFIGURADO',
+      'company.fiscalData':              fiscalData,
     });
 
     return { success: true };
