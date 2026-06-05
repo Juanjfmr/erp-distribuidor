@@ -90,6 +90,34 @@ Resolver antes de iniciar o Bloco 2:
 
 ---
 
+## Registro de Testes de Usuário
+
+### Teste 1 — 05/06/2026 (Claude Code)
+
+**Escopo:** Fluxo completo cadastro → fatura interna (conta nova em produção)
+
+**Resultado:** ✅ Aprovado após correção de bug crítico
+
+**Bug encontrado e corrigido:**
+- **Multi-tenant contamination** — conta nova carregava dados reais de outro tenant via localStorage
+- Causa: `loadFromFirebase` salvava state do localStorage no Firestore do novo tenant quando documento não existia
+- Correção: reset para `defaultState` + tag `stoqio_uid` no localStorage + remoção do `config/global`
+- Commits: `249ae18`, `dd341b0`, `277bc74`, `035ce82`
+
+**Fluxo testado:**
+1. ✅ Cadastro (nome, email, senha, segmento) → dashboard vazio
+2. ✅ Produto criado (nome, preço custo/venda, estoque)
+3. ✅ Cliente criado (razão social, CNPJ, cidade)
+4. ✅ Nota Fiscal emitida (NF-0001, R$ 80,00, À Vista, status: pendente)
+
+**Observação de produto:**
+> O fluxo testado foi direto para Nota Fiscal. O fluxo correto para o usuário real deve ser:
+> **Pedido** (rascunho → confirmado) → **Faturar** (gera NF vinculada ao pedido) → **Receber pagamento**
+>
+> Testar este fluxo completo via Pedidos na próxima rodada de testes.
+
+---
+
 ## Critério de Lançamento
 
 O produto está pronto para cobrar clientes quando:
