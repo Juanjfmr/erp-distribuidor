@@ -137,9 +137,9 @@ O produto está pronto para cobrar clientes quando:
 - [ ] Plano B concluído — NF-e emitindo em produção
 - [ ] Plano C concluído — importação CSV funcionando
 - [x] Plano D concluído — contador com acesso somente leitura
-- [ ] Plano E2 concluído — webhook MP ativando tenants
-- [ ] Plano E1 concluído — admin.html operacional
-- [ ] Plano E3 concluído — checkout MP funcionando end-to-end
+- [ ] Plano E2 deployado — webhook MP ativando tenants (requer Firebase Blaze + token MP)
+- [ ] Plano E1 deployado — admin.html operacional
+- [ ] Plano E3 deployado — checkout MP funcionando end-to-end
 - [ ] 3 clientes piloto testando em produção por 2 semanas
 - [ ] Landing page no ar
 - [ ] Base de conhecimento com 10+ artigos
@@ -180,9 +180,9 @@ Atualizar após cada plano concluído:
 | Plano B | ✅ Concluído | 2026-06-01 | Focus NFe integrado; configurar token em Configurações → Dados Fiscais |
 | Plano C | ✅ Concluído | 2026-05-31 | Wizard onboarding 4 etapas + csvImport.js (Bling, Conta Azul, genérico) |
 | Plano D | ✅ Concluído | 2026-06-05 | Role contador: convite por email, isExternal, acesso somente leitura (dashboard/relatorios/notas/caixa/contas) |
-| Plano E2 | ⏳ Pendente | — | Aguarda Firebase Blaze + token MP |
-| Plano E1 | ⏳ Pendente | — | — |
-| Plano E3 | ⏳ Pendente | — | — |
+| Plano E2 | ✅ Código completo | 2026-06-05 | mpWebhook, checkOverdue, payAffiliate — aguarda deploy (Firebase Blaze + token MP) |
+| Plano E1 | ✅ Código completo | 2026-06-05 | admin.html operacional — aguarda deploy |
+| Plano E3 | ✅ Código completo | 2026-06-05 | createSubscription + assinarPlano() + tela de bloqueio — aguarda deploy |
 | Plano F1 | ⏳ Pendente | — | Aguarda Anthropic API Key |
 | Plano F2 | ⏳ Pendente | — | — |
 | Plano F3 | ⏳ Pendente | — | — |
