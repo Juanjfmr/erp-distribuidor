@@ -401,6 +401,22 @@ async function emitirNFdePedido(nfNum, pedidoId){
   const clientCosts=costs.filter(c=>c.clientPays).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
   const date=el("nf-date").value||today();
   if(!state.nfItems.length){ _doneSave(); alert("Adicione pelo menos um item."); return; }
+  const _pedClientId = parseInt(el("nf-client")?.value)||0;
+  if(_pedClientId && canEmitNFe(state.company)){
+    const _pedClient = getClient(_pedClientId);
+    if(_pedClient){
+      const _missingPed=[];
+      if(!(_pedClient.street||'').trim()) _missingPed.push('Logradouro');
+      if(!(_pedClient.city||'').trim()) _missingPed.push('Cidade');
+      if(!(_pedClient.uf||'').trim()) _missingPed.push('UF');
+      if(!(_pedClient.cep||'').trim()) _missingPed.push('CEP');
+      if(_missingPed.length){
+        _doneSave();
+        alert(`Cadastro do cliente incompleto para NF-e.\n\nFaltam: ${_missingPed.join(', ')}.\n\nEdite o cliente antes de faturar.`);
+        return;
+      }
+    }
+  }
   const stockWarningsPed=state.nfItems.filter(it=>{const p=getProd(it.productId);return p&&p.stock<it.qty;});
   if(stockWarningsPed.length){
     const msg=stockWarningsPed.map(it=>{const p=getProd(it.productId);return `• ${p.name}: estoque ${p.stock}, pedido ${it.qty}`;}).join("\n");

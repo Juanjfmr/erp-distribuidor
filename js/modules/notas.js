@@ -292,6 +292,22 @@ function nfRenderItems(){
 async function emitirNF(num){
   if(!_guardSave()) return;
   if(!el("nf-client").value){ _doneSave(); return alert("Selecione o cliente ou escolha 'Consumidor Final'."); }
+  const _rawClientIdVal = el("nf-client").value;
+  const _isAvulsoVal = _rawClientIdVal === 'avulso';
+  if(!_isAvulsoVal && canEmitNFe(state.company)){
+    const _clientVal = getClient(parseInt(_rawClientIdVal));
+    if(_clientVal){
+      const missing=[];
+      if(!(_clientVal.street||'').trim()) missing.push('Logradouro');
+      if(!(_clientVal.city||'').trim()) missing.push('Cidade');
+      if(!(_clientVal.uf||'').trim()) missing.push('UF');
+      if(!(_clientVal.cep||'').trim()) missing.push('CEP');
+      if(missing.length){
+        _doneSave();
+        return alert(`O cadastro deste cliente está incompleto para emissão de NF-e.\n\nCampos ausentes: ${missing.join(', ')}.\n\nAcesse Clientes → editar cliente e preencha antes de emitir.`);
+      }
+    }
+  }
   if(!state.nfItems.length){ _doneSave(); return alert("Adicione pelo menos um item."); }
   const sub=nfGetSubtotal();
   const disc=parseFloat(el("nf-disc").value)||0;
