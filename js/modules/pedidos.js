@@ -318,7 +318,7 @@ async function faturarPedido(id){
   state.nfCosts=[];
   const clients=state.clients||[];
   const nextNum=await getNextNFNumber();
-  const obsVal=(o.notes||"").replace(/"/g,"&quot;");
+  const obsVal=(o.notes||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   openModal(`<div class="modal-title">Emitir NF — Pedido ${o.number}</div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Número NF</label>
