@@ -245,7 +245,7 @@ function nfAddItemFromList(prodId){
   const disc=parseFloat(el(`nf-row-disc-${prodId}`)?.value)||0;
   const existing=state.nfItems.find(it=>it.productId===prodId);
   if(existing){ existing.qty+=qty; }
-  else{ state.nfItems.push({productId:p.id,qty,price:p.salePrice,itemDiscount:disc}); }
+  else{ state.nfItems.push({productId:p.id,name:p.name,unit:p.unit||'UN',qty,price:p.salePrice,itemDiscount:disc}); }
   const qEl=el(`nf-row-qty-${prodId}`); if(qEl) qEl.value="1";
   const dEl=el(`nf-row-disc-${prodId}`); if(dEl) dEl.value="0";
   const btn=el(`nf-row-btn-${prodId}`);
@@ -401,7 +401,7 @@ function viewNF(id){
     </div>
     <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Desc.</th><th>Total</th></tr></thead><tbody>
       ${n.items.map(it=>{const p=getProd(it.productId);const d=it.itemDiscount||0;const t=it.qty*it.price*(1-d/100);return`<tr>
-        <td>${p?p.name:"—"} <span class="text-muted mono" style="font-size:11px">${p?p.unit:""}</span></td>
+        <td>${it.name||p?.name||"—"} <span class="text-muted mono" style="font-size:11px">${it.unit||p?.unit||""}</span></td>
         <td class="mono">${it.qty}</td><td class="mono">${fmt(it.price)}</td>
         <td class="mono">${d>0?d+"%":"—"}</td>
         <td class="mono">${fmt(t)}</td>
