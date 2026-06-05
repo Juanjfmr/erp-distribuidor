@@ -73,11 +73,15 @@ async function saveToFirebase() {
     }
 
     await flush();
+    const _uid = window._companyId || window._currentUser?.uid || '';
+    if (_uid) localStorage.setItem('stoqio_uid', _uid);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     showSyncStatus('✓ Salvo');
   } catch(e) {
     console.error('Firebase save error:', e);
     showSyncStatus('⚠ Salvo local', true);
+    const _uid = window._companyId || window._currentUser?.uid || '';
+    if (_uid) localStorage.setItem('stoqio_uid', _uid);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 }
@@ -87,6 +91,14 @@ async function loadFromFirebase() {
     const db = window._db;
     const { doc, getDoc, collection, getDocs } = window._fbFns;
     const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
+
+    // Descarta cache do localStorage se pertencer a outro tenant
+    const cachedUid = localStorage.getItem('stoqio_uid');
+    if (uid && uid !== 'default' && cachedUid && cachedUid !== uid) {
+      localStorage.removeItem(STORAGE_KEY);
+      state = JSON.parse(JSON.stringify(defaultState));
+    }
+    if (uid && uid !== 'default') localStorage.setItem('stoqio_uid', uid);
 
     // Carregar config global do operador (token Focus NFe centralizado)
     try {
@@ -132,7 +144,8 @@ async function loadFromFirebase() {
         if (data.company) state.company = data.company;
       }
     } else {
-      // Documento não existe ainda — inicializa com o state do localStorage (já carregado)
+      // Documento não existe — novo tenant, inicializa vazio (nunca usar localStorage de outro tenant)
+      state = JSON.parse(JSON.stringify(defaultState));
       window._lastSaved = {};
       await saveToFirebase();
     }
