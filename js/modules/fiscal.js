@@ -193,3 +193,83 @@ async function wizardSaveStep2() {
   await saveFiscalStep({ fiscalData });
   wizardGoTo(3);
 }
+
+function renderWizardStep3() {
+  const exp = state.company.certExpiresAt;
+  if (exp) {
+    const expDate = new Date(exp).toLocaleDateString('pt-BR');
+    return `
+      <h3 class="modal-title">Certificado A1</h3>
+      <div class="alert" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:12px;border-radius:8px">
+        ✅ Certificado carregado. Validade: <strong>${expDate}</strong>
+      </div>
+      <div class="row" style="gap:8px;margin-top:16px">
+        <button class="btn btn-secondary" onclick="wizardGoTo(4)">Próximo →</button>
+        <button class="btn btn-secondary" onclick="wizardReplaceCert()">Substituir certificado</button>
+      </div>`;
+  }
+
+  return `
+    <h3 class="modal-title">Certificado A1</h3>
+    <p>Faça upload do seu certificado digital A1 (.pfx ou .p12).</p>
+    <div class="form-grid">
+      <label>Arquivo do certificado *
+        <input id="wiz-cert-file" type="file" accept=".pfx,.p12" class="form-input">
+      </label>
+      <label>Senha do certificado *
+        <input id="wiz-cert-senha" type="password" class="form-input" placeholder="Senha do certificado">
+      </label>
+    </div>
+    <div id="wiz-cert-error" style="color:var(--red,#ef4444);margin-top:8px"></div>
+    <div class="row" style="gap:8px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="wizardGoTo(2)">← Voltar</button>
+      <button id="wiz-cert-btn" class="btn" onclick="wizardUploadCert()">Enviar certificado</button>
+    </div>`;
+}
+
+function wizardReplaceCert() {
+  state.company.certExpiresAt = null;
+  wizardGoTo(3);
+}
+
+async function wizardUploadCert() {
+  const fileInput = document.getElementById('wiz-cert-file');
+  const senha     = document.getElementById('wiz-cert-senha')?.value;
+  const errEl     = document.getElementById('wiz-cert-error');
+  const btn       = document.getElementById('wiz-cert-btn');
+
+  if (!fileInput?.files[0]) { if (errEl) errEl.textContent = 'Selecione o arquivo .pfx.'; return; }
+  if (!senha)               { if (errEl) errEl.textContent = 'Informe a senha do certificado.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  if (errEl) errEl.textContent = '';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const bytes     = new Uint8Array(e.target.result);
+    const binary    = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+    const pfxBase64 = btoa(binary);
+    const cnpj      = state.company.fiscalData?.cnpj || '';
+
+    try {
+      const uploadCertFn = firebase.functions().httpsCallable('uploadCertificate');
+      const result       = await uploadCertFn({ companyId: state.companyId, pfxBase64, senha, cnpj });
+
+      if (result.data.success) {
+        state.company.certExpiresAt = result.data.expiresAt;
+        state.company.fiscalStatus  = 'SEM_CERTIFICADO';
+        wizardGoTo(4);
+      } else {
+        if (errEl) errEl.textContent = result.data.error || 'Erro ao processar certificado.';
+        btn.disabled    = false;
+        btn.textContent = 'Enviar certificado';
+      }
+    } catch (err) {
+      if (errEl) errEl.textContent = 'Erro de conexão: ' + err.message;
+      btn.disabled    = false;
+      btn.textContent = 'Enviar certificado';
+    }
+  };
+  reader.readAsArrayBuffer(fileInput.files[0]);
+}
