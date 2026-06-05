@@ -49,42 +49,17 @@ onAuthStateChanged(auth, async (user) => {
         const profile = snap.data();
         window._userProfile = profile;
         window._userRole = profile.role || 'visualizador';
-        // Todos os usuários (admin ou não): config/global é a fonte da verdade
-        const globalSnap = await getDoc(doc(db, 'config', 'global'));
-        if (globalSnap.exists()) {
-          // config/global já existe — todos usam esse companyId, sem exceção
-          const globalCompanyId = globalSnap.data().companyId;
-          // Admin com companyId próprio tem precedência — evita apontar para empresa errada
-          const companyId = (profile.role === 'admin' && profile.companyId) ? profile.companyId : globalCompanyId;
-          window._companyId = companyId;
-        } else {
-          // config/global ainda não existe — apenas o admin cria (outros aguardam)
-          if (profile.role === 'admin') {
-            const companyId = profile.companyId || user.uid;
-            await setDoc(doc(db, 'config', 'global'), { companyId });
-            if (!profile.companyId) {
-              await setDoc(doc(db, 'users', user.uid), {...profile, companyId});
-              window._userProfile = {...profile, companyId};
-            }
-            window._companyId = companyId;
-          } else {
-            // Não-admin sem global config — fallback temporário ao próprio uid
-            window._companyId = profile.companyId || user.uid;
-          }
-        }
+        // companyId vem sempre do perfil do usuário — isolamento total por tenant
+        // Admins: companyId = uid (gravado em doSignup)
+        // Não-admins convidados: companyId = companyId do admin que os convidou (gravado em usuarios.js)
+        window._companyId = profile.companyId || user.uid;
       } else {
-        // Nenhum perfil: race condition no cadastro (onAuthStateChanged disparou antes do setDoc em doSignup)
+        // Race condition no cadastro (onAuthStateChanged disparou antes do setDoc em doSignup)
         // ou primeiro usuário criado direto no Firebase Console.
-        // NUNCA sobrescrever config/global se já existe — cada empresa tem seu próprio companyId.
         const companyId = user.uid;
         const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
         const profile = { name: user.displayName || user.email, email: user.email, role: 'admin', active: true, createdAt: new Date().toISOString(), companyId };
         await setDoc(doc(db, 'users', user.uid), profile);
-        // Só cria config/global se ainda não existe (evita sobrescrever outro tenant)
-        const existingGlobal = await getDoc(doc(db, 'config', 'global'));
-        if (!existingGlobal.exists()) {
-          await setDoc(doc(db, 'config', 'global'), { companyId });
-        }
         await setDoc(doc(db, 'empresas', companyId), { plan: 'trial', trialEndsAt, active: true }, { merge: true });
         window._userProfile = profile;
         window._userRole = 'admin';
