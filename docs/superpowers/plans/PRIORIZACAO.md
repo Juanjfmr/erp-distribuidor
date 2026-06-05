@@ -113,8 +113,19 @@ Resolver antes de iniciar o Bloco 2:
 **Observação de produto:**
 > O fluxo testado foi direto para Nota Fiscal. O fluxo correto para o usuário real deve ser:
 > **Pedido** (rascunho → confirmado) → **Faturar** (gera NF vinculada ao pedido) → **Receber pagamento**
->
-> Testar este fluxo completo via Pedidos na próxima rodada de testes.
+
+### Teste 2 — ⏳ Pendente (executar após Bloco 1 concluído)
+
+**Escopo:** Fluxo completo via Pedidos
+
+**Passos a validar:**
+1. Cadastro de nova conta limpa
+2. Cadastrar produto e cliente fictícios
+3. Criar pedido → status rascunho
+4. Confirmar pedido → status confirmado
+5. Faturar pedido → NF gerada vinculada ao pedido
+6. Registrar recebimento → status pago
+7. Verificar impacto no dashboard (KPIs, fluxo de caixa)
 
 ---
 
