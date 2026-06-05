@@ -361,10 +361,10 @@ async function emitirNF(num){
       showSyncStatus('Emitindo NF-e na SEFAZ… aguarde (pode levar até 30s).');
       const resultado = await emitirNFe(nf, state.company, state.products, state.clients);
       if(!resultado.success){
-        // Reverter estoque e recebíveis antes de abortar
         nf.items.forEach(it=>{ const p=state.products.find(x=>x.id===it.productId); if(p) p.stock+=it.qty; });
         state.stockMovements=state.stockMovements.filter(m=>m.reference!==num);
         state.receivables=state.receivables.filter(r=>r.invoiceId!==nf.id);
+        state.transactions=state.transactions.filter(t=>!t.description?.endsWith(`— ${num}`));
         _doneSave();
         return alert('Erro ao emitir NF-e:\n' + resultado.error);
       }
