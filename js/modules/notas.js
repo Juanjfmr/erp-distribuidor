@@ -291,7 +291,12 @@ function nfRenderItems(){
 }
 async function emitirNF(num){
   if(!_guardSave()) return;
-  if(!el("nf-client").value){ _doneSave(); return alert("Selecione o cliente ou escolha 'Consumidor Final'."); }
+  if(!el("nf-client").value){
+    _doneSave();
+    const typed = (el("nf-client-search")?.value||'').trim();
+    if(typed) return alert(`O cliente "${typed}" não foi selecionado.\n\nClique no nome na lista de sugestões, ou use "+ Consumidor Final" para emitir sem cadastro.`);
+    return alert("Selecione o cliente ou clique em '+ Consumidor Final'.");
+  }
   const _rawClientIdVal = el("nf-client").value;
   const _isAvulsoVal = _rawClientIdVal === 'avulso';
   if(!_isAvulsoVal && canEmitNFe(state.company)){
