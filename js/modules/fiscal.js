@@ -61,9 +61,49 @@ function renderFiscalWizardHTML(step) {
     </div>`;
 }
 
-// Placeholder para dashboard fiscal (implementado na Task 14)
 function renderFiscalDashboardHTML() {
-  return '<p>Carregando painel fiscal…</p>';
+  const s      = state.company.fiscalStatus || 'NAO_CONFIGURADO';
+  const env    = state.company.focusNfeEnv  || 'homologacao';
+  const exp    = state.company.certExpiresAt;
+  const certAlertData = state.company.certAlert;
+  const expStr = exp ? new Date(exp).toLocaleDateString('pt-BR') : '—';
+
+  const statusColors = {
+    PRODUCAO_ATIVA:         'bg-green',
+    CONFIGURADO_TESTADO:    'bg-green',
+    CONFIGURADO:            'bg-blue',
+    CONFIGURADO_NAO_TESTADO:'bg-amber',
+    SEM_CERTIFICADO:        'bg-amber',
+    ERRO_REGISTRO:          'bg-red',
+    BLOQUEADO_CPF:          'bg-gray',
+    NAO_CONFIGURADO:        'bg-gray',
+  };
+
+  const certAlertHtml = certAlertData ? `
+    <div class="alert" style="background:${certAlertData.tipo==='expirado'?'rgba(239,68,68,.1)':'rgba(245,158,11,.1)'};border:1px solid ${certAlertData.tipo==='expirado'?'rgba(239,68,68,.3)':'rgba(245,158,11,.3)'};padding:12px;border-radius:8px;margin-bottom:12px">
+      ${certAlertData.tipo === 'expirado'
+        ? `⚠️ Certificado expirado em ${new Date(certAlertData.desde).toLocaleDateString('pt-BR')}. Faça upload de um novo.`
+        : `⚠️ Certificado expira em ${certAlertData.diasRestantes} dias (${new Date(certAlertData.expiraEm).toLocaleDateString('pt-BR')}).`}
+    </div>` : '';
+
+  return `
+    <div>
+      <h3 class="modal-title">Módulo Fiscal</h3>
+      ${certAlertHtml}
+      <div class="form-grid" style="margin-bottom:16px">
+        <div>Status: <span class="badge ${statusColors[s] || 'bg-gray'}">${s.replace(/_/g, ' ')}</span></div>
+        <div>Ambiente: <strong>${env === 'producao' ? '🔴 Produção' : '🟡 Homologação'}</strong></div>
+        <div>Certificado válido até: <strong>${expStr}</strong></div>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        ${exp ? `<button class="btn btn-secondary" onclick="wizardGoTo(3)">Trocar certificado</button>` : ''}
+        ${env === 'homologacao' && s !== 'NAO_CONFIGURADO' ? `
+          <button class="btn btn-secondary" onclick="if(confirm('Ativar produção? NFs emitidas terão validade fiscal real.')) wizardSetEnv('producao')">Ativar produção</button>
+          <button class="btn btn-secondary" onclick="wizardGoTo(6)">Re-testar emissão</button>
+        ` : ''}
+        ${s === 'ERRO_REGISTRO' ? `<button class="btn" onclick="wizardGoTo(5)">Tentar registro novamente</button>` : ''}
+      </div>
+    </div>`;
 }
 
 function renderWizardStep1() {
