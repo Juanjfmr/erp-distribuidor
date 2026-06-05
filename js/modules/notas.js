@@ -323,6 +323,10 @@ async function emitirNF(num){
   const clientCosts=costs.filter(c=>c.clientPays).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
   const total=parseFloat((sub*(1-disc/100)+freight+clientCosts).toFixed(2));
   const date=el("nf-date").value;
+  if(date > today()){
+    _doneSave();
+    return alert("A data de emissão não pode ser futura. Corrija o campo Data de Emissão.");
+  }
   const rawClientId=el("nf-client").value;
   const isAvulso=rawClientId==='avulso';
   const clientId=isAvulso?null:parseInt(rawClientId);

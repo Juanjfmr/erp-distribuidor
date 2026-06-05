@@ -400,6 +400,11 @@ async function emitirNFdePedido(nfNum, pedidoId){
   const costs=[...(state.nfCosts||[])].filter(c=>c.description||c.value>0);
   const clientCosts=costs.filter(c=>c.clientPays).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
   const date=el("nf-date").value||today();
+  if(date > today()){
+    _doneSave();
+    alert("A data de emissão não pode ser futura.");
+    return;
+  }
   if(!state.nfItems.length){ _doneSave(); alert("Adicione pelo menos um item."); return; }
   const _pedClientId = parseInt(el("nf-client")?.value)||0;
   if(_pedClientId && canEmitNFe(state.company)){
