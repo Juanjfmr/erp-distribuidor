@@ -53,7 +53,7 @@ function filterNotas(){
       <td class="mono text-amber">${n.number}</td>
       <td>${fmtDate(n.date)}</td>
       <td class="text-white fw-bold">${getNFClientName(n)}</td>
-      <td class="mono fw-bold">${fmt(n.total)}${n.discount>0?`<span class="text-muted" style="font-size:11px;margin-left:4px">-${n.discount}%</span>`:""}</td>
+      <td class="mono fw-bold">${fmt(n.total)}${n.discount>0?`<span class="text-muted" style="font-size:11px;margin-left:4px" title="Desconto de ${n.discount}% = ${fmt(n.subtotal*n.discount/100)}">-${n.discount}%</span>`:""}</td>
       <td><span class="badge bg-blue" style="font-size:10px">${n.paymentTerms}</span></td>
       <td><span class="badge ${statusColor}">${n.status==="emitida"?"pendente":n.status}</span></td>
       <td><div class="row">
@@ -431,7 +431,7 @@ function viewNF(id){
     </tbody></table>
     <div class="totals-box" style="margin-top:14px">
       <div class="row-between" style="margin-bottom:4px"><span class="text-muted">Subtotal</span><span class="mono">${fmt(n.subtotal)}</span></div>
-      ${n.discount>0?`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">Desconto (${n.discount}%)</span><span class="mono text-red">− ${fmt(n.subtotal*n.discount/100)}</span></div>`:""}
+      ${n.discount>0?`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">Desconto (${n.discount}%)</span><span class="mono text-red">− ${fmt(n.subtotal*n.discount/100)} <span style="font-size:11px;opacity:.6">(${n.discount}%)</span></span></div>`:""}
       ${n.freight>0?`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">Frete PDF</span><span class="mono">+ ${fmt(n.freight)}</span></div>`:""}
       ${(n.costs||[]).filter(c=>c.clientPays).map(c=>`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">${c.description||"Custo"} <span style="font-size:10px">(cliente)</span></span><span class="mono">+ ${fmt(c.value||0)}</span></div>`).join("")}
       <div class="row-between" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
