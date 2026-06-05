@@ -185,10 +185,16 @@ async function assinarPlano(plan) {
 }
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-function renderConfig(){
+function renderConfig(activeTab){
+  activeTab = activeTab || 'geral';
   const co=state.company||{};
   el("content").innerHTML=`
     <div class="section-title" style="margin-bottom:20px">Configurações da Empresa</div>
+    <div class="tabs" style="margin-bottom:0">
+      <div class="tab ${activeTab==='geral'?'active':''}" data-tab="geral" onclick="renderConfig('geral')">Geral</div>
+      <div class="tab ${activeTab==='fiscal'?'active':''}" data-tab="fiscal" onclick="renderConfig('fiscal')">Fiscal</div>
+    </div>
+    <div id="config-tab-geral" style="display:${activeTab==='geral'?'block':'none'}">
     <div class="card" style="max-width:580px">
       <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="cfg-name" class="form-input" value="${co.name||""}"></div>
       <div class="form-grid-2">
@@ -272,7 +278,17 @@ function renderConfig(){
         <button class="btn" style="font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="state.onboarding={complete:false,step:0,checklist:{empresa:false,dados:false,pedido:false,nfe:false,recebimento:false,certificado:false}};saveState();navigate('onboarding')">↩ Reiniciar onboarding</button>
       </div>
       <!-- /TEMPORÁRIO -->
+    </div>
+    </div>
+    <div id="config-tab-fiscal" style="display:${activeTab==='fiscal'?'block':'none'}">
+      <div class="card" style="max-width:680px;margin-top:0">
+        <div id="fiscal-tab-content">
+        </div>
+      </div>
     </div>`;
+  if (activeTab === 'fiscal') {
+    renderFiscalTab();
+  }
 }
 function saveConfig(){
   const prev = state.company||{};
