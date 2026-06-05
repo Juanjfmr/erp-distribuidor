@@ -37,9 +37,15 @@ service cloud.firestore {
       return collection == 'pdv_sessions';
     }
 
+    // Helper: superadmin da instância
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.email == 'juanjfmr1@gmail.com';
+    }
+
     // ── Dados da empresa (single-document por tenant) ──────────────────────
     match /empresas/{companyId} {
-      allow read, write: if belongsToCompany(companyId);
+      allow read: if belongsToCompany(companyId) || isSuperAdmin();
+      allow write: if belongsToCompany(companyId);
     }
 
     // ── Configuração global da instância ──────────────────────────────────
@@ -53,7 +59,9 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
 
+      // uid != request.auth.uid evita get() circular quando usuário lê o próprio doc
       allow read: if request.auth != null
+        && uid != request.auth.uid
         && userProfile().companyId == resource.data.companyId
         && userProfile().role == 'admin';
 

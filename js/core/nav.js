@@ -33,7 +33,7 @@ function render(){
 var ROLE_NAV = {
   admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta','onboarding'],
   vendedor:     ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','minha-conta','onboarding'],
-  visualizador: ['dashboard','relatorios','minha-conta','onboarding'],
+  visualizador: ['dashboard','relatorios','minha-conta'],
   contador:     ['dashboard','relatorios','notas','caixa','contas','minha-conta'],
 };
 var ROLE_LABELS = { admin:'Admin', vendedor:'Vendedor', visualizador:'Visualizador', contador:'Contador' };

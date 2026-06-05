@@ -145,7 +145,12 @@ tr:hover td{background:var(--surface2);}
     <input id="adm-email" class="form-input" type="email" placeholder="seu@email.com">
     <label class="form-label">Senha</label>
     <input id="adm-pass" class="form-input" type="password" placeholder="••••••••">
-    <button class="btn-login" onclick="adminLogin()">Entrar</button>
+    <button class="btn-login" onclick="adminLoginGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#111;border:1px solid #ccc;margin-bottom:10px;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/></svg>
+      Entrar com Google
+    </button>
+    <div style="text-align:center;color:var(--text2);font-size:11px;font-family:var(--mono);margin-bottom:10px;">ou</div>
+    <button class="btn-login" onclick="adminLogin()">Entrar com e-mail</button>
     <div id="adm-err" class="err"></div>
   </div>
 </div>
@@ -213,7 +218,7 @@ const ADMIN_EMAIL = 'juanjfmr1@gmail.com';
 const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net';
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, orderBy, query, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -273,6 +278,22 @@ window.adminLogin = async function() {
   } catch(e) {
     errEl.style.display = 'block';
     errEl.textContent = 'E-mail ou senha incorretos.';
+  }
+};
+
+window.adminLoginGoogle = async function() {
+  const errEl = el('adm-err');
+  errEl.style.display = 'none';
+  try {
+    const result = await signInWithPopup(auth, new GoogleAuthProvider());
+    if (result.user.email !== ADMIN_EMAIL) {
+      await signOut(auth);
+      errEl.style.display = 'block';
+      errEl.textContent = 'Acesso não autorizado.';
+    }
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Erro ao autenticar com Google.';
   }
 };
 

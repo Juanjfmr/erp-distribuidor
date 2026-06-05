@@ -97,7 +97,7 @@ O produto está pronto para cobrar clientes quando:
 - [ ] Plano A concluído — `checkPlan()` bloqueando corretamente
 - [ ] Plano B concluído — NF-e emitindo em produção
 - [ ] Plano C concluído — importação CSV funcionando
-- [ ] Plano D concluído — contador com acesso somente leitura
+- [x] Plano D concluído — contador com acesso somente leitura
 - [ ] Plano E2 concluído — webhook MP ativando tenants
 - [ ] Plano E1 concluído — admin.html operacional
 - [ ] Plano E3 concluído — checkout MP funcionando end-to-end
@@ -140,7 +140,7 @@ Atualizar após cada plano concluído:
 | Plano A | ✅ Concluído | 2026-05-31 | checkPlan, trial 30d, strings renomeadas |
 | Plano B | ✅ Concluído | 2026-06-01 | Focus NFe integrado; configurar token em Configurações → Dados Fiscais |
 | Plano C | ✅ Concluído | 2026-05-31 | Wizard onboarding 4 etapas + csvImport.js (Bling, Conta Azul, genérico) |
-| Plano D | ⏳ Pendente | — | — |
+| Plano D | ✅ Concluído | 2026-06-05 | Role contador: convite por email, isExternal, acesso somente leitura (dashboard/relatorios/notas/caixa/contas) |
 | Plano E2 | ⏳ Pendente | — | Aguarda Firebase Blaze + token MP |
 | Plano E1 | ⏳ Pendente | — | — |
 | Plano E3 | ⏳ Pendente | — | — |

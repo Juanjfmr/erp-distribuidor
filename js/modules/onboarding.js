@@ -2,6 +2,8 @@
 // Wizard de onboarding pós-cadastro — 4 etapas
 
 function shouldShowOnboarding() {
+  const role = window._userRole || 'visualizador';
+  if (role === 'visualizador' || role === 'contador') return false;
   return state.onboarding && !state.onboarding.complete;
 }
 
