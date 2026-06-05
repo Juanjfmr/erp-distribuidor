@@ -3,8 +3,8 @@
 // Numeração atômica é feita por getNextNFNumber() em firebase.js.
 
 async function emitirNFe(invoice, company, products, clients) {
-  const token = window._focusToken;
-  const env = window._focusEnv || 'homologacao';
+  const token = company?.focusNfeToken || window._focusToken;
+  const env = company?.focusNfeEnv || window._focusEnv || 'homologacao';
 
   if (!token) {
     return { success: false, error: 'Token Focus NFe não configurado. Acesse Configurações para inserir.' };
@@ -102,8 +102,8 @@ async function emitirNFe(invoice, company, products, clients) {
 }
 
 async function cancelarNFe(focusRef, justificativa, company) {
-  const token = window._focusToken;
-  const env = window._focusEnv || 'homologacao';
+  const token = company?.focusNfeToken || window._focusToken;
+  const env = company?.focusNfeEnv || window._focusEnv || 'homologacao';
 
   if (!token) return { success: false, error: 'Token Focus NFe não configurado.' };
   if ((justificativa || '').length < 15) return { success: false, error: 'Justificativa deve ter no mínimo 15 caracteres.' };
@@ -131,8 +131,8 @@ async function cancelarNFe(focusRef, justificativa, company) {
 }
 
 async function consultarNFe(focusRef, company) {
-  const token = window._focusToken;
-  const env = window._focusEnv || 'homologacao';
+  const token = company?.focusNfeToken || window._focusToken;
+  const env = company?.focusNfeEnv || window._focusEnv || 'homologacao';
   const baseUrl = env === 'producao'
     ? 'https://api.focusnfe.com.br'
     : 'https://homologacao.focusnfe.com.br';
