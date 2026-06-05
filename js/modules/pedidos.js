@@ -103,8 +103,13 @@ function openPedidoModal(prefill){
         <input id="ped-freight" type="number" min="0" step="0.01" class="form-input" value="0" oninput="pedidoRenderItems()">
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Observações</label>
-      <textarea id="ped-notes" class="form-input" rows="2" style="resize:vertical"></textarea>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Prazo de Entrega</label>
+        <input id="ped-delivery" type="date" class="form-input">
+      </div>
+      <div class="form-group"><label class="form-label">Observações</label>
+        <textarea id="ped-notes" class="form-input" rows="2" style="resize:vertical"></textarea>
+      </div>
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DO PEDIDO</div>
@@ -214,6 +219,7 @@ async function salvarPedido(num, confirmar=false){
     clientId, paymentTerms:el("ped-terms").value,
     paymentMethod:el("ped-method")?.value||'',
     discount:disc, freight, notes:el("ped-notes").value,
+    deliveryDate:el("ped-delivery")?.value||'',
     items:[...state.pedidoItems],
     subtotal:sub, total,
     status:confirmar?"confirmado":"rascunho"
@@ -281,8 +287,13 @@ function editarPedidoModal(id){
         <input id="ped-freight" type="number" min="0" step="0.01" class="form-input" value="${o.freight||0}" oninput="pedidoRenderItems()">
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Observações</label>
-      <textarea id="ped-notes" class="form-input" rows="2" style="resize:vertical">${(o.notes||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Prazo de Entrega</label>
+        <input id="ped-delivery" type="date" class="form-input" value="${o.deliveryDate||''}">
+      </div>
+      <div class="form-group"><label class="form-label">Observações</label>
+        <textarea id="ped-notes" class="form-input" rows="2" style="resize:vertical">${(o.notes||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+      </div>
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DO PEDIDO</div>
@@ -321,6 +332,7 @@ async function salvarEditPedido(id,confirmar=false){
   o.paymentMethod=el("ped-method")?.value||'';
   o.discount=disc; o.freight=freight;
   o.notes=el("ped-notes").value;
+  o.deliveryDate=el("ped-delivery")?.value||'';
   o.items=[...state.pedidoItems];
   o.subtotal=sub; o.total=total;
   if(confirmar) o.status="confirmado";
@@ -493,6 +505,7 @@ function viewPedido(id){
       <div><span class="text-muted">Status:</span> ${statusLabel[o.status]||o.status}</div>
       <div><span class="text-muted">Cliente:</span> ${c?c.name:"—"}</div>
       <div><span class="text-muted">Pagamento:</span> ${o.paymentTerms||"—"}</div>
+      ${o.deliveryDate?`<div><span class="text-muted">Prazo de Entrega:</span> ${fmtDate(o.deliveryDate)}</div>`:''}
     </div>
     <table class="table" style="margin-bottom:12px">
       <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desc%</th><th>Total</th></tr></thead>
