@@ -158,7 +158,7 @@ function scanAddItem(modalType, code){
   }
   if(modalType==='nf'){
     const existing=state.nfItems.find(it=>it.productId===p.id);
-    if(existing){ existing.qty+=1; } else { state.nfItems.push({productId:p.id,qty:1,price:p.salePrice,itemDiscount:0}); }
+    if(existing){ existing.qty+=1; } else { state.nfItems.push({productId:p.id,name:p.name,unit:p.unit||'UN',qty:1,price:p.salePrice,itemDiscount:0}); }
     nfRenderItems();
   } else if(modalType==='ped'){
     const existing=state.pedidoItems.find(it=>it.productId===p.id);
