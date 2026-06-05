@@ -262,6 +262,12 @@ function nfAddItemFromList(prodId){
 }
 function nfAddItem(){ /* legacy — kept for compatibility */ }
 function nfRemItem(i){ state.nfItems.splice(i,1); nfRenderItems(); }
+function nfEditItemQty(i, val){
+  const qty=parseInt(val)||1;
+  if(qty<1) return;
+  if(state.nfItems[i]) state.nfItems[i].qty=qty;
+  nfRenderItems();
+}
 function nfGetSubtotal(){ return state.nfItems.reduce((s,it)=>s+(it.qty*it.price*(1-(it.itemDiscount||0)/100)),0); }
 function nfUpdateTotals(){ nfRenderItems(); }
 function nfRenderItems(){
@@ -273,14 +279,16 @@ function nfRenderItems(){
   if(el("nf-items-list")) el("nf-items-list").innerHTML=state.nfItems.length?`
     <div class="items-box">
       ${state.nfItems.map((it,i)=>{const p=getProd(it.productId);const lineTotal=it.qty*it.price*(1-(it.itemDiscount||0)/100);return`
-        <div class="item-row">
-          <div>
-            <span style="font-size:13px;color:var(--text2)">${p?p.name:"?"}</span>
-            ${it.itemDiscount>0?`<span class="badge bg-amber" style="margin-left:6px">${it.itemDiscount}% desc</span>`:""}
+        <div class="item-row" style="align-items:center">
+          <div style="flex:1;min-width:0">
+            <span style="font-size:13px;color:var(--text2)">${it.name||p?.name||"?"}</span>
           </div>
-          <div class="row">
-            <span class="mono text-muted">${it.qty} × ${fmt(it.price)}</span>
-            <span class="mono text-white" style="min-width:90px;text-align:right">${fmt(lineTotal)}</span>
+          <div class="row" style="gap:6px;align-items:center">
+            <input type="number" min="1" step="1" value="${it.qty}" style="width:60px;padding:3px 6px" class="form-input"
+              oninput="nfEditItemQty(${i},this.value)" title="Quantidade">
+            <span class="mono text-muted" style="font-size:12px">× ${fmt(it.price)}</span>
+            ${it.itemDiscount>0?`<span class="badge bg-amber" style="font-size:10px">${it.itemDiscount}%</span>`:""}
+            <span class="mono text-white" style="min-width:80px;text-align:right">${fmt(lineTotal)}</span>
             <button class="btn-sm btn-red" onclick="nfRemItem(${i})">✕</button>
           </div>
         </div>`}).join("")}
