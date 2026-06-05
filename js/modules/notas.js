@@ -251,6 +251,11 @@ function nfAddItemFromList(prodId){
   if(!p) return;
   const qty=parseInt(el(`nf-row-qty-${prodId}`)?.value)||1;
   const disc=parseFloat(el(`nf-row-disc-${prodId}`)?.value)||0;
+  const currentInCart=(state.nfItems.find(it=>it.productId===prodId)?.qty||0);
+  const totalQty=currentInCart+qty;
+  if(p.stock>=0 && totalQty>p.stock){
+    if(!confirm(`Atenção: estoque disponível de "${p.name}" é ${p.stock} ${p.unit||'un'}, mas você está adicionando ${totalQty} no total. Continuar mesmo assim?`)) return;
+  }
   const existing=state.nfItems.find(it=>it.productId===prodId);
   if(existing){ existing.qty+=qty; }
   else{ state.nfItems.push({productId:p.id,name:p.name,unit:p.unit||'UN',qty,price:p.salePrice,itemDiscount:disc}); }
