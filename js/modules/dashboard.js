@@ -1,5 +1,19 @@
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 window._dashPeriod = window._dashPeriod || 'mes';
+
+function renderFiscalBanner() {
+  if (!needsBanner(state.company)) return '';
+  const cfg = getBannerConfig(state.company);
+  const isReadOnly = state.user?.role === 'visualizador' || state.user?.role === 'contador';
+  const cta = isReadOnly ? '' :
+    `<button class="btn-sm" onclick="${cfg.ctaAction}" style="margin-left:12px;flex-shrink:0">${cfg.ctaLabel}</button>`;
+  return `<div style="background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.3);padding:8px 16px;display:flex;align-items:center;gap:8px;font-size:13px">
+    <span>${cfg.icone}</span>
+    <span style="flex:1">${cfg.texto}</span>
+    ${cta}
+  </div>`;
+}
+
 function renderDashboard(){
   const period = window._dashPeriod || 'mes';
   const now = new Date();
@@ -65,7 +79,7 @@ function renderDashboard(){
     `;
   })();
 
-  el("content").innerHTML=`
+  el("content").innerHTML = renderFiscalBanner() + `
     ${onboardingHtml}
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button class="btn-sm${period==='hoje'?' btn-amber':''}" onclick="window._dashPeriod='hoje';renderDashboard()">Hoje</button>
