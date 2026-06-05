@@ -214,7 +214,7 @@ const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctio
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, updateDoc, orderBy, query, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, orderBy, query, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
@@ -228,6 +228,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig, 'admin');
 const auth = getAuth(app);
 const db = getFirestore(app);
+window._db = db;
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 const el = id => document.getElementById(id);
@@ -346,6 +347,20 @@ async function loadDashboard() {
     .slice(0,5);
 
   el('page-dashboard').innerHTML = `
+    <section style="background:var(--surface2,#1a1a24);border-radius:12px;padding:20px;margin:0 0 24px;border:1px solid var(--border,#2a2a38)">
+      <h3 style="margin:0 0 8px;color:var(--text,#f0f0f8)">Focus NFe — Token Master</h3>
+      <p style="color:var(--text2,#8888aa);font-size:13px;margin:0 0 16px">
+        Token master usado pelo Stoqio para registrar empresas de novos tenants na Focus NFe. Este token nunca é exposto aos assinantes.
+      </p>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <label style="flex:1">
+          <span style="font-size:12px;color:var(--text2,#8888aa)">Token Master Focus NFe</span>
+          <input id="admin-focus-master" type="password" style="width:100%;margin-top:4px;padding:8px 12px;background:var(--surface,#111118);border:1px solid var(--border,#2a2a38);border-radius:6px;color:var(--text,#f0f0f8);font-size:14px" placeholder="Cole o token master da sua conta Focus NFe">
+        </label>
+        <button onclick="saveAdminFocusMasterToken()" style="padding:8px 16px;background:var(--amber,#f59e0b);color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">Salvar</button>
+      </div>
+      <div id="admin-focus-status" style="margin-top:8px;font-size:13px"></div>
+    </section>
     <div class="kpi-grid">
       <div class="kpi green"><div class="kpi-label">MRR</div><div class="kpi-value">${fmt(mrr)}</div><div class="kpi-sub">${ativos.length} assinantes ativos</div></div>
       <div class="kpi"><div class="kpi-label">Tenants Ativos</div><div class="kpi-value">${ativos.length}</div><div class="kpi-sub">${_tenants.length} total</div></div>
@@ -574,6 +589,19 @@ async function loadPagamentos() {
     </div>
   `;
 }
+
+	// ── FOCUS NFe TOKEN ────────────────────────────────────────────────────────
+	window.saveAdminFocusMasterToken = async function() {
+	  const token  = document.getElementById('admin-focus-master')?.value.trim();
+	  const status = document.getElementById('admin-focus-status');
+	  if (!token) { if (status) { status.textContent = 'Token não pode ser vazio.'; status.style.color = 'var(--red,#ef4444)'; } return; }
+	  try {
+	    await setDoc(doc(db, 'config', 'focusNfe'), { masterToken: token }, { merge: true });
+	    if (status) { status.textContent = '✅ Token master salvo com sucesso.'; status.style.color = 'var(--green,#22c55e)'; }
+	  } catch (err) {
+	    if (status) { status.textContent = 'Erro: ' + err.message; status.style.color = 'var(--red,#ef4444)'; }
+	  }
+	};
 </script>
 </body>
 </html>
