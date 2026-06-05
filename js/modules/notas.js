@@ -196,7 +196,7 @@ function nfRemCost(i){
 }
 function nfCostChange(i,field,val){
   if(!state.nfCosts[i]) return;
-  if(field==="value") state.nfCosts[i].value=parseFloat(val)||0;
+  if(field==="value") state.nfCosts[i].value=Math.max(0, parseFloat(val)||0);
   else if(field==="description") state.nfCosts[i].description=val;
   else if(field==="clientPays") state.nfCosts[i].clientPays=val;
   nfRenderItems();
