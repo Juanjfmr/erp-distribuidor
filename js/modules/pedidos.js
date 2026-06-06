@@ -242,6 +242,21 @@ async function salvarPedido(num, confirmar=false){
       }
     }
   }
+  // Valida feriados/fins de semana na data do pedido e entrega
+  const rawDate = el("ped-date").value || today();
+  const rawDelivery = el("ped-delivery")?.value;
+  const dateOk = await proximoDiaUtil(rawDate);
+  if(dateOk !== rawDate && !confirm(`A data do pedido ${fmtDate(rawDate)} é feriado ou fim de semana.\n\nMover para ${fmtDate(dateOk)}?`)){
+    _doneSave(); return;
+  }
+  if(rawDelivery){
+    const delOk = await proximoDiaUtil(rawDelivery);
+    if(delOk !== rawDelivery && !confirm(`O prazo de entrega ${fmtDate(rawDelivery)} é feriado ou fim de semana.\n\nMover para ${fmtDate(delOk)}?`)){
+      _doneSave(); return;
+    }
+    el("ped-delivery").value = delOk;
+  }
+  el("ped-date").value = dateOk;
   const order={
     id:Date.now(), number:num,
     date:el("ped-date").value||today(),
@@ -368,6 +383,21 @@ async function salvarEditPedido(id,confirmar=false){
       }
     }
   }
+  // Valida feriados/fins de semana na data do pedido e entrega
+  const rawDateE = el("ped-date").value || today();
+  const rawDeliveryE = el("ped-delivery")?.value;
+  const dateOkE = await proximoDiaUtil(rawDateE);
+  if(dateOkE !== rawDateE && !confirm(`A data do pedido ${fmtDate(rawDateE)} é feriado ou fim de semana.\n\nMover para ${fmtDate(dateOkE)}?`)){
+    _doneSave(); return;
+  }
+  if(rawDeliveryE){
+    const delOkE = await proximoDiaUtil(rawDeliveryE);
+    if(delOkE !== rawDeliveryE && !confirm(`O prazo de entrega ${fmtDate(rawDeliveryE)} é feriado ou fim de semana.\n\nMover para ${fmtDate(delOkE)}?`)){
+      _doneSave(); return;
+    }
+    el("ped-delivery").value = delOkE;
+  }
+  el("ped-date").value = dateOkE;
   o.date=el("ped-date").value||today();
   o.clientId=clientId;
   if(isAvulso) o.clientName="Consumidor Final";
