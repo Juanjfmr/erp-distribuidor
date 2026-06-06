@@ -168,6 +168,20 @@ Visualização do plano atual, uso de recursos, upgrade/downgrade, programa de a
 ### Onboarding / Importação
 Wizard de 4 etapas para novos usuários. Importação CSV de produtos e clientes (formatos: Bling, Conta Azul, genérico). Mapeamento automático de colunas.
 
+## Cobrança Digital — Integração Asaas
+
+O Stoqio integra com a plataforma Asaas para geração de cobranças digitais.
+
+Funcionalidade: em Contas → A Receber, cada parcela aberta exibe botões 📱 (Pix) e 🏦 (Boleto) quando a chave Asaas estiver configurada. Ao clicar, o sistema cria o cliente no Asaas automaticamente pelo CNPJ e gera a cobrança, exibindo o QR Code Pix ou a linha digitável do boleto.
+
+Configuração pelo usuário:
+1. Criar conta gratuita em asaas.com
+2. Acessar Configurações → Integrações → Chave de API e copiar a chave
+3. Colar em Config → Financeiro → campo "Chave API Asaas" → Salvar
+4. Usar ambiente Sandbox para testes, Produção para cobranças reais
+
+Requisito: o cliente deve ter CPF/CNPJ cadastrado. Taxa por transação cobrada pelo Asaas diretamente (não pelo Stoqio).
+
 ## REGRAS DE RESPOSTA
 
 - Responda SEMPRE em português do Brasil, com gramática impecável.

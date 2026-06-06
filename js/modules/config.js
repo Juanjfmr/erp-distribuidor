@@ -1,5 +1,6 @@
 // ─── MINHA CONTA ─────────────────────────────────────────────────────────────
 function renderMinhaConta(){
+  window._billingCycle = window._billingCycle || 'monthly';
   const plan = window._plan || 'trial';
   const trialEndsAt = window._trialEndsAt;
   const co = state.company || {};
@@ -50,7 +51,13 @@ function renderMinhaConta(){
         </div>
         <div class="divider"></div>
         <div style="margin-bottom:16px">
-          <div class="section-title" style="font-size:14px;margin-bottom:12px">Escolha seu plano</div>
+          <div class="row-between" style="margin-bottom:12px">
+            <div class="section-title" style="font-size:14px">Escolha seu plano</div>
+            <div style="display:flex;background:var(--bg);border-radius:8px;padding:3px;border:1px solid var(--border)">
+              <div onclick="window._billingCycle='monthly';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='monthly'?'background:var(--primary);color:#fff':'color:var(--muted)'}">Mensal</div>
+              <div onclick="window._billingCycle='annual';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='annual'?'background:var(--green);color:#fff':'color:var(--muted)'}">Anual <span style="font-size:10px;opacity:.8">-20%</span></div>
+            </div>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
             ${[
               {key:'basico', name:'Essencial', price:'R$ 97/mês', priceAnnual:'R$ 931/ano', features:['1 usuário','500 produtos','150 NFs/mês','Pedidos + NF + Caixa']},
@@ -62,8 +69,8 @@ function renderMinhaConta(){
               <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
                 ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
                 <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
-                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:2px">${p.price}</div>
-                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">ou ${p.priceAnnual} (-20%)</div>
+                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:2px">${window._billingCycle==='annual'?p.priceAnnual:p.price}</div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${window._billingCycle==='annual'?'Cobrança única anual (-20%)':'ou '+p.priceAnnual+' (-20%)'}</div>
                 ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">✓ ${f}</div>`).join('')}
                 ${isCurrent ? `
                   <div style="text-align:center;padding:9px;background:rgba(34,197,94,.1);border-radius:6px;color:var(--green);font-weight:700;margin-top:12px;font-size:13px">
@@ -156,7 +163,8 @@ async function assinarPlano(plan) {
     const functions = getFunctions(window._app, 'us-central1');
     const createSub = httpsCallable(functions, 'createSubscription');
 
-    const result = await createSub({ plan, backUrl: window.location.href });
+    const billingCycle = window._billingCycle || 'monthly';
+    const result = await createSub({ plan, billingCycle, backUrl: window.location.href });
     const data = result.data;
 
     if (!data.success) {
@@ -219,6 +227,7 @@ function renderConfig(activeTab){
     <div class="tabs" style="margin-bottom:0">
       <div class="tab ${activeTab==='geral'?'active':''}" data-tab="geral" onclick="renderConfig('geral')">Geral</div>
       <div class="tab ${activeTab==='fiscal'?'active':''}" data-tab="fiscal" onclick="renderConfig('fiscal')">Fiscal</div>
+      <div class="tab ${activeTab==='financeiro'?'active':''}" data-tab="financeiro" onclick="renderConfig('financeiro')">Financeiro</div>
     </div>
     <div id="config-tab-geral" style="display:${activeTab==='geral'?'block':'none'}">
     <div class="card" style="max-width:580px">
@@ -311,9 +320,35 @@ function renderConfig(activeTab){
         <div id="fiscal-tab-content">
         </div>
       </div>
+    </div>
+    <div id="config-tab-financeiro" style="display:${activeTab==='financeiro'?'block':'none'}">
+      <div class="card" style="max-width:680px;margin-top:0">
+        <h3 style="margin-bottom:16px">Cobrança Pix e Boleto — Asaas</h3>
+        <div id="asaas-instrucoes" style="margin-bottom:20px"></div>
+        <div class="form-group">
+          <label class="form-label">Chave API Asaas</label>
+          <input id="cfg-asaas-key" class="form-input" type="password"
+            placeholder="$aact_..." value="${co.asaasKey||''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ambiente</label>
+          <select id="cfg-asaas-env" class="form-input">
+            <option value="sandbox"  ${(co.asaasEnv||'sandbox')==='sandbox' ?'selected':''}>Sandbox (testes)</option>
+            <option value="producao" ${co.asaasEnv==='producao'?'selected':''}>Produção</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary" onclick="salvarAsaas()">Salvar</button>
+          <button class="btn btn-secondary" onclick="testarAsaas()">Testar conexão</button>
+        </div>
+        <div id="cfg-asaas-status" style="font-size:12px;margin-top:10px;display:none"></div>
+      </div>
     </div>`;
   if (activeTab === 'fiscal') {
     renderFiscalTab();
+  }
+  if (activeTab === 'financeiro') {
+    _renderAsaasInstrucoes();
   }
 }
 function saveConfig(){
@@ -398,4 +433,63 @@ async function resetData(){
   await saveToFirebase();
   render();
   alert("Dados resetados.");
+}
+
+function _renderAsaasInstrucoes() {
+  const box = el('asaas-instrucoes');
+  if (!box) return;
+  const temChave = !!(state?.company?.asaasKey);
+  box.innerHTML = temChave
+    ? `<div style="background:var(--surface-2);border-left:3px solid var(--green);padding:12px;border-radius:6px;font-size:13px">
+        ✅ <strong>Asaas configurado.</strong> Os botões <em>📱 Pix</em> e <em>🏦 Boleto</em> aparecem automaticamente em <strong>Contas → A Receber</strong>.
+        <br><small style="color:var(--muted)">Para trocar a chave, cole a nova abaixo e salve. Use Produção apenas quando pronto para cobranças reais.</small>
+        <br><a href="https://www.asaas.com/config/index?tab=integracao" target="_blank" style="font-size:12px">Gerenciar chave no Asaas →</a>
+      </div>`
+    : `<div style="background:var(--surface-2);border-left:3px solid var(--amber,#f59e0b);padding:12px;border-radius:6px;font-size:13px">
+        <strong>Como configurar em 3 passos:</strong>
+        <ol style="margin:8px 0 0 16px;line-height:2.2">
+          <li>Crie uma conta gratuita em <a href="https://asaas.com" target="_blank">asaas.com</a></li>
+          <li>Acesse <strong>Configurações → Integrações → Chave de API</strong> e copie a chave</li>
+          <li>Cole no campo abaixo e clique em <strong>Salvar</strong></li>
+        </ol>
+        <p style="margin-top:8px;color:var(--muted);font-size:12px">
+          💡 Comece em <strong>Sandbox</strong> — pagamentos são simulados sem custo. Mude para Produção quando quiser cobrar de verdade.
+        </p>
+      </div>`;
+}
+
+function salvarAsaas() {
+  const key = (el('cfg-asaas-key')?.value || '').trim();
+  const env = el('cfg-asaas-env')?.value || 'sandbox';
+  if (!key) {
+    const st = el('cfg-asaas-status');
+    st.style.display = 'block'; st.style.color = 'var(--red)';
+    st.textContent = 'Informe a chave API.'; return;
+  }
+  state.company = { ...(state.company||{}), asaasKey: key, asaasEnv: env };
+  saveState();
+  _renderAsaasInstrucoes();
+  const st = el('cfg-asaas-status');
+  st.style.display = 'block'; st.style.color = 'var(--green)';
+  st.textContent = '✓ Chave salva com sucesso.';
+  showSyncStatus('✓ Asaas configurado');
+}
+
+async function testarAsaas() {
+  const st = el('cfg-asaas-status');
+  st.style.display = 'block'; st.textContent = '⏳ Testando...'; st.style.color = 'var(--muted)';
+  try {
+    const key = (el('cfg-asaas-key')?.value || state?.company?.asaasKey || '').trim();
+    const env = el('cfg-asaas-env')?.value || state?.company?.asaasEnv || 'sandbox';
+    if (!key) throw new Error('Informe a chave primeiro.');
+    const r = await fetch(`${ASAAS_BASE[env]}/myAccount`, { headers: { 'access_token': key } });
+    const d = await r.json();
+    if (d?.name) {
+      st.style.color = 'var(--green)';
+      st.textContent = `✓ Conectado: ${d.name}`;
+    } else { throw new Error('Resposta inesperada'); }
+  } catch(e) {
+    st.style.color = 'var(--red)';
+    st.textContent = `✗ ${e.message}`;
+  }
 }

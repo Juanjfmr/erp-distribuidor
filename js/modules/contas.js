@@ -58,7 +58,7 @@ function renderContas(){
           <td class="mono ${overdue&&r.status==='aberta'?'text-red':'text-muted'}">${overdue&&r.status==='aberta'?daysLate+'d':'—'}</td>
           <td class="mono fw-bold">${fmt(r.amount)}</td>
           <td><span class="badge ${r.status==="paga"?"bg-green":r.status==="cancelada"?"bg-gray":overdue?"bg-red":"bg-amber"}">${r.status==="aberta"&&overdue?"vencida":r.status}</span></td>
-          <td>${r.status==="aberta"?`<button class="btn-sm btn-green" onclick="payReceivable(${r.id})">Receber</button>`:`<span class="text-muted mono" style="font-size:11px">${r.paidAt?fmtDate(r.paidAt):""}</span>`}</td>
+          <td>${r.status==="aberta"?`<button class="btn-sm btn-green" onclick="payReceivable(${r.id})">Receber</button>${state?.company?.asaasKey?`<button class="btn-sm" style="background:#6366f1;color:#fff;margin-left:3px" onclick="cobrar(${r.id},'PIX')">📱</button><button class="btn-sm" style="background:#0ea5e9;color:#fff;margin-left:2px" onclick="cobrar(${r.id},'BOLETO')">🏦</button>`:''}`:`<span class="text-muted mono" style="font-size:11px">${r.paidAt?fmtDate(r.paidAt):""}</span>`}</td>
         </tr>`}).join("")||`<tr><td colspan="8" class="empty">Nenhum lançamento.</td></tr>`}
       </tbody></table>`;
   } else {
@@ -201,4 +201,48 @@ async function confirmarPayPayable(id){
   if(compra) compra.status=allPaid?"paga":anyPaid?"parcial":"a pagar";
   try{ await saveToFirebase(); closeModal(); renderContas(); showSyncStatus(`✓ Pagamento de ${fmt(parseFloat(amt.toFixed(2)))} registrado`); }
   finally{ _doneSave(); }
+}
+
+async function cobrar(id, tipo) {
+  if (!state?.company?.asaasKey) return alert('Configure a chave Asaas em Configurações → Financeiro.');
+  const r = state.receivables.find(x => x.id === id);
+  if (!r) return;
+  const client = getClient(r.clientId);
+  if (!client?.cnpj) return alert('Cliente sem CPF/CNPJ cadastrado. Adicione o documento em Cadastros → Clientes.');
+
+  const btns = document.querySelectorAll(`[onclick*="cobrar(${id},'${tipo}')"]`);
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const result = await asaasGerarCobranca(r, client, tipo);
+
+    const pixHtml = `
+      ${result.pixImage ? `<div style="text-align:center;margin:12px 0"><img src="data:image/png;base64,${result.pixImage}" style="width:180px;height:180px;border-radius:8px"></div>` : ''}
+      <div class="form-group">
+        <label class="form-label">Pix Copia e Cola</label>
+        <textarea class="form-input" rows="3" readonly onclick="this.select()" style="font-size:11px;font-family:monospace">${result.pixCopiaCola}</textarea>
+      </div>
+      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(result.pixCopiaCola)}).then(()=>showSyncStatus('✓ Copiado!'))">📋 Copiar chave Pix</button>`;
+
+    const boletoHtml = `
+      <div class="form-group">
+        <label class="form-label">Linha Digitável</label>
+        <textarea class="form-input" rows="2" readonly onclick="this.select()" style="font-size:11px;font-family:monospace">${result.linhaDigitavel||''}</textarea>
+      </div>
+      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(result.linhaDigitavel||'')}).then(()=>showSyncStatus('✓ Copiado!'))">📋 Copiar código</button>
+      ${result.boletoUrl ? `<a href="${result.boletoUrl}" target="_blank" class="btn btn-secondary" style="margin-left:6px">🖨 Imprimir boleto</a>` : ''}`;
+
+    showModal(`
+      <div class="modal-title">${tipo==='PIX'?'📱 Pix Gerado':'🏦 Boleto Gerado'}</div>
+      <p style="font-size:13px;color:var(--muted)">${client.name} — ${fmt(r.amount)} — venc. ${fmtDate(r.dueDate)}</p>
+      ${tipo==='PIX' ? pixHtml : boletoHtml}
+      <div class="modal-footer" style="margin-top:14px;gap:8px">
+        ${result.invoiceUrl ? `<a href="${result.invoiceUrl}" target="_blank" class="btn btn-secondary">🔗 Ver fatura online</a>` : ''}
+        <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+      </div>`);
+  } catch(e) {
+    alert(`Erro ao gerar cobrança: ${e.message}`);
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
 }
