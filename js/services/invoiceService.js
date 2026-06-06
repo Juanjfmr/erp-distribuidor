@@ -13,21 +13,41 @@ async function emitirNFe(invoice, company, products, clients) {
   const client = invoice.clientId ? clients.find(c => c.id === invoice.clientId) : null;
   const isAvulso = !invoice.clientId;
 
+  const ufDestino = (!isAvulso && client) ? (client.uf || company.uf) : company.uf;
+  const interestadual = company.uf && ufDestino && company.uf !== ufDestino;
+  const regime = parseInt(company.regime) || 1;
+
   const itens = (invoice.items || []).map((item, idx) => {
     const prod = products.find(p => p.id === item.productId);
     if (!prod) return null;
+
+    // ─── Define CFOP e CST ──────────────────────────────────────────────────
+    let cfop, cst;
+    if (prod.st) {
+      // ICMS-ST: imposto já recolhido pelo fabricante
+      cst = '60';
+      cfop = interestadual ? '6401' : '5405';
+    } else {
+      // Normal
+      cst = (regime === 1 || regime === 2) ? '102' : '000';
+      const cfopBase = prod.cfop || '5102';
+      cfop = interestadual && cfopBase.startsWith('5')
+        ? '6' + cfopBase.slice(1)   // 5102 → 6102, 5405 → 6405
+        : cfopBase;
+    }
+
     return {
       numero_item: idx + 1,
       codigo_produto: prod.code || String(prod.id),
       descricao: prod.name,
       codigo_ncm: (prod.ncm || '').replace(/\D/g, ''),
-      cfop: prod.cfop || '5102',
+      cfop: cfop,
       unidade_comercial: prod.unit || 'UN',
       quantidade_comercial: item.qty,
       valor_unitario_comercial: item.price,
       valor_bruto: parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)),
       origem_mercadoria: prod.origem || '0',
-      icms_situacao_tributaria: (company.regime === '1' || company.regime === '2') ? '102' : '000',
+      icms_situacao_tributaria: cst,
       pis_situacao_tributaria: '07',
       cofins_situacao_tributaria: '07',
     };

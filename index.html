@@ -284,6 +284,10 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .notif-action{font-size:11px;color:var(--primary-light);cursor:pointer;margin-top:4px;display:inline-block}
 .notif-action:hover{text-decoration:underline}
 .notif-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px}
+/* Tooltips */
+.tip{position:relative;display:inline-flex;align-items:center;cursor:help;color:var(--muted);font-size:13px;vertical-align:middle}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-size:11px;font-weight:400;white-space:normal;width:280px;text-align:left;line-height:1.4;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.tip:hover::after{opacity:1}
 .bar-wrap{margin-bottom:13px}
 .bar-info{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px}
 .bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}

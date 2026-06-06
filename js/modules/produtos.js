@@ -88,7 +88,7 @@ function openProdModal(id){
     </div>
     <div class="form-grid-3">
       <div class="form-group"><label class="form-label">EAN / Código de Barras</label><input id="f-ean" class="form-input" value="${p?p.ean||'':''}"></div>
-      <div class="form-group"><label class="form-label">NCM</label><input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}"></div>
+      <div class="form-group"><label class="form-label">NCM</label><input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}" oninput="updateSTTip()"></div>
       <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?p.cfop||'':''}"></div>
     </div>
     <div class="form-group"><label class="form-label">Origem da Mercadoria</label><select id="f-origem" class="form-input">
@@ -96,6 +96,18 @@ function openProdModal(id){
       <option value="1" ${p&&p.origem==='1'?'selected':''}>1 — Estrangeira (importação direta)</option>
       <option value="2" ${p&&p.origem==='2'?'selected':''}>2 — Estrangeira (adquirida no mercado interno)</option>
     </select></div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="f-st" style="width:auto;margin:0" onchange="updateSTTip()" ${p&&p.st?'checked':''}> 
+          ICMS-ST (Substituição Tributária)
+        </label>
+        <span id="st-tip" class="tip" data-tip="ICMS-ST: o imposto já foi recolhido pelo fabricante (Ambev, Coca-Cola, etc). A NF-e sairá com CST 60 e CFOP 5405. Ative para produtos como cervejas, refrigerantes e águas." style="margin-top:2px">ⓘ O que é?</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="visibility:hidden">placeholder</label>
+      </div>
+    </div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Estoque Atual</label><input id="f-stock" class="form-input" type="number" value="${p?p.stock:0}"></div>
       <div class="form-group"><label class="form-label">Estoque Mínimo</label><input id="f-min" class="form-input" type="number" value="${p?p.minStock:0}"></div>
@@ -145,10 +157,10 @@ function saveProd(id){
     if(newSale!==p.salePrice||newCost!==p.costPrice){
       ph.push({date:today(),salePrice:newSale,costPrice:newCost,note:el("f-note")?el("f-note").value||"Atualização":"Atualização"});
     }
-    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value}:x);
+    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked}:x);
   }else{
     savedId=uid();
-    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value});
+    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked});
   }
   saveState();
   showSyncStatus(id?"✓ Produto atualizado":"✓ Produto cadastrado");
@@ -196,4 +208,34 @@ function viewMovements(id){
     </tr>`).join(""):`<tr><td colspan="5" class="empty">Sem movimentações.</td></tr>`}
     </tbody></table>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>`);
+}
+
+// ─── Auto-detecção de ICMS-ST ────────────────────────────────────────────────
+// Bebidas (NCM 2201-2203) têm ST na maioria dos estados
+function updateSTTip() {
+  const ncm = (document.getElementById('f-ncm')?.value || '').replace(/\D/g, '');
+  const cb = document.getElementById('f-st');
+  const tip = document.getElementById('st-tip');
+  if (!cb || !tip) return;
+  
+  const isBeverage = /^220[123]/.test(ncm);
+  
+  if (isBeverage && !cb.checked) {
+    cb.checked = true;
+    tip.setAttribute('data-tip', '⚠️ Detectado: este NCM é de bebida — geralmente sujeito a ICMS-ST. O imposto já foi recolhido pelo fabricante. A NF-e sairá com CST 60 e CFOP 5405. Desmarque se sua operação for diferente.');
+    tip.innerHTML = '⚠️ ICMS-ST ativado automaticamente';
+    tip.style.color = 'var(--amber)';
+  } else if (!isBeverage && cb.checked) {
+    tip.setAttribute('data-tip', 'ICMS-ST ativado manualmente. A NF-e sairá com CST 60 e CFOP 5405.');
+    tip.innerHTML = 'ⓘ Ativado manualmente';
+    tip.style.color = 'var(--muted)';
+  } else if (!isBeverage) {
+    tip.setAttribute('data-tip', 'ICMS-ST: o imposto já foi recolhido pelo fabricante. A NF-e sairá com CST 60 e CFOP 5405. Ative para produtos como cervejas, refrigerantes e águas.');
+    tip.innerHTML = 'ⓘ O que é?';
+    tip.style.color = 'var(--muted)';
+  } else {
+    tip.setAttribute('data-tip', '✅ ICMS-ST ativo. A NF-e sairá com CST 60 e CFOP 5405. O fabricante já recolheu o imposto.');
+    tip.innerHTML = '✅ Ativo para bebidas';
+    tip.style.color = 'var(--green)';
+  }
 }
