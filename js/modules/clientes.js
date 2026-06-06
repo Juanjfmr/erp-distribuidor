@@ -63,7 +63,7 @@ function openClientModal(id){
     </div>
     <div class="form-grid-3">
       <div class="form-group"><label class="form-label">Inscrição Estadual</label><input id="fc-ie" class="form-input" placeholder="Isento ou número" value="${c?c.ie||'':''}"></div>
-      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}"></div>
+      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}" onblur="buscarCep('cli')"></div>
       <div class="form-group"><label class="form-label">UF</label><select id="fc-uf" class="form-input">${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(u=>`<option${c&&c.uf===u?' selected':''}>${u}</option>`).join('')}</select></div>
     </div>
     <div class="form-grid-2">

@@ -228,7 +228,7 @@ function renderConfig(activeTab){
       </div>
       <div class="form-group"><label class="form-label">Endereço</label><input id="cfg-addr" class="form-input" value="${co.address||""}"></div>
       <div class="form-grid-2">
-        <div class="form-group"><label class="form-label">CEP</label><input id="cfg-cep" class="form-input" placeholder="00000-000" maxlength="9" value="${co.cep||""}"></div>
+        <div class="form-group"><label class="form-label">CEP</label><input id="cfg-cep" class="form-input" placeholder="00000-000" maxlength="9" value="${co.cep||""}" onblur="buscarCep('cfg')"></div>
         <div class="form-group"><label class="form-label">UF</label><input id="cfg-uf" class="form-input" value="${co.uf||"MS"}"></div>
       </div>
       <div class="form-group"><label class="form-label">Cidade</label><input id="cfg-city" class="form-input" value="${co.city||""}"></div>

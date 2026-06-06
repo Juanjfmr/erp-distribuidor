@@ -344,3 +344,23 @@ function sortData(data, sortState, getters) {
 function thSortable(label, col, sortState, onClickFn) {
   return `<th onclick="${onClickFn}('${col}')" class="sort-th" style="cursor:pointer;user-select:none;white-space:nowrap">${label}${sortIcon(sortState, col)}</th>`;
 }
+
+// ─── CEP → Endereço via BrasilAPI ────────────────────────────────────────────
+async function buscarCep(prefix) {
+  const raw = (document.getElementById(`${prefix}-cep`)?.value || '').replace(/\D/g,'');
+  if (raw.length !== 8) return;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${raw}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    if (prefix === 'cli') {
+      set('fc-street', d.street); set('fc-district', d.neighborhood);
+      set('fc-city', d.city);     set('fc-uf', d.state);
+    } else if (prefix === 'cfg') {
+      set('cfg-addr', d.street);  set('cfg-city', d.city);
+      set('cfg-uf', d.state);
+    }
+  } catch(e) { /* silencioso */ }
+}
+window.buscarCep = buscarCep;
