@@ -482,14 +482,24 @@ function renderDRE(){
   });
   const despArr=Object.entries(despByCat).sort((a,b)=>b[1]-a[1]);
   const totalDesp=despArr.reduce((s,[,v])=>s+v,0);
-  // EBITDA = Lucro Bruto - Despesas Operacionais (antes de impostos)
+  // EBITDA
   const ebitda=lucroBruto-totalDesp;
   const margEbitda=receitaLiq>0?(ebitda/receitaLiq*100):0;
-  // Estimativa de impostos baseada no regime
-  const regime=state.company?.regime||'1';
-  const taxRates={'1':0.08,'2':0.10,'3':0.15};
-  const taxRate=taxRates[regime]||0;
-  const regimeNames={'1':'Simples Nacional','2':'Simples Nacional (excesso)','3':'Lucro Presumido'};
+  // Impostos — controlado pelo usuário
+  const regimes={
+    'simples':'Simples Nacional',
+    'simples-exc':'Simples Nac. (excesso)',
+    'presumido':'Lucro Presumido',
+    'real':'Lucro Real',
+    'iva':'IVA Dual (Reforma Trib.)',
+    'nenhum':'Sem estimativa',
+  };
+  const taxRates={'simples':0.08,'simples-exc':0.10,'presumido':0.15,'real':0.24,'iva':0.265,'nenhum':0};
+  if(state.dreRegime===undefined) state.dreRegime='simples';
+  if(state.dreEstimarImpostos===undefined) state.dreEstimarImpostos=true;
+  const regime=state.dreRegime;
+  const estimar=state.dreEstimarImpostos;
+  const taxRate=estimar?(taxRates[regime]||0):0;
   const impostosEstimados=receitaLiq*taxRate;
   const lucroLiq=ebitda-impostosEstimados;
   const margLiq=receitaLiq>0?(lucroLiq/receitaLiq*100):0;
@@ -513,13 +523,29 @@ function renderDRE(){
           <div class="tab" onclick="state.relTab='nf';state.relNfId=null;renderRelatorios()">Por NF</div>
           <div class="tab active">DRE</div>
         </div>
+      </div>
+    </div>
+    <!-- Controles de imposto -->
+    <div class="card" style="max-width:680px;margin-bottom:16px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--text2);white-space:nowrap">🧾 Regime para estimativa:</span>
+        <select class="form-input" style="width:200px" onchange="state.dreRegime=this.value;renderRelatorios()">
+          ${Object.entries(regimes).map(([k,v])=>`<option value="${k}" ${regime===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
+          <input type="checkbox" ${estimar?'checked':''} onchange="state.dreEstimarImpostos=this.checked;renderRelatorios()"
+            style="accent-color:var(--amber);width:16px;height:16px;cursor:pointer">
+          Estimar impostos
+        </label>
+        <span style="flex:1"></span>
         <span class="text-muted" style="font-size:13px">Período:</span>
-        <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
+        <select class="form-input" style="width:140px" onchange="state.relPeriod=this.value;renderRelatorios()">
           <option value="all" ${state.relPeriod==='all'?'selected':''}>Todo o período</option>
           ${sortedMonths.map(m=>{const[y,mo]=m.split('-');const ml=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?'selected':''}>${ml}/${y}</option>`;}).join('')}
         </select>
         <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="window.print()">🖨 Imprimir</button>
       </div>
+      ${taxRate>0?`<div style="margin-top:8px;font-size:12px;color:var(--blue);background:rgba(59,130,246,.06);padding:6px 10px;border-radius:6px">ℹ Estimativa de <b>${(taxRate*100).toFixed(1)}%</b> sobre receita líquida (${regimes[regime]}). Esta é uma <b>aproximação</b> — não substitui a apuração contábil oficial.</div>`:''}
     </div>
 
     <!-- KPIs de destaque -->
@@ -542,15 +568,14 @@ function renderDRE(){
       <div class="kpi" style="border-left:3px solid ${lucroLiq>=0?'var(--green)':'var(--red)'}">
         <div class="kpi-label">Lucro Líquido</div>
         <div class="kpi-value" style="font-size:20px;color:${lucroLiq>=0?'var(--green)':'var(--red)'}">${fmt(lucroLiq)}</div>
-        <div class="kpi-sub">Margem ${margLiq.toFixed(1)}%</div>
+        <div class="kpi-sub">Margem ${margLiq.toFixed(1)}%${taxRate===0?' · s/ impostos':''}</div>
       </div>
     </div>
 
     ${hasMissingCost?`<div class="alert-yellow" style="margin-bottom:12px">⚠ Há produtos sem preço de custo cadastrado — o CMV está subestimado. Cadastre o preço de custo nos produtos para um DRE preciso.</div>`:''}
-    ${taxRate>0?`<div class="alert-blue" style="margin-bottom:12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);color:var(--blue)">ℹ Impostos estimados em <b>${(taxRate*100).toFixed(0)}%</b> da receita líquida (regime: ${regimeNames[regime]||'Desconhecido'}). Esta é uma <b>estimativa</b> — não substitui a apuração contábil oficial.</div>`:''}
 
     <div class="card" style="max-width:680px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">DRE — ${label}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">DRE — ${label}${taxRate===0?' · sem impostos':''}</div>
       <table style="width:100%">
         <thead><tr>
           <th style="text-align:left">Descrição</th>
@@ -572,8 +597,8 @@ function renderDRE(){
           ${row('(=) EBITDA',ebitda,false,true,ebitda>=0?'var(--blue)':'var(--red)','<span style="font-size:10px;color:var(--muted);margin-left:6px">antes de impostos</span>')}
           <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem EBITDA: ${margEbitda.toFixed(1)}%</td></tr>
           <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
-          ${taxRate>0?row('(-) Impostos (estimativa ~'+(taxRate*100).toFixed(0)+'%)',-impostosEstimados,true,false,'var(--red)','<span style="font-size:10px;color:var(--blue);margin-left:6px">estimado</span>')+`<tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>`:''}
-          ${row('(=) LUCRO LÍQUIDO',lucroLiq,false,true,lucroLiq>=0?'var(--green)':'var(--red)',taxRate>0?'<span style="font-size:10px;color:var(--muted);margin-left:6px">após impostos estimados</span>':'')}
+          ${taxRate>0?row('(-) Impostos (estimativa ~'+(taxRate*100).toFixed(1)+'%)',-impostosEstimados,true,false,'var(--red)','<span style="font-size:10px;color:var(--blue);margin-left:6px">estimado</span>')+`<tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>`:''}
+          ${row('(=) LUCRO LÍQUIDO',lucroLiq,false,true,lucroLiq>=0?'var(--green)':'var(--red)',taxRate>0?'<span style="font-size:10px;color:var(--muted);margin-left:6px">após impostos estimados</span>':'<span style="font-size:10px;color:var(--muted);margin-left:6px">sem estimativa fiscal</span>')}
           <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem Líquida: ${margLiq.toFixed(1)}%</td></tr>
         </tbody>
       </table>
