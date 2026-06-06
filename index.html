@@ -91,6 +91,19 @@ onAuthStateChanged(auth, async (user) => {
     window._tenantStatus = companyData.status || 'trial';
     window._companyData = companyData;
 
+    // Sincronizar dados da empresa do Firestore no state (evita stale do localStorage)
+    try {
+      if (companyData.company || companyData.name) {
+        const raw = localStorage.getItem('stoqio_v1');
+        if (raw) {
+          const stored = JSON.parse(raw);
+          if (companyData.company) stored.company = Object.assign(stored.company || {}, companyData.company);
+          if (companyData.name) stored.company.name = companyData.name;
+          localStorage.setItem('stoqio_v1', JSON.stringify(stored));
+        }
+      }
+    } catch(_) {}
+
     if (plan !== 'owner' && (!isActive || trialExpired || isBlocked)) {
       document.getElementById('login-screen').style.setProperty('display','none','important');
       document.getElementById('app').style.setProperty('display','none','important');

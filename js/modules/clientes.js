@@ -38,7 +38,7 @@ function filterClientes(){
     const oldest=state.receivables.filter(r=>r.clientId===c.id&&r.status==="aberta"&&isOverdue(r.dueDate)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate))[0];
     const daysLate=oldest?Math.floor((new Date()-new Date(oldest.dueDate+'T00:00:00'))/86400000):0;
     return`<tr>
-      <td class="text-white fw-bold">${c.name}</td>
+      <td class="text-white fw-bold">${escapeHtml(c.name)}</td>
       <td class="mono">${c.cnpj||"—"}</td>
       <td>${c.city||"—"}</td><td>${c.phone||"—"}</td>
       <td class="mono">${fmt(c.creditLimit||0)}</td>

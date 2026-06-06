@@ -92,10 +92,11 @@ async function loadFromFirebase() {
     const { doc, getDoc, collection, getDocs } = window._fbFns;
     const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
 
-    // Descarta cache do localStorage se não estiver tagueado para este tenant.
-    // Cobre dois casos: nenhuma tag (stoqio_uid null) OU tag de tenant diferente.
+    // Descarta cache do localStorage apenas se for de OUTRO tenant.
+    // Não descarta se for primeiro acesso (stoqio_uid null) — o sync do
+    // onAuthStateChanged já gravou os dados corretos antes de chegar aqui.
     const cachedUid = localStorage.getItem('stoqio_uid');
-    if (uid && uid !== 'default' && cachedUid !== uid) {
+    if (uid && uid !== 'default' && cachedUid && cachedUid !== uid) {
       localStorage.removeItem(STORAGE_KEY);
       state = JSON.parse(JSON.stringify(defaultState));
     }

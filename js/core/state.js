@@ -3,7 +3,7 @@ const STORAGE_KEY = "stoqio_v1";
 
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
-  trial:        { users: 1, products: 50,    nfMonth: 10,   modules: ['basic'] },
+  trial:        { users: 1, products: 50,    nfMonth: 10,   modules: ['basic','pro'] },
   basico:       { users: 1, products: 500,   nfMonth: 150,  modules: ['basic'] },
   profissional: { users: 5, products: 3000,  nfMonth: 1000, modules: ['basic','pro'] },
   empresarial:  { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
@@ -225,6 +225,16 @@ function scanKeyHandler(e, modalType){
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+// ─── SEGURANÇA: Escapa HTML para prevenir XSS ─────────────────────────────────
+function escapeHtml(str) {
+  if (!str && str !== 0) return '';
+  const s = String(str);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 const fmt = v => (v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const fmtNum = v => (v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtDate = d => { if(!d) return "—"; const [y,m,dd]=d.split("-"); return `${dd}/${m}/${y}`; };

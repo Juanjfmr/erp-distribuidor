@@ -56,7 +56,7 @@ function filterProdutos(){
     return`<tr style="${inactive?"opacity:.5":""}">
       <td class="mono text-amber">${p.code}</td>
       <td class="mono">${p.ean||'—'}</td>
-      <td class="text-white fw-bold">${p.name}</td>
+      <td class="text-white fw-bold">${escapeHtml(p.name)}</td>
       <td>${p.category}</td>
       <td class="mono">${fmt(p.costPrice||0)}</td>
       <td class="mono">${fmt(p.salePrice)}</td>

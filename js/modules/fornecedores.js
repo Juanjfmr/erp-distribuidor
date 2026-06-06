@@ -32,7 +32,7 @@ function filterFornecedores(){
     const comps=state.purchases.filter(p=>p.supplierId===s.id);
     const vol=comps.reduce((a,c)=>a+c.total,0);
     return`<tr>
-      <td class="text-white fw-bold">${s.name}</td>
+      <td class="text-white fw-bold">${escapeHtml(s.name)}</td>
       <td class="mono">${s.cnpj||"—"}</td>
       <td>${s.city||"—"}</td>
       <td>${s.contact||"—"}</td>
