@@ -93,7 +93,37 @@ function renderDashboard(){
       <div class="kpi"><div class="kpi-label">A Receber (total aberto)</div><div class="kpi-value text-amber">${fmt(aReceber)}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==="aberta").length} parcelas em aberto</div></div>
       <div class="kpi"><div class="kpi-label">Vencidas</div><div class="kpi-value text-red">${fmt(overdueRec.reduce((s,r)=>s+r.amount,0))}</div><div class="kpi-sub">${overdueRec.length} parcela(s) vencida(s)</div></div>
     </div>
-    ${lowStock.length?`<div class="alert-warn">⚠ Estoque baixo: ${lowStock.map(p=>`${p.name} (${p.stock})`).join(", ")}</div>`:""}
+    ${lowStock.length ? `
+    <div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--amber)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:18px">📦</span>
+        <span style="font-weight:700;color:var(--text)">Estoque Baixo</span>
+        <span class="badge bg-amber" style="margin-left:auto">${lowStock.length} produto(s)</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+        ${lowStock.map(p => {
+          const pct = p.minStock ? Math.round(p.stock / p.minStock * 100) : 0;
+          const barColor = pct <= 30 ? 'var(--red)' : pct <= 60 ? 'var(--amber)' : 'var(--blue)';
+          return `
+          <div style="background:var(--bg3,#252540);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
+              <span style="font-size:12px;color:var(--text2)">${p.unit || 'UN'}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+                <div style="background:${barColor};height:100%;width:${Math.min(pct,100)}%;border-radius:4px;transition:width .4s"></div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:${barColor};min-width:40px;text-align:right">${pct}%</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+              <span>Atual: <b style="color:var(--text2)">${p.stock}</b></span>
+              <span>Mín: <b style="color:var(--text2)">${p.minStock || '—'}</b></span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:""}
     ${overdueRec.length?`<div class="alert-red">⚠ ${overdueRec.length} parcela(s) vencida(s) — <span style="cursor:pointer;text-decoration:underline" onclick="navigate('contas')">ver contas a receber</span></div>`:""}
     <div class="grid-2">
       <div class="card">

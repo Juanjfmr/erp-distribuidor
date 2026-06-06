@@ -28,11 +28,11 @@ const PRODUCTS = [
   { name: 'Cerveja Brahma 350ml', unit: 'UN', costPrice: 3.20, salePrice: 5.50, ean: '7891149100011', category: 'Bebidas', stock: 240 },
   { name: 'Cerveja Skol 350ml', unit: 'UN', costPrice: 3.10, salePrice: 5.30, ean: '7891149100022', category: 'Bebidas', stock: 350 },
   { name: 'Cerveja Antarctica 350ml', unit: 'UN', costPrice: 2.90, salePrice: 4.90, ean: '7891149100033', category: 'Bebidas', stock: 180 },
-  { name: 'Cerveja Heineken 330ml', unit: 'UN', costPrice: 5.80, salePrice: 9.90, ean: '7891149100044', category: 'Bebidas', stock: 120 },
+  { name: 'Cerveja Heineken 330ml', unit: 'UN', costPrice: 5.80, salePrice: 9.90, ean: '7891149100044', category: 'Bebidas', stock: 120, minStock: 150 },
   { name: 'Cerveja Budweiser 350ml', unit: 'UN', costPrice: 3.50, salePrice: 5.90, ean: '7891149100055', category: 'Bebidas', stock: 200 },
-  { name: 'Cerveja Original 600ml', unit: 'UN', costPrice: 6.50, salePrice: 10.90, ean: '7891149100066', category: 'Bebidas', stock: 90 },
+  { name: 'Cerveja Original 600ml', unit: 'UN', costPrice: 6.50, salePrice: 10.90, ean: '7891149100066', category: 'Bebidas', stock: 90, minStock: 120 },
   { name: 'Cerveja Brahma Duplo Malte 350ml', unit: 'UN', costPrice: 3.60, salePrice: 6.20, ean: '7891149100077', category: 'Bebidas', stock: 160 },
-  { name: 'Cerveja Corona 330ml', unit: 'UN', costPrice: 5.50, salePrice: 9.50, ean: '7891149100088', category: 'Bebidas', stock: 75 },
+  { name: 'Cerveja Corona 330ml', unit: 'UN', costPrice: 5.50, salePrice: 9.50, ean: '7891149100088', category: 'Bebidas', stock: 75, minStock: 100 },
   // Refrigerantes
   { name: 'Coca-Cola 2L', unit: 'UN', costPrice: 5.20, salePrice: 9.00, ean: '7891149100100', category: 'Bebidas', stock: 300 },
   { name: 'Coca-Cola Lata 350ml', unit: 'UN', costPrice: 2.60, salePrice: 4.50, ean: '7891149100111', category: 'Bebidas', stock: 480 },
@@ -46,12 +46,12 @@ const PRODUCTS = [
   { name: 'Água com Gás Crystal 500ml', unit: 'UN', costPrice: 1.00, salePrice: 2.50, ean: '7891149100222', category: 'Bebidas', stock: 250 },
   // Energéticos
   { name: 'Red Bull 250ml', unit: 'UN', costPrice: 7.00, salePrice: 13.00, ean: '7891149100300', category: 'Bebidas', stock: 100 },
-  { name: 'Monster Energy 473ml', unit: 'UN', costPrice: 6.00, salePrice: 11.00, ean: '7891149100311', category: 'Bebidas', stock: 80 },
+  { name: 'Monster Energy 473ml', unit: 'UN', costPrice: 6.00, salePrice: 11.00, ean: '7891149100311', category: 'Bebidas', stock: 80, minStock: 100 },
   // Sucos
   { name: 'Suco Del Valle Uva 1L', unit: 'UN', costPrice: 3.80, salePrice: 6.50, ean: '7891149100400', category: 'Bebidas', stock: 120 },
   { name: 'Suco Del Valle Laranja 1L', unit: 'UN', costPrice: 3.80, salePrice: 6.50, ean: '7891149100411', category: 'Bebidas', stock: 130 },
   // Alimentos
-  { name: 'Arroz Tio João 5kg', unit: 'UN', costPrice: 16.00, salePrice: 25.00, ean: '7891149100500', category: 'Alimentos', stock: 80 },
+  { name: 'Arroz Tio João 5kg', unit: 'UN', costPrice: 16.00, salePrice: 25.00, ean: '7891149100500', category: 'Alimentos', stock: 80, minStock: 100 },
   { name: 'Feijão Carioca Camil 1kg', unit: 'UN', costPrice: 5.50, salePrice: 9.00, ean: '7891149100511', category: 'Alimentos', stock: 120 },
   { name: 'Macarrão Adria Espaguete 500g', unit: 'UN', costPrice: 2.50, salePrice: 4.50, ean: '7891149100522', category: 'Alimentos', stock: 200 },
   { name: 'Óleo de Soja Liza 900ml', unit: 'UN', costPrice: 5.80, salePrice: 9.50, ean: '7891149100533', category: 'Alimentos', stock: 150 },
@@ -64,7 +64,7 @@ const PRODUCTS = [
   { name: 'Desinfetante Pinho Sol 500ml', unit: 'UN', costPrice: 3.50, salePrice: 6.00, ean: '7891149100633', category: 'Limpeza', stock: 120 },
   // Higiene
   { name: 'Papel Higiênico Neve 4un', unit: 'PCT', costPrice: 3.80, salePrice: 6.50, ean: '7891149100700', category: 'Higiene', stock: 200 },
-  { name: 'Shampoo Seda 325ml', unit: 'UN', costPrice: 7.00, salePrice: 12.00, ean: '7891149100711', category: 'Higiene', stock: 80 },
+  { name: 'Shampoo Seda 325ml', unit: 'UN', costPrice: 7.00, salePrice: 12.00, ean: '7891149100711', category: 'Higiene', stock: 80, minStock: 100 },
   { name: 'Creme Dental Colgate 90g', unit: 'UN', costPrice: 2.50, salePrice: 4.50, ean: '7891149100722', category: 'Higiene', stock: 150 },
   { name: 'Sabonete Lux 85g', unit: 'UN', costPrice: 1.30, salePrice: 2.50, ean: '7891149100733', category: 'Higiene', stock: 250 },
 ];
@@ -204,11 +204,33 @@ exports.seedData = functions.runWith({ secrets: [], timeoutSeconds: 540 }).https
 
   if (!companyId) throw new functions.https.HttpsError('invalid-argument', 'Informe companyId ou email.');
 
+  const shouldClear = data.clear === true;
+
   // Busca empresa
   const companySnap = await db.collection('empresas').doc(companyId).get();
   if (!companySnap.exists) throw new functions.https.HttpsError('not-found', 'Empresa não encontrada.');
 
-  console.log(`Seeding data for companyId: ${companyId}${userEmail ? ', email: ' + userEmail : ''}`);
+  console.log(`Seeding data for companyId: ${companyId}${userEmail ? ', email: ' + userEmail : ''}${shouldClear ? ' (CLEAR MODE)' : ''}`);
+
+  // ─── Limpa dados antigos (se clear:true) ────────────────────────────────────
+  const ALL_COLS = ['products','clients','suppliers','invoices','purchases','receivables','payables','transactions','stockMovements','orders','returns'];
+
+  if (shouldClear) {
+    console.log('Clearing old data...');
+    for (const colName of ALL_COLS) {
+      const snap = await db.collection('empresas').doc(companyId).collection(colName).get();
+      if (snap.empty) continue;
+      const batchSize2 = 400;
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += batchSize2) {
+        const batch = db.batch();
+        docs.slice(i, i + batchSize2).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+      console.log(`  ✓ ${colName}: ${docs.length} docs deleted`);
+    }
+    console.log('Old data cleared.');
+  }
 
   // ─── Atualiza dados da empresa ─────────────────────────────────────────────
   await db.collection('empresas').doc(companyId).set({
@@ -230,6 +252,19 @@ exports.seedData = functions.runWith({ secrets: [], timeoutSeconds: 540 }).https
     plan: 'trial',
     active: true,
     updatedAt: new Date().toISOString(),
+    // Marca onboarding como completo
+    onboarding: {
+      complete: true,
+      step: 5,
+      checklist: {
+        empresa: true,
+        dados: true,
+        pedido: true,
+        nfe: true,
+        recebimento: true,
+        certificado: true,
+      },
+    },
   }, { merge: true });
 
   // ─── Produtos ──────────────────────────────────────────────────────────────
@@ -249,6 +284,7 @@ exports.seedData = functions.runWith({ secrets: [], timeoutSeconds: 540 }).https
       ean: p.ean,
       category: p.category,
       stock: p.stock,
+      minStock: p.minStock || 10,
       active: true,
     };
     await db.collection('empresas').doc(companyId).collection('products').doc(String(productId)).set(doc);
