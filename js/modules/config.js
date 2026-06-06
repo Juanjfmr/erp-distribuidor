@@ -13,10 +13,10 @@ function renderMinhaConta(){
   if(plan==='trial' && trialEndsAt){
     const msLeft = new Date(trialEndsAt) - new Date();
     trialDaysLeft = Math.max(0, Math.ceil(msLeft/86400000));
-    trialPct = Math.round((trialDaysLeft/30)*100);
+    trialPct = Math.round((trialDaysLeft/14)*100);
   }
 
-  const planLabel = {trial:'Teste Gratuito', basico:'Básico', profissional:'Profissional', empresarial:'Empresarial'}[plan] || plan;
+  const planLabel = {trial:'Teste Grátis', basico:'Essencial', profissional:'Profissional', empresarial:'Empresarial'}[plan] || plan;
   const planColor = plan==='trial'?'bg-amber': plan==='basico'?'bg-blue':'bg-green';
 
   el("content").innerHTML=`
@@ -41,7 +41,7 @@ function renderMinhaConta(){
         <div style="margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted)">
             <span>Período de teste</span>
-            <span>${trialDaysLeft} dias restantes de 30</span>
+              <span>${trialDaysLeft} dias restantes de 14</span>
           </div>
           <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${trialPct}%;background:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};border-radius:4px;transition:width .4s"></div>
@@ -53,16 +53,17 @@ function renderMinhaConta(){
           <div class="section-title" style="font-size:14px;margin-bottom:12px">Escolha seu plano</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
             ${[
-              {key:'basico', name:'Básico', price:'R$ 79/mês', features:['1 usuário','500 produtos','Pedidos + NF + Caixa']},
-              {key:'profissional', name:'Profissional', price:'R$ 149/mês', features:['5 usuários','Ilimitado','Todos os módulos'], highlight:true},
-              {key:'empresarial', name:'Empresarial', price:'R$ 299/mês', features:['15 usuários','API','Suporte prioritário']}
+              {key:'basico', name:'Essencial', price:'R$ 97/mês', priceAnnual:'R$ 931/ano', features:['1 usuário','500 produtos','150 NFs/mês','Pedidos + NF + Caixa']},
+              {key:'profissional', name:'Profissional', price:'R$ 197/mês', priceAnnual:'R$ 1.891/ano', features:['5 usuários','3.000 produtos','1.000 NFs/mês','Devoluções + Comissões','Curva ABC + DRE'], highlight:true},
+              {key:'empresarial', name:'Empresarial', price:'R$ 397/mês', priceAnnual:'R$ 3.811/ano', features:['Usuários ilimitados','Produtos ilimitados','NFs ilimitadas','API + PDV (em breve)','Suporte prioritário']}
             ].map(p=>{
               const isCurrent = plan === p.key;
               return `
               <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
                 ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
                 <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
-                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:10px">${p.price}</div>
+                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:2px">${p.price}</div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">ou ${p.priceAnnual} (-20%)</div>
                 ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">✓ ${f}</div>`).join('')}
                 ${isCurrent ? `
                   <div style="text-align:center;padding:9px;background:rgba(34,197,94,.1);border-radius:6px;color:var(--green);font-weight:700;margin-top:12px;font-size:13px">

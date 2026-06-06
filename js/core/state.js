@@ -4,14 +4,15 @@ const STORAGE_KEY = "stoqio_v1";
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
   trial:        { users: 1, products: 50,    nfMonth: 10,   modules: ['basic'] },
-  basico:       { users: 1, products: 300,   nfMonth: 100,  modules: ['basic'] },
-  profissional: { users: 3, products: 2000,  nfMonth: 500,  modules: ['basic','pro'] },
+  basico:       { users: 1, products: 500,   nfMonth: 150,  modules: ['basic'] },
+  profissional: { users: 5, products: 3000,  nfMonth: 1000, modules: ['basic','pro'] },
   empresarial:  { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
   owner:        { users: 99,products: 99999, nfMonth: 9999, modules: ['basic','pro','enterprise'] },
 };
 
 const MODULE_PLAN = {
   devolucoes:   'pro',
+  relatorios:   'pro',
   comissoes:    'pro',
   tabelaPreco:  'pro',
   estoqueMin:   'pro',
@@ -36,7 +37,7 @@ function getPlanLimit(key) {
 function showPlanBlockModal(module) {
   const msgs = {
     devolucoes:  'Devoluções',
-    relatorios:  'Relatórios avançados e Curva ABC',
+    relatorios:  'Relatórios Avançados e Curva ABC',
     comissoes:   'Comissão de vendedores',
     tabelaPreco: 'Tabela de preços por cliente',
     estoqueMin:  'Estoque mínimo e alertas',
@@ -44,11 +45,14 @@ function showPlanBlockModal(module) {
     api:         'Acesso via API',
   };
   const nome = msgs[module] || module;
+  const requiredPlan = MODULE_PLAN[module];
+  const planNames = { pro: 'Profissional (R$197/mês)', enterprise: 'Empresarial (R$397/mês)' };
+  const planMsg = planNames[requiredPlan] || 'um plano superior';
   showModal(`
     <div style="text-align:center;padding:24px">
       <div style="font-size:32px;margin-bottom:12px">🔒</div>
       <div style="font-size:18px;font-weight:700;margin-bottom:8px">Recurso bloqueado</div>
-      <div style="color:var(--text2);margin-bottom:20px"><b>${nome}</b> está disponível a partir do plano <b>Profissional</b>.</div>
+      <div style="color:var(--text2);margin-bottom:20px"><b>${nome}</b> está disponível a partir do plano <b>${planMsg}</b>.</div>
       <button class="btn btn-primary" onclick="navigate('minha-conta');closeModal()">Ver planos</button>
       <button class="btn" onclick="closeModal()" style="margin-left:8px">Fechar</button>
     </div>

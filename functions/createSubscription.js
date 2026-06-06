@@ -8,9 +8,9 @@ const { MercadoPagoConfig, PreApproval } = require('mercadopago');
 const db = admin.firestore();
 
 const PLANOS = {
-  basico:       { nome: 'ERP Distribuidora Básico',       valor: 79,  frequencia: 'months' },
-  profissional: { nome: 'ERP Distribuidora Profissional', valor: 149, frequencia: 'months' },
-  empresarial:  { nome: 'ERP Distribuidora Empresarial',  valor: 299, frequencia: 'months' },
+  basico:       { nome: 'ERP Distribuidora Essencial',       valor: 97,  frequencia: 'months' },
+  profissional: { nome: 'ERP Distribuidora Profissional', valor: 197, frequencia: 'months' },
+  empresarial:  { nome: 'ERP Distribuidora Empresarial',  valor: 397, frequencia: 'months' },
 };
 
 exports.createSubscription = functions.runWith({ secrets: ['MP_ACCESS_TOKEN'] }).https.onCall(async (data, context) => {

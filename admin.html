@@ -252,12 +252,12 @@ function statusBadge(status) {
 }
 
 function planBadge(plan) {
-  const map = { basico:'Básico', profissional:'Profissional', empresarial:'Empresarial', trial:'Trial' };
+  const map = { basico:'Essencial', profissional:'Profissional', empresarial:'Empresarial', trial:'Trial' };
   return `<span class="plan ${plan||'trial'}">${map[plan]||plan||'Trial'}</span>`;
 }
 
 function planMRR(plan) {
-  return { basico:79, profissional:149, empresarial:299 }[plan] || 0;
+  return { basico:97, profissional:197, empresarial:397 }[plan] || 0;
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────

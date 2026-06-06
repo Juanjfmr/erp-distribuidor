@@ -12,6 +12,11 @@ const PAGE_TITLES={dashboard:"Dashboard",produtos:"Produtos",clientes:"Clientes"
 const MODULE_GUARD = {
   devolucoes: 'devolucoes',
   relatorios: 'relatorios',
+  comissoes: 'comissoes',
+  tabelaPreco: 'tabelaPreco',
+  estoqueMin: 'estoqueMin',
+  pdv: 'pdv',
+  api: 'api',
 };
 
 function navigate(v){
