@@ -70,14 +70,17 @@ function renderCaixa(){
         ? `<div class="empty" style="padding:24px">Nenhuma despesa recorrente cadastrada.<br><span style="font-size:12px;color:var(--muted)">Ex: Aluguel, Internet, Salários — lançados automaticamente todo mês.</span></div>`
         : `<table><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Frequência</th><th>Próx. vencimento</th><th>Ativo</th><th></th></tr></thead><tbody>
           ${state.recurringExpenses.map((r,i)=>`
-            <tr style="${!r.active?'opacity:.4':''}">
-              <td class="text-white">${r.description}</td>
+            <tr style="${!r.active?'opacity:.4':r.nextDueDate<today()?'background:rgba(239,68,68,.06)':''}">
+              <td class="text-white">${r.description}${r.nextDueDate<today()&&r.active?' <span style="font-size:10px;color:var(--red)">atrasada</span>':''}</td>
               <td>${r.category}</td>
               <td class="mono text-red">${fmt(r.amount)}</td>
               <td><span class="badge bg-blue" style="font-size:11px">${r.frequency==='monthly'?'Mensal':r.frequency==='weekly'?'Semanal':r.frequency==='biweekly'?'Quinzenal':r.frequency}</span></td>
-              <td class="mono" style="color:${r.nextDueDate<today()?'var(--red)':''}">${fmtDate(r.nextDueDate)}${r.nextDueDate<today()?' ⚠':''}</td>
+              <td class="mono" style="color:${r.nextDueDate<today()?'var(--red)':r.nextDueDate===today()?'var(--amber)':''}">${fmtDate(r.nextDueDate)}${r.nextDueDate<today()?' ⚠':r.nextDueDate===today()?' ← hoje':''}</td>
               <td><button class="btn-sm ${r.active?'bg-green':'bg-gray'}" onclick="toggleRecurring(${i})" style="font-size:10px;min-width:50px">${r.active?'Sim':'Não'}</button></td>
-              <td><button class="btn-sm btn-amber" onclick="openRecurringModal(${i})">Editar</button><button class="btn-sm btn-red" onclick="deleteRecurring(${i})">✕</button></td>
+              <td>
+                ${r.nextDueDate<today()&&r.active?`<button class="btn-sm btn-amber" onclick="processSingleRecurring(${i})" title="Lançar esta despesa agora e avançar data">Regularizar</button>`:''}
+                <button class="btn-sm btn-amber" onclick="openRecurringModal(${i})">Editar</button><button class="btn-sm btn-red" onclick="deleteRecurring(${i})">✕</button>
+              </td>
             </tr>`).join('')}
         </tbody></table>`}
     </div>`;
@@ -196,4 +199,26 @@ function deleteRecurring(index){
   if(!confirm('Remover esta despesa recorrente?')) return;
   state.recurringExpenses.splice(index,1);
   saveState(); renderCaixa();
+}
+function processSingleRecurring(index){
+  const r = state.recurringExpenses[index];
+  if(!r) return;
+  if(!confirm(`Lançar "${r.description}" (${fmt(r.amount)}) com data de ${fmtDate(r.nextDueDate)} e avançar para o próximo vencimento?`)) return;
+  // Cria transação com a data original (atrasada)
+  state.transactions.push({
+    id: uid(),
+    date: r.nextDueDate,
+    type: 'saida',
+    category: r.category,
+    description: r.description,
+    amount: r.amount
+  });
+  // Avança para a próxima data a partir da original
+  const d = new Date(r.nextDueDate + 'T00:00:00');
+  if (r.frequency === 'monthly') d.setMonth(d.getMonth() + 1);
+  else if (r.frequency === 'weekly') d.setDate(d.getDate() + 7);
+  else if (r.frequency === 'biweekly') d.setDate(d.getDate() + 14);
+  r.nextDueDate = d.toISOString().slice(0, 10);
+  saveState(); renderCaixa();
+  showSyncStatus(`✓ "${r.description}" regularizada — próximo vencimento: ${fmtDate(r.nextDueDate)}`);
 }

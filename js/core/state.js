@@ -127,8 +127,9 @@ function processRecurringExpenses() {
   const todayStr = today();
   const recs = state.recurringExpenses || [];
   let processed = 0;
-  recs.filter(r => r.active && r.nextDueDate <= todayStr).forEach(r => {
-    // Cria transação de saída
+  const processedNames = [];
+  // Só processa despesas que vencem EXATAMENTE hoje
+  recs.filter(r => r.active && r.nextDueDate === todayStr).forEach(r => {
     state.transactions.push({
       id: uid(),
       date: r.nextDueDate,
@@ -148,10 +149,11 @@ function processRecurringExpenses() {
     }
     r.nextDueDate = d.toISOString().slice(0, 10);
     processed++;
+    processedNames.push(r.description);
   });
   if (processed > 0) {
     saveState();
-    console.log(`✓ ${processed} despesa(s) recorrente(s) processada(s)`);
+    showSyncStatus(`✓ ${processed} despesa(s) processada(s): ${processedNames.join(', ')}`);
   }
   return processed;
 }
