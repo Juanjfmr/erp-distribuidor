@@ -354,9 +354,11 @@ async function emitirNF(num){
   const terms=el("nf-terms").value;
   const paymentMethod=el("nf-method")?.value||'';
   const client=clientId?getClient(clientId):null;
-  const openAmt=clientId?state.receivables.filter(r=>r.clientId===clientId&&r.status==="aberta").reduce((s,r)=>s+r.amount,0):0;
-  if(client&&client.creditLimit>0&&(openAmt+total)>client.creditLimit){
-    if(!confirm(`Atenção: este cliente tem ${fmt(openAmt)} em aberto. O limite de crédito é ${fmt(client.creditLimit)}. Limite será ultrapassado. Continuar?`)){ _doneSave(); return; }
+  const cc = checkClientCredit(clientId, total);
+  if(cc.blocked){
+    _doneSave();
+    alert(`Não é possível emitir a nota.\n\n${cc.reason}\n\nRegularize a situação do cliente em Contas → Receber.`);
+    return;
   }
   const stockWarnings=state.nfItems.filter(it=>{const p=getProd(it.productId);return p&&p.stock<it.qty;});
   if(stockWarnings.length){
@@ -600,15 +602,27 @@ function getNFClientName(nf){
 }
 
 function checkClienteNF(clientId){
-  const overdue = state.receivables.filter(r=>r.clientId==clientId&&r.status==='aberta'&&isOverdue(r.dueDate));
   const alert = document.getElementById('nf-credit-alert');
   if(!alert) return;
-  if(overdue.length){
-    const total = overdue.reduce((s,r)=>s+r.amount,0);
-    const oldest = overdue.sort((a,b)=>a.dueDate.localeCompare(b.dueDate))[0];
-    const days = Math.floor((new Date()-new Date(oldest.dueDate+'T00:00:00'))/86400000);
+  const cc = checkClientCredit(clientId, 0); // pass 0 to check overdue only
+  if(cc.blocked){
     alert.style.display='block';
-    alert.innerHTML=`⚠ Cliente com ${overdue.length} parcela(s) vencida(s) totalizando ${fmt(total)} (mais antiga: ${days}d atraso). Confirme para continuar.`;
+    alert.style.background='rgba(239,68,68,.12)';
+    alert.style.border='1px solid rgba(239,68,68,.3)';
+    alert.style.color='var(--red)';
+    alert.innerHTML=`🚫 <b>Bloqueado:</b> ${cc.reason}. A nota <b>não</b> poderá ser emitida para este cliente.`;
+  } else if(cc.openAmt > 0 && cc.creditLimit > 0){
+    alert.style.display='block';
+    alert.style.background='rgba(245,158,11,.08)';
+    alert.style.border='1px solid rgba(245,158,11,.2)';
+    alert.style.color='var(--amber)';
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto — limite de crédito: ${fmt(cc.creditLimit)} (${fmt(Math.max(0, cc.creditLimit - cc.openAmt))} disponível)`;
+  } else if(cc.openAmt > 0){
+    alert.style.display='block';
+    alert.style.background='rgba(245,158,11,.08)';
+    alert.style.border='1px solid rgba(245,158,11,.2)';
+    alert.style.color='var(--amber)';
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto (sem limite de crédito configurado)`;
   } else {
     alert.style.display='none';
   }

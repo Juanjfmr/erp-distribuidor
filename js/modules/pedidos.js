@@ -199,10 +199,11 @@ function pedidoPreencheCliente(clientId){
     const sel=el("ped-terms");
     if(sel){ [...sel.options].forEach(opt=>{ opt.selected=opt.value===c.payterm||opt.text===c.payterm; }); }
   }
-  const overdueRec=state.receivables.filter(r=>r.clientId==clientId&&r.status==='aberta'&&isOverdue(r.dueDate));
-  if(overdueRec.length){
-    const total=overdueRec.reduce((s,r)=>s+r.amount,0);
-    showSyncStatus(`⚠ ${c.name} tem ${fmt(total)} vencido`,true);
+  const cc = checkClientCredit(parseInt(clientId), 0);
+  if(cc.blocked){
+    showSyncStatus(`⚠ ${cc.reason} — Pedido será bloqueado para confirmação`, true);
+  } else if(cc.openAmt > 0){
+    showSyncStatus(`ℹ ${c.name}: ${fmt(cc.openAmt)} em aberto (limite: ${fmt(cc.creditLimit)})`);
   }
 }
 
@@ -217,6 +218,15 @@ async function salvarPedido(num, confirmar=false){
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
   const total=sub*(1-disc/100)+freight;
+  // Bloqueio de cliente inadimplente / limite estourado
+  if(confirmar){
+    const cc = checkClientCredit(clientId, total);
+    if(cc.blocked){
+      _doneSave();
+      alert(`Não é possível confirmar o pedido.\n\n${cc.reason}\n\nSalve como rascunho ou regularize a situação do cliente em Contas → Receber.`);
+      return;
+    }
+  }
   const order={
     id:Date.now(), number:num,
     date:el("ped-date").value||today(),
@@ -334,6 +344,15 @@ async function salvarEditPedido(id,confirmar=false){
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
   const total=sub*(1-disc/100)+freight;
+  // Bloqueio de cliente inadimplente / limite estourado
+  if(confirmar){
+    const cc = checkClientCredit(clientId, total);
+    if(cc.blocked){
+      _doneSave();
+      alert(`Não é possível confirmar o pedido.\n\n${cc.reason}\n\nSalve como rascunho ou regularize a situação do cliente em Contas → Receber.`);
+      return;
+    }
+  }
   o.date=el("ped-date").value||today();
   o.clientId=clientId;
   if(isAvulso) o.clientName="Consumidor Final";
@@ -468,6 +487,13 @@ async function emitirNFdePedido(nfNum, pedidoId){
         return;
       }
     }
+  }
+  // Bloqueio de cliente inadimplente / limite estourado
+  const ccPed = checkClientCredit(clientId, parseFloat((nfGetSubtotal()*(1-disc/100)+freight+clientCosts).toFixed(2)));
+  if(ccPed.blocked){
+    _doneSave();
+    alert(`Não é possível faturar o pedido.\n\n${ccPed.reason}\n\nRegularize a situação do cliente em Contas → Receber.`);
+    return;
   }
   const stockWarningsPed=state.nfItems.filter(it=>{const p=getProd(it.productId);return p&&p.stock<it.qty;});
   if(stockWarningsPed.length){

@@ -197,6 +197,33 @@ const el = id => document.getElementById(id);
 const totalIn = (txs) => (txs||state.transactions).filter(t=>t.type==="entrada").reduce((s,t)=>s+t.amount,0);
 const totalOut = (txs) => (txs||state.transactions).filter(t=>t.type==="saida").reduce((s,t)=>s+t.amount,0);
 const isOverdue = dueDate => dueDate < today();
+function getClientOpenBalance(clientId) {
+  if (!clientId) return 0;
+  return (state.receivables||[]).filter(r => r.clientId === clientId && r.status === 'aberta').reduce((s, r) => s + r.amount, 0);
+}
+function getClientOverdueBalance(clientId) {
+  if (!clientId) return 0;
+  return (state.receivables||[]).filter(r => r.clientId === clientId && r.status === 'aberta' && isOverdue(r.dueDate)).reduce((s, r) => s + r.amount, 0);
+}
+function isClientDelinquent(clientId) {
+  return getClientOverdueBalance(clientId) > 0;
+}
+function checkClientCredit(clientId, newTotal) {
+  // Returns { blocked: bool, reason: string, openAmt: number, creditLimit: number, overdueAmt: number }
+  if (!clientId) return { blocked: false, reason: '', openAmt: 0, creditLimit: 0, overdueAmt: 0 };
+  const client = getClient(clientId);
+  if (!client) return { blocked: false, reason: '', openAmt: 0, creditLimit: 0, overdueAmt: 0 };
+  const openAmt = getClientOpenBalance(clientId);
+  const overdueAmt = getClientOverdueBalance(clientId);
+  const creditLimit = client.creditLimit || 0;
+  if (overdueAmt > 0) {
+    return { blocked: true, reason: `Cliente inadimplente: ${fmt(overdueAmt)} vencido`, openAmt, creditLimit, overdueAmt };
+  }
+  if (creditLimit > 0 && (openAmt + newTotal) > creditLimit) {
+    return { blocked: true, reason: `Limite de crédito excedido: ${fmt(openAmt)} em aberto + ${fmt(newTotal)} = ${fmt(openAmt + newTotal)} (limite: ${fmt(creditLimit)})`, openAmt, creditLimit, overdueAmt };
+  }
+  return { blocked: false, reason: '', openAmt, creditLimit, overdueAmt };
+}
 const norm = s => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 const normWords = s => norm(s).replace(/\s+/g,'');
 function prodSimilarity(a,b){
