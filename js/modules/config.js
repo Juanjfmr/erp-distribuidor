@@ -77,7 +77,10 @@ function renderMinhaConta(){
         </div>`:`
         <div class="row-between">
           <div style="font-size:13px;color:var(--text2)">Próximo vencimento: <b>${trialEndsAt?new Date(trialEndsAt).toLocaleDateString('pt-BR'):'—'}</b></div>
-          <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('${plan}')">Gerenciar assinatura</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('${plan}')">Gerenciar</button>
+            <button class="btn btn-danger" style="font-size:12px" onclick="cancelarPlano()">Cancelar assinatura</button>
+          </div>
         </div>`}
     </div>
 
@@ -141,28 +144,19 @@ function copyAffiliateLink(){
 }
 
 async function assinarPlano(plan) {
-  const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net';
-
   const btn = event.currentTarget;
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Redirecionando...';
 
   try {
-    const token = await window._currentUser.getIdToken();
-    const resp = await fetch(`${FUNCTIONS_BASE}/createSubscription`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        plan,
-        backUrl: window.location.href,
-      }),
-    });
+    // Usa Callable Function — auth é gerenciado automaticamente pelo SDK
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js');
+    const functions = getFunctions(window._app, 'us-central1');
+    const createSub = httpsCallable(functions, 'createSubscription');
 
-    const data = await resp.json();
+    const result = await createSub({ plan, backUrl: window.location.href });
+    const data = result.data;
 
     if (!data.success) {
       alert('Erro ao gerar checkout: ' + (data.error || 'Tente novamente.'));
@@ -178,10 +172,41 @@ async function assinarPlano(plan) {
     window.location.href = data.checkoutUrl;
 
   } catch(e) {
-    alert('Erro de conexão: ' + e.message);
+    alert('Erro ao gerar checkout: ' + (e.message || 'Tente novamente.'));
     btn.disabled = false;
     btn.textContent = originalText;
   }
+}
+
+async function cancelarPlano() {
+  if (!confirm('Tem certeza que deseja cancelar sua assinatura?\n\nSeu acesso permanecerá ativo até o fim do período pago.')) {
+    return;
+  }
+
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = 'Cancelando...';
+
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js');
+    const functions = getFunctions(window._app || window._auth.app, 'us-central1');
+    const cancelSub = httpsCallable(functions, 'cancelSubscription');
+
+    const result = await cancelSub();
+    const data = result.data;
+
+    if (data.success) {
+      alert('Assinatura cancelada com sucesso.');
+    } else {
+      alert('Erro ao cancelar: ' + (data.error || 'Tente novamente.'));
+    }
+  } catch(e) {
+    alert('Erro ao cancelar: ' + (e.message || 'Tente novamente.'));
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Cancelar assinatura';
+  renderMinhaConta();
 }
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────

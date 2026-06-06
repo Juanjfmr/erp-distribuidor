@@ -13,7 +13,7 @@ const PLANOS = {
   empresarial:  { nome: 'ERP Distribuidora Empresarial',  valor: 299, frequencia: 'months' },
 };
 
-exports.createSubscription = functions.https.onCall(async (data, context) => {
+exports.createSubscription = functions.runWith({ secrets: ['MP_ACCESS_TOKEN'] }).https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado.');
   }
@@ -36,7 +36,10 @@ exports.createSubscription = functions.https.onCall(async (data, context) => {
   const client = new MercadoPagoConfig({ accessToken: mpToken });
 
   const tenantSnap = await db.collection('empresas').doc(companyId).get();
-  const tenantEmail = tenantSnap.data()?.email || context.auth.token.email || 'cliente@email.com';
+  const tenantEmail = tenantSnap.data()?.email
+    || context.auth.token.email
+    || userSnap.data()?.email
+    || 'cliente@email.com';
 
   const preapproval = new PreApproval(client);
   const sub = await preapproval.create({

@@ -89,7 +89,7 @@ async function openNFModal(){
         <div id="nf-credit-alert" class="alert-red" style="display:none"></div>
       </div>
       <div class="form-group"><label class="form-label">Data de Emissão</label>
-        <input id="nf-date" type="date" class="form-input" value="${today()}">
+        <input id="nf-date" type="date" class="form-input" value="${today()}" onclick="this.showPicker?.()">
       </div>
     </div>
     <div class="form-grid-2">

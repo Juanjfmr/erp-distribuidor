@@ -16,6 +16,7 @@
 // ─── FIREBASE SDK ─────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeApp as initSecondaryApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -32,11 +33,16 @@ const app = initializeApp(firebaseConfig);
 window._firebaseConfig = firebaseConfig;
 const db = getFirestore(app);
 const auth = getAuth(app);
+const functions = getFunctions(app);
 
 // Expose to global scope for use in non-module scripts
 window._db = db;
 window._auth = auth;
+window._app = app;
+window._functions = functions;
+window._httpsCallable = httpsCallable;
 window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
+window._firebaseConfig = firebaseConfig;
 
 // Auth state listener
 onAuthStateChanged(auth, async (user) => {

@@ -73,14 +73,15 @@ function openPedidoModal(prefill){
         <input id="ped-num" class="form-input" value="${nextNum}" readonly>
       </div>
       <div class="form-group"><label class="form-label">Data</label>
-        <input id="ped-date" type="date" class="form-input" value="${today()}">
+        <input id="ped-date" type="date" class="form-input" value="${today()}" onclick="this.showPicker?.()">
       </div>
     </div>
     <div class="form-group"><label class="form-label">Cliente</label>
-      <select id="ped-client" class="form-input" onchange="pedidoPreencheCliente(this.value)">
-        <option value="">Selecione cliente...</option>
-        ${clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}
-      </select>
+    <select id="ped-client" class="form-input" onchange="pedidoPreencheCliente(this.value)">
+      <option value="">Selecione cliente...</option>
+      <option value="avulso">Consumidor Final (sem cadastro)</option>
+      ${clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}
+    </select>
     </div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Condição de Pagamento</label>
@@ -191,6 +192,7 @@ function pedidoRenderItems(){
   totEl.innerHTML=`<div style="text-align:right;font-size:13px;color:var(--muted)">Subtotal: <b style="color:var(--text)">${fmt(sub)}</b> &nbsp; Desconto: <b style="color:var(--red)">-${fmt(discAmt)}</b> &nbsp; Frete: <b style="color:var(--text)">+${fmt(freight)}</b> &nbsp; <span style="font-size:15px;font-weight:700;color:var(--amber)">Total: ${fmt(total)}</span></div>`;
 }
 function pedidoPreencheCliente(clientId){
+  if(clientId==='avulso'||!clientId) return;
   const c=getClient(parseInt(clientId));
   if(!c) return;
   if(c.payterm){
@@ -207,8 +209,10 @@ function pedidoPreencheCliente(clientId){
 async function salvarPedido(num, confirmar=false){
   if(!_guardSave()) return;
   if(!state.pedidoItems.length){ _doneSave(); alert("Adicione pelo menos um item ao pedido."); return; }
-  const clientId=parseInt(el("ped-client").value)||0;
-  if(!clientId){ _doneSave(); alert("Selecione um cliente para o pedido."); return; }
+  const rawClient=el("ped-client").value;
+  const isAvulso=rawClient==='avulso';
+  const clientId=isAvulso?null:(parseInt(rawClient)||0);
+  if(!rawClient){ _doneSave(); alert("Selecione um cliente para o pedido."); return; }
   const disc=parseFloat(el("ped-disc").value)||0;
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
@@ -217,6 +221,7 @@ async function salvarPedido(num, confirmar=false){
     id:Date.now(), number:num,
     date:el("ped-date").value||today(),
     clientId, paymentTerms:el("ped-terms").value,
+    clientName:isAvulso?"Consumidor Final":null,
     paymentMethod:el("ped-method")?.value||'',
     discount:disc, freight, notes:el("ped-notes").value,
     deliveryDate:el("ped-delivery")?.value||'',
@@ -257,7 +262,7 @@ function editarPedidoModal(id){
         <input id="ped-num" class="form-input" value="${o.number}" readonly>
       </div>
       <div class="form-group"><label class="form-label">Data</label>
-        <input id="ped-date" type="date" class="form-input" value="${o.date}">
+        <input id="ped-date" type="date" class="form-input" value="${o.date}" onclick="this.showPicker?.()">
       </div>
     </div>
     <div class="form-group"><label class="form-label">Cliente</label>
@@ -321,13 +326,17 @@ async function salvarEditPedido(id,confirmar=false){
   if(!state.pedidoItems.length){ _doneSave(); alert("Adicione pelo menos um item ao pedido."); return; }
   const o=state.orders.find(x=>x.id==id);
   if(!o){ _doneSave(); return; }
-  const clientId=parseInt(el("ped-client").value)||0;
+  const rawClient=el("ped-client").value;
+  const isAvulso=rawClient==='avulso';
+  const clientId=isAvulso?null:(parseInt(rawClient)||0);
+  if(!rawClient){ _doneSave(); alert("Selecione um cliente para o pedido."); return; }
   const disc=parseFloat(el("ped-disc").value)||0;
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
   const total=sub*(1-disc/100)+freight;
   o.date=el("ped-date").value||today();
   o.clientId=clientId;
+  if(isAvulso) o.clientName="Consumidor Final";
   o.paymentTerms=el("ped-terms").value;
   o.paymentMethod=el("ped-method")?.value||'';
   o.discount=disc; o.freight=freight;

@@ -4,7 +4,7 @@ const { MercadoPagoConfig, Payment, PreApproval } = require('mercadopago');
 
 const db = admin.firestore();
 
-exports.mpWebhook = functions.https.onRequest(async (req, res) => {
+exports.mpWebhook = functions.runWith({ secrets: ['MP_ACCESS_TOKEN'] }).https.onRequest(async (req, res) => {
   // Só aceitar POST
   if (req.method !== 'POST') {
     res.status(405).send('Method Not Allowed');
