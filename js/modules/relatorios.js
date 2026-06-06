@@ -464,7 +464,7 @@ function renderCurvaABCClientes(){
 
 function renderDRE(){
   const {label,filter}=getRelPeriod();
-  const inv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const inv=state.invoices.filter(n=>n.status!=='cancelada'&&filter(n.date));
   const receitaBruta=inv.reduce((s,n)=>s+n.total,0);
   const devolucoes=(state.returns||[]).filter(r=>filter(r.date)).reduce((s,r)=>s+(r.total||0),0);
   const receitaLiq=receitaBruta-devolucoes;
@@ -477,23 +477,32 @@ function renderDRE(){
   const lucroBruto=receitaLiq-cmv;
   const margBruta=receitaLiq>0?(lucroBruto/receitaLiq*100):0;
   const despByCat={};
-  (state.transactions||[]).filter(t=>t.type==="saida"&&filter(t.date)).forEach(t=>{
+  (state.transactions||[]).filter(t=>t.type==='saida'&&filter(t.date)).forEach(t=>{
     despByCat[t.category]=(despByCat[t.category]||0)+t.amount;
   });
   const despArr=Object.entries(despByCat).sort((a,b)=>b[1]-a[1]);
   const totalDesp=despArr.reduce((s,[,v])=>s+v,0);
-  const lucroLiq=lucroBruto-totalDesp;
+  // EBITDA = Lucro Bruto - Despesas Operacionais (antes de impostos)
+  const ebitda=lucroBruto-totalDesp;
+  const margEbitda=receitaLiq>0?(ebitda/receitaLiq*100):0;
+  // Estimativa de impostos baseada no regime
+  const regime=state.company?.regime||'1';
+  const taxRates={'1':0.08,'2':0.10,'3':0.15};
+  const taxRate=taxRates[regime]||0;
+  const regimeNames={'1':'Simples Nacional','2':'Simples Nacional (excesso)','3':'Lucro Presumido'};
+  const impostosEstimados=receitaLiq*taxRate;
+  const lucroLiq=ebitda-impostosEstimados;
   const margLiq=receitaLiq>0?(lucroLiq/receitaLiq*100):0;
   const months=new Set();
   state.invoices.forEach(n=>{if(n.date)months.add(n.date.slice(0,7));});
   const sortedMonths=[...months].sort().reverse();
-  const row=(label,val,indent,bold,color)=>`
-    <tr style="${bold?"font-weight:700":""}">
-      <td style="padding-left:${indent?24:8}px;color:var(--text2)">${label}</td>
-      <td class="mono" style="text-align:right;color:${color||"var(--text)"};padding-right:12px">${fmt(val)}</td>
-      <td style="text-align:right;padding-right:12px;color:var(--muted);font-size:12px">${receitaBruta>0?(val/receitaBruta*100).toFixed(1)+"%":""}</td>
+  const row=(label,val,indent,bold,color,extra)=>`
+    <tr style="${bold?'font-weight:700':''}">
+      <td style="padding-left:${indent?24:8}px;color:var(--text2)">${label}${extra||''}</td>
+      <td class="mono" style="text-align:right;color:${color||'var(--text)'};padding-right:12px">${fmt(val)}</td>
+      <td style="text-align:right;padding-right:12px;color:var(--muted);font-size:12px">${receitaBruta>0?(val/receitaBruta*100).toFixed(1)+'%':''}</td>
     </tr>`;
-  el("content").innerHTML=`
+  el('content').innerHTML=`
     <div class="section-header">
       <div class="section-title">Relatórios — DRE</div>
       <div class="row" style="flex-wrap:wrap;gap:6px">
@@ -506,13 +515,41 @@ function renderDRE(){
         </div>
         <span class="text-muted" style="font-size:13px">Período:</span>
         <select class="form-input" style="width:160px" onchange="state.relPeriod=this.value;renderRelatorios()">
-          <option value="all" ${state.relPeriod==="all"?"selected":""}>Todo o período</option>
-          ${sortedMonths.map(m=>{const[y,mo]=m.split("-");const ml=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?"selected":""}>${ml}/${y}</option>`;}).join("")}
+          <option value="all" ${state.relPeriod==='all'?'selected':''}>Todo o período</option>
+          ${sortedMonths.map(m=>{const[y,mo]=m.split('-');const ml=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1];return`<option value="${m}" ${state.relPeriod===m?'selected':''}>${ml}/${y}</option>`;}).join('')}
         </select>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="window.print()">🖨 Imprimir</button>
       </div>
     </div>
-    ${hasMissingCost?`<div class="alert-yellow" style="margin-bottom:12px">⚠ Há produtos sem preço de custo — o CMV está subestimado.</div>`:""}
-    <div class="card" style="max-width:640px">
+
+    <!-- KPIs de destaque -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+      <div class="kpi" style="border-left:3px solid var(--amber)">
+        <div class="kpi-label">Receita Líquida</div>
+        <div class="kpi-value" style="font-size:20px">${fmt(receitaLiq)}</div>
+        <div class="kpi-sub">${inv.length} nota(s)</div>
+      </div>
+      <div class="kpi" style="border-left:3px solid ${lucroBruto>=0?'var(--green)':'var(--red)'}">
+        <div class="kpi-label">Lucro Bruto</div>
+        <div class="kpi-value" style="font-size:20px;color:${lucroBruto>=0?'var(--green)':'var(--red)'}">${fmt(lucroBruto)}</div>
+        <div class="kpi-sub">Margem ${margBruta.toFixed(1)}%</div>
+      </div>
+      <div class="kpi" style="border-left:3px solid var(--blue)">
+        <div class="kpi-label">EBITDA</div>
+        <div class="kpi-value" style="font-size:20px;color:var(--blue)">${fmt(ebitda)}</div>
+        <div class="kpi-sub">Margem ${margEbitda.toFixed(1)}%</div>
+      </div>
+      <div class="kpi" style="border-left:3px solid ${lucroLiq>=0?'var(--green)':'var(--red)'}">
+        <div class="kpi-label">Lucro Líquido</div>
+        <div class="kpi-value" style="font-size:20px;color:${lucroLiq>=0?'var(--green)':'var(--red)'}">${fmt(lucroLiq)}</div>
+        <div class="kpi-sub">Margem ${margLiq.toFixed(1)}%</div>
+      </div>
+    </div>
+
+    ${hasMissingCost?`<div class="alert-yellow" style="margin-bottom:12px">⚠ Há produtos sem preço de custo cadastrado — o CMV está subestimado. Cadastre o preço de custo nos produtos para um DRE preciso.</div>`:''}
+    ${taxRate>0?`<div class="alert-blue" style="margin-bottom:12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);color:var(--blue)">ℹ Impostos estimados em <b>${(taxRate*100).toFixed(0)}%</b> da receita líquida (regime: ${regimeNames[regime]||'Desconhecido'}). Esta é uma <b>estimativa</b> — não substitui a apuração contábil oficial.</div>`:''}
+
+    <div class="card" style="max-width:680px">
       <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">DRE — ${label}</div>
       <table style="width:100%">
         <thead><tr>
@@ -521,19 +558,22 @@ function renderDRE(){
           <th style="text-align:right;padding-right:12px">% Receita</th>
         </tr></thead>
         <tbody>
-          ${row("(+) Receita Bruta de Vendas",receitaBruta,false,true,"var(--amber)")}
-          ${devolucoes>0?row("(-) Devoluções",-devolucoes,true,false,"var(--red)"):""}
-          ${row("(=) Receita Líquida",receitaLiq,false,true,receitaLiq>=0?"var(--text)":"var(--red)")}
+          ${row('(+) Receita Bruta de Vendas',receitaBruta,false,true,'var(--amber)')}
+          ${devolucoes>0?row('(-) Devoluções',-devolucoes,true,false,'var(--red)'):''}
+          ${row('(=) Receita Líquida',receitaLiq,false,true,receitaLiq>=0?'var(--text)':'var(--red)')}
           <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
-          ${row("(-) CMV — Custo das Mercadorias Vendidas",-cmv,true,false,"var(--red)")}
-          ${row("(=) Lucro Bruto",lucroBruto,false,true,lucroBruto>=0?"var(--green)":"var(--red)")}
+          ${row('(-) CMV — Custo Mercadoria Vendida',-cmv,true,false,'var(--red)')}
+          ${row('(=) Lucro Bruto',lucroBruto,false,true,lucroBruto>=0?'var(--green)':'var(--red)','')}
           <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem Bruta: ${margBruta.toFixed(1)}%</td></tr>
           <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
           <tr><td colspan="3" style="padding:4px 8px;font-size:11px;font-weight:700;color:var(--muted)">(-) DESPESAS OPERACIONAIS</td></tr>
-          ${despArr.map(([cat,val])=>row(cat,-val,true,false,"var(--red)")).join("")}
-          ${despArr.length===0?`<tr><td colspan="3" style="padding:4px 8px;color:var(--muted);font-size:12px">Nenhuma despesa no período</td></tr>`:""}
+          ${despArr.map(([cat,val])=>row(cat,-val,true,false,'var(--red)')).join('')}
+          ${despArr.length===0?`<tr><td colspan="3" style="padding:4px 8px;color:var(--muted);font-size:12px">Nenhuma despesa no período</td></tr>`:''}
+          ${row('(=) EBITDA',ebitda,false,true,ebitda>=0?'var(--blue)':'var(--red)','<span style="font-size:10px;color:var(--muted);margin-left:6px">antes de impostos</span>')}
+          <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem EBITDA: ${margEbitda.toFixed(1)}%</td></tr>
           <tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>
-          ${row("(=) LUCRO LÍQUIDO",lucroLiq,false,true,lucroLiq>=0?"var(--green)":"var(--red)")}
+          ${taxRate>0?row('(-) Impostos (estimativa ~'+(taxRate*100).toFixed(0)+'%)',-impostosEstimados,true,false,'var(--red)','<span style="font-size:10px;color:var(--blue);margin-left:6px">estimado</span>')+`<tr><td colspan="3" style="padding:4px 0"><hr style="border-color:var(--border)"></td></tr>`:''}
+          ${row('(=) LUCRO LÍQUIDO',lucroLiq,false,true,lucroLiq>=0?'var(--green)':'var(--red)',taxRate>0?'<span style="font-size:10px;color:var(--muted);margin-left:6px">após impostos estimados</span>':'')}
           <tr><td colspan="3" style="padding:2px 8px;font-size:11px;color:var(--muted)">Margem Líquida: ${margLiq.toFixed(1)}%</td></tr>
         </tbody>
       </table>

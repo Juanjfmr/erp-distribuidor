@@ -12,7 +12,6 @@ const PLAN_LIMITS = {
 
 const MODULE_PLAN = {
   devolucoes:   'pro',
-  relatorios:   'pro',
   comissoes:    'pro',
   tabelaPreco:  'pro',
   estoqueMin:   'pro',
