@@ -46,6 +46,11 @@ function aiChatInit() {
           <div style="font-size:14px;font-weight:700;color:var(--text,#e0e0e0);line-height:1.2">Stoqio AI</div>
           <div style="font-size:11px;color:var(--muted,#888)">Assistente de gestão</div>
         </div>
+        <button id="ai-playbook-btn" onclick="aiPlaybookRun()" title="Analisar operação — detectar alertas"
+          style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--amber);cursor:pointer;
+            font-size:12px;padding:5px 10px;border-radius:8px;white-space:nowrap;transition:all .2s"
+          onmouseover="this.style.background='rgba(245,158,11,.22)'"
+          onmouseout="this.style.background='rgba(245,158,11,.12)'">🔔 Analisar</button>
         <button onclick="aiChatToggle()" style="background:none;border:none;color:var(--muted,#888);cursor:pointer;
           font-size:18px;padding:4px 8px;line-height:1;border-radius:6px"
           onmouseover="this.style.background='rgba(255,255,255,.05)'"
@@ -230,6 +235,87 @@ async function aiChatSend() {
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─── Playbook — Analisar operação ─────────────────────────────────────────────
+let _playbookRunning = false;
+
+async function aiPlaybookRun() {
+  if (_playbookRunning) return;
+  _playbookRunning = true;
+
+  const btn = document.getElementById('ai-playbook-btn');
+  if (btn) { btn.textContent = '⏳ Analisando...'; btn.style.opacity = '.6'; }
+
+  const msgs = document.getElementById('ai-chat-msgs');
+  if (!msgs) { _playbookRunning = false; return; }
+
+  // Abre o chat se fechado
+  if (!_aiChatOpen) aiChatToggle();
+
+  // Limpa mensagens anteriores e mostra loading
+  msgs.innerHTML = '';
+  aiChatShowTyping();
+
+  try {
+    const callable = window._httpsCallable(window._functions, 'aiPlaybook');
+    const result = await callable({});
+    const data = result.data;
+
+    // Remove typing
+    const typing = document.getElementById('ai-chat-typing');
+    if (typing) typing.remove();
+
+    // Cabeçalho
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px';
+    header.innerHTML = '<span style="font-size:14px">🔔</span><span style="font-size:13px;font-weight:700;color:var(--text)">Análise da Operação</span>';
+    msgs.appendChild(header);
+
+    // Alerta geral
+    if (data.alertaGeral) {
+      const div = document.createElement('div');
+      div.style.cssText = 'background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--blue);line-height:1.5';
+      div.textContent = data.alertaGeral;
+      msgs.appendChild(div);
+    }
+
+    // Cards de alerta
+    const severidadeColor = { alta: '#ef4444', media: '#f59e0b', baixa: '#6b7280' };
+    const tipoIcone = { inadimplencia: '💰', estoque: '📦', faturamento: '📊', cliente: '👤', operacional: '⚙️' };
+
+    if (data.alertas && data.alertas.length) {
+      data.alertas.forEach(a => {
+        const card = document.createElement('div');
+        const cor = severidadeColor[a.severidade] || '#6b7280';
+        card.style.cssText = `background:var(--bg3);border:1px solid var(--border);border-left:3px solid ${cor};border-radius:8px;padding:10px 12px;margin-bottom:10px`;
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="font-size:13px">${tipoIcone[a.tipo] || '📌'}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(a.titulo || '')}</span>
+            <span style="font-size:10px;background:${cor}22;color:${cor};padding:1px 6px;border-radius:4px;font-weight:700;margin-left:auto">${(a.severidade||'').toUpperCase()}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">${escapeHtml(a.mensagem || '')}</div>
+          ${a.acao ? `<div style="font-size:11px;color:var(--amber);background:rgba(245,158,11,.06);padding:4px 8px;border-radius:4px">→ ${escapeHtml(a.acao)}</div>` : ''}`;
+        msgs.appendChild(card);
+      });
+    } else {
+      const div = document.createElement('div');
+      div.style.cssText = 'text-align:center;padding:20px;color:var(--green);font-size:13px';
+      div.innerHTML = '✅ <b>Nenhum alerta crítico encontrado.</b><br><span style="font-size:11px;color:var(--muted)">A operação parece estar sob controle.</span>';
+      msgs.appendChild(div);
+    }
+
+    aiChatScrollDown();
+  } catch (e) {
+    const typing = document.getElementById('ai-chat-typing');
+    if (typing) typing.remove();
+    aiChatAddMsg('ai', '❌ Erro ao analisar a operação. Tente novamente.');
+    console.error('aiPlaybook error:', e);
+  }
+
+  _playbookRunning = false;
+  if (btn) { btn.textContent = '🔔 Analisar'; btn.style.opacity = '1'; }
 }
 
 // Auto-init quando o DOM estiver pronto e state carregar
