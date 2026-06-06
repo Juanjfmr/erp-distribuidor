@@ -52,7 +52,11 @@ function navigate(v){
   render();
 }
 function render(){
-  ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:renderConfig,usuarios:renderUsuarios,'minha-conta':renderMinhaConta,onboarding:renderOnboarding})[state.currentView]?.();
+  try {
+    ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:typeof renderConfig!=='undefined'?renderConfig:undefined,usuarios:renderUsuarios,'minha-conta':typeof renderMinhaConta!=='undefined'?renderMinhaConta:undefined,onboarding:renderOnboarding})[state.currentView]?.();
+  } catch(e) {
+    console.error('Render error:', state.currentView, e.message);
+  }
   applyRoleUI();
 }
 
