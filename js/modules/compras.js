@@ -305,6 +305,19 @@ async function salvarCompra(num){
     if(!d){ _doneSave(); return alert(`Informe a data de vencimento da parcela ${i+1}.`); }
     dueDates.push(d);
   }
+  // Valida feriados/fins de semana nos vencimentos
+  for(let i=0;i<dueDates.length;i++){
+    const original = dueDates[i];
+    const ajustada = await proximoDiaUtil(original);
+    if(ajustada !== original){
+      if(!confirm(`A parcela ${i+1}/${nInst} vence em ${fmtDate(original)}, que é feriado ou fim de semana.\n\nMover para ${fmtDate(ajustada)}?`)){
+        _doneSave(); return;
+      }
+      dueDates[i] = ajustada;
+      const inp = el(`cp-due-${i}`);
+      if(inp) inp.value = ajustada;
+    }
+  }
   state.compraItems.forEach(function(it){
     var p=state.products.find(function(x){ return x.id===it.productId; });
     if(p){
@@ -506,6 +519,19 @@ async function salvarEditCompra(id){
     const d=el(`cp-due-${i}`)?.value;
     if(!d){ _doneSave(); return alert(`Informe a data de vencimento da parcela ${i+1}.`); }
     dueDates.push(d);
+  }
+  // Valida feriados/fins de semana nos vencimentos
+  for(let i=0;i<dueDates.length;i++){
+    const original = dueDates[i];
+    const ajustada = await proximoDiaUtil(original);
+    if(ajustada !== original){
+      if(!confirm(`A parcela ${i+1}/${nInst} vence em ${fmtDate(original)}, que é feriado ou fim de semana.\n\nMover para ${fmtDate(ajustada)}?`)){
+        _doneSave(); return;
+      }
+      dueDates[i] = ajustada;
+      const inp = el(`cp-due-${i}`);
+      if(inp) inp.value = ajustada;
+    }
   }
   c.items.forEach(it=>{
     const p=state.products.find(x=>x.id===it.productId);

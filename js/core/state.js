@@ -364,3 +364,31 @@ async function buscarCep(prefix) {
   } catch(e) { /* silencioso */ }
 }
 window.buscarCep = buscarCep;
+
+// ─── Feriados via BrasilAPI ──────────────────────────────────────────────────
+let _feriadosCache = null;
+async function getFeriados(ano) {
+  if (_feriadosCache?.ano === ano) return _feriadosCache.datas;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}`);
+    const lista = await r.json();
+    const datas = new Set(lista.map(f => f.date));
+    _feriadosCache = { ano, datas };
+    return datas;
+  } catch(e) { return new Set(); }
+}
+
+async function proximoDiaUtil(dateStr) {
+  let d = new Date(dateStr + 'T12:00:00');
+  const feriados = await getFeriados(d.getFullYear());
+  let count = 0;
+  while (count < 60) {
+    const dow = d.getDay();
+    const iso = d.toISOString().slice(0,10);
+    if (dow !== 0 && dow !== 6 && !feriados.has(iso)) return iso;
+    d.setDate(d.getDate() + 1);
+    count++;
+  }
+  return dateStr;
+}
+window.proximoDiaUtil = proximoDiaUtil;
