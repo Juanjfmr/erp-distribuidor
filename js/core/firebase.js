@@ -119,7 +119,16 @@ async function loadFromFirebase() {
     const hasSubcollections = colSnaps.some(s => !s.empty);
 
     if (hasSubcollections) {
-      if (snap.exists() && snap.data().company) state.company = snap.data().company;
+      if (snap.exists()) {
+        const docData = snap.data();
+        if (docData.company)    state.company    = docData.company;
+        // Carrega onboarding, plano e trial do documento principal
+        if (docData.onboarding) state.onboarding = docData.onboarding;
+        if (docData.plan) {
+          window._plan = docData.plan;
+          if (docData.trialEndsAt) window._trialEndsAt = docData.trialEndsAt;
+        }
+      }
       window._lastSaved = {};
       _COLS.forEach((colName, i) => {
         const items = [];

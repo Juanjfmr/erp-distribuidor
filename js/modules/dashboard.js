@@ -14,6 +14,79 @@ function renderFiscalBanner() {
   </div>`;
 }
 
+// ─── NOTIFICATION SYSTEM ─────────────────────────────────────────────────────
+window._notifications = window._notifications || [];
+
+function addNotification(type, title, msg, actionLabel, actionFn) {
+  // Evita duplicatas (mesmo título)
+  if (window._notifications.some(n => n.title === title)) return;
+  window._notifications.push({ id: Date.now(), type, title, msg, actionLabel, actionFn, read: false });
+}
+
+function clearNotifications() {
+  window._notifications = [];
+}
+
+function updateNotifBell() {
+  const badge = document.getElementById('notif-badge');
+  const n = window._notifications.length;
+  if (badge) {
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+  }
+}
+
+function toggleNotifications(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('notif-dropdown');
+  if (!dd) return;
+  const isOpen = dd.classList.contains('open');
+  if (isOpen) {
+    dd.classList.remove('open');
+  } else {
+    renderNotifDropdown();
+    dd.classList.add('open');
+  }
+}
+
+function renderNotifDropdown() {
+  const dd = document.getElementById('notif-dropdown');
+  if (!dd) return;
+  const notifs = window._notifications;
+
+  const tipoIcone = {
+    estoque: '📦', inadimplencia: '💰', vencimento: '📅', fiscal: '🧾', operacional: '⚙️'
+  };
+  const tipoCor = {
+    estoque: 'var(--amber)', inadimplencia: 'var(--red)', vencimento: 'var(--amber)', fiscal: 'var(--amber)', operacional: 'var(--blue)'
+  };
+
+  if (!notifs.length) {
+    dd.innerHTML = '<div class="notif-empty">✅ Nenhuma notificação</div>';
+    return;
+  }
+
+  dd.innerHTML = notifs.map(n => `
+    <div class="notif-item">
+      <span class="notif-icon">${tipoIcone[n.type] || '📌'}</span>
+      <div class="notif-body">
+        <div class="notif-title" style="color:${tipoCor[n.type] || 'var(--text)'}">${n.title}</div>
+        <div class="notif-msg">${n.msg}</div>
+        ${n.actionLabel ? `<span class="notif-action" onclick="${n.actionFn}">→ ${n.actionLabel}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('notif-dropdown');
+  const bell = document.getElementById('notif-bell');
+  if (dd && dd.classList.contains('open') && !dd.contains(e.target) && e.target !== bell && !bell?.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
+
 function renderDashboard(){
   const period = window._dashPeriod || 'mes';
   const now = new Date();
@@ -47,6 +120,28 @@ function renderDashboard(){
   const vencendoVal = vencendo.reduce((s,r)=>s+r.amount,0);
   const lowStock=state.products.filter(p=>p.active!==false&&p.stock<=p.minStock);
   const recentNF=[...state.invoices].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  
+  // ─── Popula notificações ──────────────────────────────────────────────────
+  clearNotifications();
+  if (lowStock.length) {
+    const names = lowStock.map(p => `${p.name} (${p.stock} ${p.unit||'UN'})`).join(', ');
+    addNotification('estoque', `${lowStock.length} produto(s) com estoque baixo`,
+      names.substring(0, 120) + (names.length > 120 ? '...' : ''),
+      'Ver produtos', "navigate('produtos');toggleNotifications(new Event('click'))");
+  }
+  if (overdueRec.length) {
+    const totalVenc = overdueRec.reduce((s,r)=>s+r.amount,0);
+    addNotification('inadimplencia', `${overdueRec.length} parcela(s) vencida(s)`,
+      `Total vencido: ${fmt(totalVenc)}. Clique para ver contas a receber.`,
+      'Ver contas', "navigate('contas');toggleNotifications(new Event('click'))");
+  }
+  if (vencendo.length) {
+    addNotification('vencimento', `${vencendo.length} parcela(s) vencendo em 7 dias`,
+      `Total a vencer: ${fmt(vencendoVal)}.`,
+      'Ver contas', "navigate('contas');toggleNotifications(new Event('click'))");
+  }
+  updateNotifBell();
+
   const ob = state.onboarding;
   const onboardingHtml = (!ob || ob.complete) ? '' : (() => {
     const items = [
@@ -93,38 +188,6 @@ function renderDashboard(){
       <div class="kpi"><div class="kpi-label">A Receber (total aberto)</div><div class="kpi-value text-amber">${fmt(aReceber)}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==="aberta").length} parcelas em aberto</div></div>
       <div class="kpi"><div class="kpi-label">Vencidas</div><div class="kpi-value text-red">${fmt(overdueRec.reduce((s,r)=>s+r.amount,0))}</div><div class="kpi-sub">${overdueRec.length} parcela(s) vencida(s)</div></div>
     </div>
-    ${lowStock.length ? `
-    <div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--amber)">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="font-size:18px">📦</span>
-        <span style="font-weight:700;color:var(--text)">Estoque Baixo</span>
-        <span class="badge bg-amber" style="margin-left:auto">${lowStock.length} produto(s)</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
-        ${lowStock.map(p => {
-          const pct = p.minStock ? Math.round(p.stock / p.minStock * 100) : 0;
-          const barColor = pct <= 30 ? 'var(--red)' : pct <= 60 ? 'var(--amber)' : 'var(--blue)';
-          return `
-          <div style="background:var(--bg3,#252540);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;justify-content:space-between;align-items:baseline">
-              <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
-              <span style="font-size:12px;color:var(--text2)">${p.unit || 'UN'}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden">
-                <div style="background:${barColor};height:100%;width:${Math.min(pct,100)}%;border-radius:4px;transition:width .4s"></div>
-              </div>
-              <span style="font-size:12px;font-weight:700;color:${barColor};min-width:40px;text-align:right">${pct}%</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
-              <span>Atual: <b style="color:var(--text2)">${p.stock}</b></span>
-              <span>Mín: <b style="color:var(--text2)">${p.minStock || '—'}</b></span>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`:""}
-    ${overdueRec.length?`<div class="alert-red">⚠ ${overdueRec.length} parcela(s) vencida(s) — <span style="cursor:pointer;text-decoration:underline" onclick="navigate('contas')">ver contas a receber</span></div>`:""}
     <div class="grid-2">
       <div class="card">
         <div class="section-title" style="margin-bottom:14px">Top Inadimplentes</div>

@@ -249,7 +249,7 @@ exports.seedData = functions.runWith({ secrets: [], timeoutSeconds: 540 }).https
       categories: CATEGORIES,
       units: ['UN', 'CX', 'DZ', 'PCT', 'KG', 'LT', 'FD', 'FX'],
     },
-    plan: 'trial',
+    plan: 'owner',
     active: true,
     updatedAt: new Date().toISOString(),
     // Marca onboarding como completo
