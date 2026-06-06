@@ -89,6 +89,7 @@ const defaultState = {
       certificado: false,
     }
   },
+  recurringExpenses: [],
 };
 
 let state = {};
@@ -110,6 +111,7 @@ function loadState(){
       complete: false, step: 0,
       checklist: { empresa:false, dados:false, pedido:false, nfe:false, recebimento:false, certificado:false }
     };
+    if(!state.recurringExpenses) state.recurringExpenses=[];
     state.nfItems=[]; state.compraItems=[]; state.pedidoItems=[]; state.nfCosts=[];
   }catch(e){ state = JSON.parse(JSON.stringify(defaultState)); }
 }
@@ -118,6 +120,40 @@ function saveState(){
   delete toSave.nfItems; delete toSave.compraItems; delete toSave.pedidoItems; delete toSave.nfCosts;
   localStorage.setItem(STORAGE_KEY,JSON.stringify(toSave));
   saveToFirebase();
+}
+
+// ─── DESPESAS RECORRENTES ────────────────────────────────────────────────────
+function processRecurringExpenses() {
+  const todayStr = today();
+  const recs = state.recurringExpenses || [];
+  let processed = 0;
+  recs.filter(r => r.active && r.nextDueDate <= todayStr).forEach(r => {
+    // Cria transação de saída
+    state.transactions.push({
+      id: uid(),
+      date: r.nextDueDate,
+      type: 'saida',
+      category: r.category,
+      description: r.description,
+      amount: r.amount
+    });
+    // Avança próxima data
+    const d = new Date(r.nextDueDate + 'T00:00:00');
+    if (r.frequency === 'monthly') {
+      d.setMonth(d.getMonth() + 1);
+    } else if (r.frequency === 'weekly') {
+      d.setDate(d.getDate() + 7);
+    } else if (r.frequency === 'biweekly') {
+      d.setDate(d.getDate() + 14);
+    }
+    r.nextDueDate = d.toISOString().slice(0, 10);
+    processed++;
+  });
+  if (processed > 0) {
+    saveState();
+    console.log(`✓ ${processed} despesa(s) recorrente(s) processada(s)`);
+  }
+  return processed;
 }
 
 function completeOnboardingStep(step) {

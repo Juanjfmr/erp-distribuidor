@@ -58,7 +58,29 @@ function renderCaixa(){
         <td class="mono fw-bold" style="color:${t.type==="entrada"?"var(--green)":"var(--red)"}">${t.type==="entrada"?"+":"−"}${fmt(t.amount)}</td>
         <td><button class="btn-sm btn-red" onclick="deleteTx(${t.id})">✕</button></td>
       </tr>`).join("")||`<tr><td colspan="6" class="empty">Nenhuma transação encontrada.</td></tr>`}
-    </tbody></table></div>`;
+    </tbody></table></div>
+
+    <!-- Despesas Fixas / Recorrentes -->
+    <div class="card" style="margin-top:16px">
+      <div class="row-between" style="margin-bottom:12px">
+        <div class="section-title" style="margin:0">🔁 Despesas Fixas</div>
+        <button class="btn btn-primary btn-sm" onclick="openRecurringModal()">+ Nova</button>
+      </div>
+      ${(state.recurringExpenses||[]).length === 0
+        ? `<div class="empty" style="padding:24px">Nenhuma despesa recorrente cadastrada.<br><span style="font-size:12px;color:var(--muted)">Ex: Aluguel, Internet, Salários — lançados automaticamente todo mês.</span></div>`
+        : `<table><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Frequência</th><th>Próx. vencimento</th><th>Ativo</th><th></th></tr></thead><tbody>
+          ${state.recurringExpenses.map((r,i)=>`
+            <tr style="${!r.active?'opacity:.4':''}">
+              <td class="text-white">${r.description}</td>
+              <td>${r.category}</td>
+              <td class="mono text-red">${fmt(r.amount)}</td>
+              <td><span class="badge bg-blue" style="font-size:11px">${r.frequency==='monthly'?'Mensal':r.frequency==='weekly'?'Semanal':r.frequency==='biweekly'?'Quinzenal':r.frequency}</span></td>
+              <td class="mono" style="color:${r.nextDueDate<today()?'var(--red)':''}">${fmtDate(r.nextDueDate)}${r.nextDueDate<today()?' ⚠':''}</td>
+              <td><button class="btn-sm ${r.active?'bg-green':'bg-gray'}" onclick="toggleRecurring(${i})" style="font-size:10px;min-width:50px">${r.active?'Sim':'Não'}</button></td>
+              <td><button class="btn-sm btn-amber" onclick="openRecurringModal(${i})">Editar</button><button class="btn-sm btn-red" onclick="deleteRecurring(${i})">✕</button></td>
+            </tr>`).join('')}
+        </tbody></table>`}
+    </div>`;
 }
 function clearCxFilters(){ state.cashFilter="todos"; renderCaixa(); }
 function openTxModal(){
@@ -103,3 +125,75 @@ function saveTx(){
   saveState(); closeModal(); renderCaixa();
 }
 function deleteTx(id){ if(confirm("Remover este lançamento?")){ state.transactions=state.transactions.filter(t=>t.id!==id); saveState(); renderCaixa(); } }
+
+// ─── DESPESAS RECORRENTES ────────────────────────────────────────────────────
+function openRecurringModal(index){
+  const r = index !== undefined ? state.recurringExpenses[index] : null;
+  const cats = CAT_FIN.saida;
+  showModal(`<div class="modal-title">${r?'Editar':'Nova'} Despesa Fixa</div>
+    <div class="form-group"><label class="form-label">Descrição</label>
+      <input id="rec-desc" class="form-input" value="${r?r.description:''}" placeholder="Ex: Aluguel, Internet, Salário...">
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Categoria</label>
+        <select id="rec-cat" class="form-input">
+          ${cats.map(c=>`<option ${r&&r.category===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor (R$)</label>
+        <input id="rec-val" type="number" step="0.01" class="form-input" value="${r?r.amount:''}">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Frequência</label>
+        <select id="rec-freq" class="form-input">
+          <option value="monthly" ${r&&r.frequency==='monthly'?'selected':''}>Mensal</option>
+          <option value="biweekly" ${r&&r.frequency==='biweekly'?'selected':''}>Quinzenal</option>
+          <option value="weekly" ${r&&r.frequency==='weekly'?'selected':''}>Semanal</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Próximo Vencimento</label>
+        <input id="rec-date" type="date" class="form-input" value="${r?r.nextDueDate:today()}" onclick="this.showPicker?.()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="rec-active" ${!r||r.active!==false?'checked':''} style="accent-color:var(--green);width:16px;height:16px"> Ativo
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRecurring(${index!==undefined?index:''})">Salvar</button>
+    </div>`);
+}
+function saveRecurring(index){
+  const desc = el('rec-desc').value.trim();
+  const val = parseFloat(el('rec-val').value);
+  if(!desc||!val) return alert('Preencha descrição e valor.');
+  const obj = {
+    id: uid(),
+    description: desc,
+    category: el('rec-cat').value,
+    amount: val,
+    frequency: el('rec-freq').value,
+    nextDueDate: el('rec-date').value,
+    active: el('rec-active').checked
+  };
+  if(index!=='') {
+    obj.id = state.recurringExpenses[index].id;
+    state.recurringExpenses[index] = obj;
+  } else {
+    state.recurringExpenses.push(obj);
+  }
+  saveState(); closeModal(); renderCaixa();
+  showSyncStatus(index!==''?'✓ Despesa atualizada':'✓ Despesa recorrente cadastrada');
+}
+function toggleRecurring(index){
+  state.recurringExpenses[index].active = !state.recurringExpenses[index].active;
+  saveState(); renderCaixa();
+}
+function deleteRecurring(index){
+  if(!confirm('Remover esta despesa recorrente?')) return;
+  state.recurringExpenses.splice(index,1);
+  saveState(); renderCaixa();
+}

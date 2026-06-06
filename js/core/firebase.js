@@ -157,6 +157,7 @@ async function loadFromFirebase() {
     render();
     updateTopbar();
     applyRoleUI();
+    processRecurringExpenses();
     showSyncStatus('✓ Conectado ao Firebase');
   } catch(e) {
     console.error('Firebase load error:', e);
