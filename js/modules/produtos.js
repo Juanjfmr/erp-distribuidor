@@ -1,4 +1,10 @@
 // ─── PRODUTOS ────────────────────────────────────────────────────────────────
+var _prodSort=initSort('nome','asc');
+function prodSortBy(col){
+  if(_prodSort.col===col) _prodSort.dir=_prodSort.dir==='asc'?'desc':'asc';
+  else{_prodSort.col=col;_prodSort.dir='asc';}
+  filterProdutos();
+}
 function renderProdutos(){
   const cats=[...new Set(state.products.map(p=>p.category))].sort();
   el("content").innerHTML=`
@@ -23,7 +29,7 @@ function renderProdutos(){
       </div>
     </div>
     <div class="card"><table><thead><tr>
-      <th>Código</th><th>EAN</th><th>Produto</th><th>Categoria</th><th>Preço Custo</th><th>Preço Venda</th><th>Margem</th><th>Estoque</th><th>Status</th><th></th>
+      <th onclick="prodSortBy('codigo')" class="sort-th">Código${sortIcon(_prodSort,'codigo')}</th><th onclick="prodSortBy('ean')" class="sort-th">EAN${sortIcon(_prodSort,'ean')}</th><th onclick="prodSortBy('nome')" class="sort-th">Produto${sortIcon(_prodSort,'nome')}</th><th onclick="prodSortBy('categoria')" class="sort-th">Categoria${sortIcon(_prodSort,'categoria')}</th><th onclick="prodSortBy('custo')" class="sort-th">Preço Custo${sortIcon(_prodSort,'custo')}</th><th onclick="prodSortBy('venda')" class="sort-th">Preço Venda${sortIcon(_prodSort,'venda')}</th><th onclick="prodSortBy('margem')" class="sort-th">Margem${sortIcon(_prodSort,'margem')}</th><th onclick="prodSortBy('estoque')" class="sort-th">Estoque${sortIcon(_prodSort,'estoque')}</th><th onclick="prodSortBy('status')" class="sort-th">Status${sortIcon(_prodSort,'status')}</th><th></th>
     </tr></thead><tbody id="prod-tbody"></tbody></table></div>`;
   filterProdutos();
 }
@@ -32,16 +38,17 @@ function filterProdutos(){
   const filterCat=(el("prod-filter-cat")||{}).value||"";
   const filterStock=(el("prod-filter-stock")||{}).value||"";
   const showInactive=(el("prod-show-inactive")||{}).checked||false;
-  const filtered=state.products.filter(p=>{
+  let data=state.products.filter(p=>{
     if(!showInactive&&p.active===false) return false;
     const mS=!search||norm(p.name).includes(norm(search))||norm(p.code).includes(norm(search));
     const mC=!filterCat||p.category===filterCat;
     const mK=!filterStock||(filterStock==="ok"&&p.stock>p.minStock)||(filterStock==="baixo"&&p.stock>0&&p.stock<=p.minStock)||(filterStock==="zerado"&&p.stock===0);
     return mS&&mC&&mK;
   });
+  data=sortData(data,_prodSort,{codigo:p=>p.code,ean:p=>p.ean||'',nome:p=>p.name,categoria:p=>p.category,custo:p=>p.costPrice||0,venda:p=>p.salePrice,margem:p=>p.costPrice>0?((p.salePrice-p.costPrice)/p.salePrice):0,estoque:p=>p.stock,status:p=>p.active===false?0:1});
   const tbody=el("prod-tbody");
   if(!tbody) return;
-  tbody.innerHTML=filtered.length?filtered.map(p=>{
+  tbody.innerHTML=data.length?data.map(p=>{
     const inactive=p.active===false;
     const margin=p.costPrice>0?((p.salePrice-p.costPrice)/p.salePrice*100):0;
     const st=inactive?"bg-gray":p.stock<=p.minStock?"bg-red":p.stock<=p.minStock*1.5?"bg-amber":"bg-green";

@@ -1,4 +1,10 @@
 // ─── CLIENTES ────────────────────────────────────────────────────────────────
+var _cliSort=initSort('nome','asc');
+function cliSortBy(col){
+  if(_cliSort.col===col) _cliSort.dir=_cliSort.dir==='asc'?'desc':'asc';
+  else{_cliSort.col=col;_cliSort.dir='asc';}
+  filterClientes();
+}
 function renderClientes(){
   el("content").innerHTML=`
     <div class="section-header">
@@ -8,15 +14,24 @@ function renderClientes(){
         <button class="btn btn-primary" onclick="openClientModal()">+ Novo Cliente</button>
       </div>
     </div>
-    <div class="card"><table><thead><tr><th>Nome</th><th>CNPJ/CPF</th><th>Cidade</th><th>Telefone</th><th>Limite Crédito</th><th>Situação</th><th></th></tr></thead>
+    <div class="card"><table><thead><tr>
+      <th onclick="cliSortBy('nome')" class="sort-th">Nome${sortIcon(_cliSort,'nome')}</th><th onclick="cliSortBy('cnpj')" class="sort-th">CNPJ/CPF${sortIcon(_cliSort,'cnpj')}</th><th onclick="cliSortBy('cidade')" class="sort-th">Cidade${sortIcon(_cliSort,'cidade')}</th><th onclick="cliSortBy('telefone')" class="sort-th">Telefone${sortIcon(_cliSort,'telefone')}</th><th onclick="cliSortBy('credito')" class="sort-th">Limite Crédito${sortIcon(_cliSort,'credito')}</th><th onclick="cliSortBy('situacao')" class="sort-th">Situação${sortIcon(_cliSort,'situacao')}</th><th></th>
+    </tr></thead>
     <tbody id="cli-tbody"></tbody></table></div>`;
   filterClientes();
 }
 function filterClientes(){
   const q=norm((el("cli-search")||{}).value||"");
+  let data=state.clients.filter(c=>!q||norm(c.name).includes(q)||norm(c.cnpj).includes(q)||norm(c.city).includes(q));
+  data=sortData(data,_cliSort,{nome:c=>c.name,cnpj:c=>c.cnpj||'',cidade:c=>c.city||'',telefone:c=>c.phone||'',credito:c=>c.creditLimit||0,situacao:c=>{
+    const openRecs=state.receivables.filter(r=>r.clientId===c.id&&r.status==="aberta");
+    const overdue=openRecs.some(r=>isOverdue(r.dueDate));
+    if(overdue) return 2;
+    if(openRecs.length>0) return 1;
+    return 0;
+  }});
   const tbody=el("cli-tbody"); if(!tbody) return;
-  const list=state.clients.filter(c=>!q||norm(c.name).includes(q)||norm(c.cnpj).includes(q)||norm(c.city).includes(q));
-  tbody.innerHTML=list.length?list.map(c=>{
+  tbody.innerHTML=data.length?data.map(c=>{
     const openRecs=state.receivables.filter(r=>r.clientId===c.id&&r.status==="aberta");
     const openAmt=openRecs.reduce((s,r)=>s+r.amount,0);
     const overdue=openRecs.some(r=>isOverdue(r.dueDate));

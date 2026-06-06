@@ -271,7 +271,7 @@ function prodSimilarity(a,b){
   return 0;
 }
 let _saving = false;
-let _nfSort = {col:"date", dir:"desc"};
+var _nfSort = initSort('date','desc');
 function _guardSave(){ if(_saving) return false; _saving=true; return true; }
 function _doneSave(){ _saving=false; }
 const DEFAULT_CAT_PROD=["Bebidas","Alimentos","Limpeza","Higiene","Outros"];
@@ -314,4 +314,33 @@ function generatePayables(purchaseId,purchaseNumber,supplierId,total,date,terms,
     pays.push({id:uid()+(i*7),purchaseId,purchaseNumber,supplierId,dueDate:d,amount:parseFloat((total*shares[i]).toFixed(2)),installment:i+1,total:dates.length,status:"aberta",paidAt:null,description:description||purchaseNumber});
   });
   return pays;
+}
+
+// ─── TABLE SORT UTILITY ─────────────────────────────────────────────────────
+// Uso: const sort = initSort('name','asc'); filterFn = () => filterProdutos();
+// TH: <th onclick="prodSortBy('name')" class="sort-th">Produto ${sortIcon(_prodSort,'name')}</th>
+// Sort dos dados: data = sortData(data, _prodSort, { name: p=>p.name, price: p=>p.salePrice });
+
+function initSort(defaultCol, defaultDir) {
+  return { col: defaultCol, dir: defaultDir || 'asc' };
+}
+
+function sortIcon(sortState, col) {
+  if (sortState.col !== col) return '';
+  return sortState.dir === 'asc' ? ' ▲' : ' ▼';
+}
+
+function sortData(data, sortState, getters) {
+  if (!sortState || !sortState.col) return data;
+  const getter = getters[sortState.col];
+  if (!getter) return data;
+  return [...data].sort((a, b) => {
+    const va = getter(a), vb = getter(b);
+    const cmp = (typeof va === 'number') ? (va - vb) : String(va||'').localeCompare(String(vb||''));
+    return sortState.dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function thSortable(label, col, sortState, onClickFn) {
+  return `<th onclick="${onClickFn}('${col}')" class="sort-th" style="cursor:pointer;user-select:none;white-space:nowrap">${label}${sortIcon(sortState, col)}</th>`;
 }

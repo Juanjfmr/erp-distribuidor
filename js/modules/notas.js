@@ -23,7 +23,7 @@ function renderNotas(){
       </div>
     </div>
     <div class="card" style="overflow-x:auto"><table><thead><tr>
-      ${[["number","Número"],["date","Data"],["clientId","Cliente"],["total","Total"],["","Pagamento"],["","Status"],["","Ações"]].map(([col,lbl])=>col?`<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="nfSortBy('${col}')">${lbl} ${_nfSort.col===col?(_nfSort.dir==="asc"?"▲":"▼"):""}</th>`:`<th>${lbl}</th>`).join("")}
+      ${[["number","Número"],["date","Data"],["clientId","Cliente"],["total","Total"],["","Pagamento"],["","Status"],["","Ações"]].map(([col,lbl])=>col?`<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="nfSortBy('${col}')">${lbl}${sortIcon(_nfSort, col)}</th>`:`<th>${lbl}</th>`).join("")}
     </tr></thead><tbody id="nf-tbody"></tbody></table></div>`;
   filterNotas();
 }
@@ -37,15 +37,14 @@ function filterNotas(){
   const fStatus=(el("nf-f-status")||{}).value||"";
   const fPeriod=(el("nf-f-period")||{}).value||"";
   const tbody=el("nf-tbody"); if(!tbody) return;
-  const {col,dir}=_nfSort;
-  const sorted=[...state.invoices]
-    .filter(n=>(!fStatus||n.status===fStatus)&&(!fPeriod||n.date?.startsWith(fPeriod))&&(!fSearch||norm(n.number).includes(fSearch)||norm(getClient(n.clientId)?.name).includes(fSearch)))
-    .sort((a,b)=>{
-      let va=a[col]??"", vb=b[col]??"";
-      if(col==="clientId"){ va=norm(getClient(a.clientId)?.name||""); vb=norm(getClient(b.clientId)?.name||""); }
-      if(typeof va==="number") return dir==="asc"?va-vb:vb-va;
-      return dir==="asc"?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
-    });
+  var filtered=[...state.invoices]
+    .filter(n=>(!fStatus||n.status===fStatus)&&(!fPeriod||n.date?.startsWith(fPeriod))&&(!fSearch||norm(n.number).includes(fSearch)||norm(getClient(n.clientId)?.name).includes(fSearch)));
+  var sorted=sortData(filtered, _nfSort, {
+    number: n=>n.number,
+    date: n=>n.date,
+    clientId: n=>{var c=getClient(n.clientId);return c?c.name:'';},
+    total: n=>n.total
+  });
   tbody.innerHTML=sorted.length?sorted.map(n=>{
     const c=getClient(n.clientId);
     const statusColor={paga:"bg-green",parcial:"bg-blue",emitida:"bg-amber",cancelada:"bg-gray"}[n.status]||"bg-gray";

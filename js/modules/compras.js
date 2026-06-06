@@ -1,4 +1,11 @@
 // ─── COMPRAS ─────────────────────────────────────────────────────────────────
+if(!window._compSort) window._compSort=initSort('data','desc');
+function compSortBy(col){
+  var s=window._compSort;
+  if(s.col===col) s.dir=s.dir==='asc'?'desc':'asc';
+  else{ s.col=col; s.dir='asc'; }
+  filterCompras();
+}
 function renderCompras(){
   el("content").innerHTML=`
     <div class="section-header">
@@ -10,7 +17,7 @@ function renderCompras(){
       </div>
     </div>
     <div class="card" style="overflow-x:auto"><table><thead><tr>
-      <th>Número</th><th>Data</th><th>Fornecedor</th><th>Frete</th><th>Total</th><th>Forma Pag.</th><th>Vencimento</th><th>Status</th><th></th>
+      ${thSortable('Número','numero',_compSort,'compSortBy')}${thSortable('Data','data',_compSort,'compSortBy')}${thSortable('Fornecedor','fornecedor',_compSort,'compSortBy')}${thSortable('Frete','frete',_compSort,'compSortBy')}${thSortable('Total','total',_compSort,'compSortBy')}${thSortable('Forma Pag.','pagamento',_compSort,'compSortBy')}${thSortable('Vencimento','vencimento',_compSort,'compSortBy')}${thSortable('Status','status',_compSort,'compSortBy')}<th></th>
     </tr></thead><tbody id="comp-tbody"></tbody></table></div>`;
   filterCompras();
 }
@@ -20,8 +27,21 @@ function filterCompras(){
   const filtered=[...state.purchases].filter(c=>{
     const sup=getSupplier(c.supplierId);
     return !q||norm(c.number).includes(q)||(sup&&norm(sup.name).includes(q));
-  }).sort((a,b)=>b.date.localeCompare(a.date));
-  tbody.innerHTML=filtered.length?filtered.map(c=>{
+  });
+  const sorted=sortData(filtered,_compSort,{
+    numero: function(c){ return c.number; },
+    data: function(c){ return c.date; },
+    fornecedor: function(c){ var s=getSupplier(c.supplierId); return s?s.name:''; },
+    frete: function(c){ return c.freight||0; },
+    total: function(c){ return c.total; },
+    pagamento: function(c){ return c.paymentMethod||c.paymentTerms||''; },
+    vencimento: function(c){
+      var pays=(state.payables||[]).filter(function(p){ return p.purchaseId===c.id&&p.status==='aberta'; }).sort(function(a,b){ return a.dueDate.localeCompare(b.dueDate); });
+      return pays[0]?pays[0].dueDate:'';
+    },
+    status: function(c){ return c.status||''; }
+  });
+  tbody.innerHTML=sorted.length?sorted.map(c=>{
     const sup=getSupplier(c.supplierId);
     const openPays=state.payables.filter(p=>p.purchaseId===c.id&&p.status==="aberta").sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
     const nextDue=openPays[0]?.dueDate||null;
@@ -285,14 +305,21 @@ async function salvarCompra(num){
     if(!d){ _doneSave(); return alert(`Informe a data de vencimento da parcela ${i+1}.`); }
     dueDates.push(d);
   }
-  state.compraItems.forEach(it=>{
-    const p=state.products.find(x=>x.id===it.productId);
+  state.compraItems.forEach(function(it){
+    var p=state.products.find(function(x){ return x.id===it.productId; });
     if(p){
+      var oldStock=p.stock;
       p.stock+=it.qty;
-      if(it.unitCost!==p.costPrice){
-        if(!p.priceHistory) p.priceHistory=[];
-        p.priceHistory.push({date,salePrice:p.salePrice,costPrice:it.unitCost,note:"Atualizado via compra "+num});
-        p.costPrice=it.unitCost;
+      var oldTotalCost=oldStock*(p.costPrice||0);
+      var newTotalCost=it.qty*(it.unitCost||it.cost||0);
+      var newQty=it.qty;
+      if(oldStock+newQty>0){
+        var newAvgCost=(oldTotalCost+newTotalCost)/(oldStock+newQty);
+        if(Math.abs(p.costPrice-newAvgCost)>0.01){
+          p.priceHistory=p.priceHistory||[];
+          p.priceHistory.push({date:today(),oldCost:p.costPrice,newCost:parseFloat(newAvgCost.toFixed(2)),reason:'Compra '+num});
+          p.costPrice=parseFloat(newAvgCost.toFixed(2));
+        }
       }
       state.stockMovements.push({id:uid(),date,productId:it.productId,type:"entrada",qty:it.qty,reason:"Compra",reference:num});
     }

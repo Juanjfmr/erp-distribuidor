@@ -1,10 +1,24 @@
 // ─── CAIXA ───────────────────────────────────────────────────────────────────
+var _caixaSort = initSort('data','desc');
+
+function caixaSortBy(col){
+  if(_caixaSort.col===col) _caixaSort.dir=_caixaSort.dir==="asc"?"desc":"asc";
+  else { _caixaSort.col=col; _caixaSort.dir="desc"; }
+  renderCaixa();
+}
+
 function renderCaixa(){
   const filter=state.cashFilter||"todos";
   const dateFrom=(el("cx-from")||{}).value||"";
   const dateTo=(el("cx-to")||{}).value||"";
   const catFilter=(el("cx-cat")||{}).value||"";
-  let txs=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));
+  var txs=sortData([...state.transactions], _caixaSort, {
+    data: t=>t.date,
+    tipo: t=>t.type,
+    categoria: t=>t.category,
+    descricao: t=>t.description,
+    valor: t=>t.amount
+  });
   if(filter!=="todos") txs=txs.filter(t=>t.type===filter);
   if(dateFrom) txs=txs.filter(t=>t.date>=dateFrom);
   if(dateTo) txs=txs.filter(t=>t.date<=dateTo);
@@ -49,7 +63,7 @@ function renderCaixa(){
         </div>
       </div>
     </div>
-    <div class="card"><table><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th></th></tr></thead><tbody>
+    <div class="card"><table><thead><tr><th onclick="caixaSortBy('data')" style="cursor:pointer;user-select:none;white-space:nowrap">Data${sortIcon(_caixaSort,'data')}</th><th onclick="caixaSortBy('tipo')" style="cursor:pointer;user-select:none;white-space:nowrap">Tipo${sortIcon(_caixaSort,'tipo')}</th><th onclick="caixaSortBy('categoria')" style="cursor:pointer;user-select:none;white-space:nowrap">Categoria${sortIcon(_caixaSort,'categoria')}</th><th onclick="caixaSortBy('descricao')" style="cursor:pointer;user-select:none;white-space:nowrap">Descrição${sortIcon(_caixaSort,'descricao')}</th><th onclick="caixaSortBy('valor')" style="cursor:pointer;user-select:none;white-space:nowrap">Valor${sortIcon(_caixaSort,'valor')}</th><th></th></tr></thead><tbody>
       ${txs.map(t=>`<tr>
         <td class="mono">${fmtDate(t.date)}</td>
         <td><span class="badge ${t.type==="entrada"?"bg-green":"bg-red"}">${t.type}</span></td>

@@ -1,4 +1,18 @@
 // ─── CONTAS ──────────────────────────────────────────────────────────────────
+var _contasRecSort = initSort('vencimento','asc');
+var _contasPagSort = initSort('vencimento','asc');
+
+function contasRecSortBy(col){
+  if(_contasRecSort.col===col) _contasRecSort.dir=_contasRecSort.dir==="asc"?"desc":"asc";
+  else { _contasRecSort.col=col; _contasRecSort.dir="asc"; }
+  renderContas();
+}
+function contasPagSortBy(col){
+  if(_contasPagSort.col===col) _contasPagSort.dir=_contasPagSort.dir==="asc"?"desc":"asc";
+  else { _contasPagSort.col=col; _contasPagSort.dir="asc"; }
+  renderContas();
+}
+
 function renderContas(){
   const tab=state.contasTab||"receber";
   const recAbertas=state.receivables.filter(r=>r.status==="aberta");
@@ -11,8 +25,17 @@ function renderContas(){
   const fOverdue=(el("contas-f-overdue")||{}).checked||false;
   let tableHTML="";
   if(tab==="receber"){
-    let sorted=[...state.receivables].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-    if(fOverdue) sorted=sorted.filter(r=>isOverdue(r.dueDate)&&r.status==="aberta");
+    var sortedRec=[...state.receivables];
+    if(fOverdue) sortedRec=sortedRec.filter(r=>isOverdue(r.dueDate)&&r.status==="aberta");
+    sortedRec=sortData(sortedRec, _contasRecSort, {
+      nota: r=>r.invoiceNumber,
+      parcela: r=>String(r.installment),
+      cliente: r=>{var c=getClient(r.clientId);return c?c.name:'';},
+      vencimento: r=>r.dueDate,
+      atraso: r=>isOverdue(r.dueDate)&&r.status==="aberta"?Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000):0,
+      valor: r=>r.amount,
+      status: r=>r.status
+    });
     const aging = {
       corrente: recAbertas.filter(r=>!isOverdue(r.dueDate)).reduce((s,r)=>s+r.amount,0),
       ate30: overdueRec.filter(r=>{ const d=Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000); return d>=1&&d<=30; }).reduce((s,r)=>s+r.amount,0),
@@ -26,8 +49,8 @@ function renderContas(){
         <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Venc. 31–60d</div><div class="kpi-value" style="font-size:16px;color:var(--amber)">${fmt(aging.de31a60)}</div></div>
         <div class="kpi" style="padding:12px"><div class="kpi-label" style="font-size:10px">Venc. +60d</div><div class="kpi-value text-red" style="font-size:16px">${fmt(aging.acima60)}</div></div>
       </div>
-      <table><thead><tr><th>Nota</th><th>Parcela</th><th>Cliente</th><th>Vencimento</th><th>Atraso</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>
-        ${sorted.map(r=>{const c=getClient(r.clientId);const overdue=isOverdue(r.dueDate)&&r.status==="aberta";const daysLate=(overdue&&r.status==="aberta")?Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000):0;return`<tr>
+      <table><thead><tr><th onclick="contasRecSortBy('nota')" style="cursor:pointer;user-select:none;white-space:nowrap">Nota${sortIcon(_contasRecSort,'nota')}</th><th onclick="contasRecSortBy('parcela')" style="cursor:pointer;user-select:none;white-space:nowrap">Parcela${sortIcon(_contasRecSort,'parcela')}</th><th onclick="contasRecSortBy('cliente')" style="cursor:pointer;user-select:none;white-space:nowrap">Cliente${sortIcon(_contasRecSort,'cliente')}</th><th onclick="contasRecSortBy('vencimento')" style="cursor:pointer;user-select:none;white-space:nowrap">Vencimento${sortIcon(_contasRecSort,'vencimento')}</th><th onclick="contasRecSortBy('atraso')" style="cursor:pointer;user-select:none;white-space:nowrap">Atraso${sortIcon(_contasRecSort,'atraso')}</th><th onclick="contasRecSortBy('valor')" style="cursor:pointer;user-select:none;white-space:nowrap">Valor${sortIcon(_contasRecSort,'valor')}</th><th onclick="contasRecSortBy('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status${sortIcon(_contasRecSort,'status')}</th><th></th></tr></thead><tbody>
+        ${sortedRec.map(r=>{const c=getClient(r.clientId);const overdue=isOverdue(r.dueDate)&&r.status==="aberta";const daysLate=(overdue&&r.status==="aberta")?Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000):0;return`<tr>
           <td class="mono text-amber">${r.invoiceNumber}</td>
           <td class="mono">${r.installment}/${r.total}${r.isSaldo?` <span class="badge bg-amber" style="font-size:10px">saldo</span>`:""}</td>
           <td class="text-white">${c?c.name:"—"}</td>
@@ -39,11 +62,19 @@ function renderContas(){
         </tr>`}).join("")||`<tr><td colspan="8" class="empty">Nenhum lançamento.</td></tr>`}
       </tbody></table>`;
   } else {
-    let sorted=[...state.payables].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-    if(fOverdue) sorted=sorted.filter(p=>isOverdue(p.dueDate)&&p.status==="aberta");
+    var sortedPag=[...state.payables];
+    if(fOverdue) sortedPag=sortedPag.filter(p=>isOverdue(p.dueDate)&&p.status==="aberta");
+    sortedPag=sortData(sortedPag, _contasPagSort, {
+      compra: p=>p.purchaseNumber||p.description,
+      parcela: p=>String(p.installment),
+      fornecedor: p=>{var s=getSupplier(p.supplierId);return s?s.name:'';},
+      vencimento: p=>p.dueDate,
+      valor: p=>p.amount,
+      status: p=>p.status
+    });
     tableHTML=`
-      <table><thead><tr><th>Compra</th><th>Parcela</th><th>Fornecedor</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody>
-        ${sorted.map(p=>{const s=getSupplier(p.supplierId);const overdue=isOverdue(p.dueDate)&&p.status==="aberta";return`<tr>
+      <table><thead><tr><th onclick="contasPagSortBy('compra')" style="cursor:pointer;user-select:none;white-space:nowrap">Compra${sortIcon(_contasPagSort,'compra')}</th><th onclick="contasPagSortBy('parcela')" style="cursor:pointer;user-select:none;white-space:nowrap">Parcela${sortIcon(_contasPagSort,'parcela')}</th><th onclick="contasPagSortBy('fornecedor')" style="cursor:pointer;user-select:none;white-space:nowrap">Fornecedor${sortIcon(_contasPagSort,'fornecedor')}</th><th onclick="contasPagSortBy('vencimento')" style="cursor:pointer;user-select:none;white-space:nowrap">Vencimento${sortIcon(_contasPagSort,'vencimento')}</th><th onclick="contasPagSortBy('valor')" style="cursor:pointer;user-select:none;white-space:nowrap">Valor${sortIcon(_contasPagSort,'valor')}</th><th onclick="contasPagSortBy('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status${sortIcon(_contasPagSort,'status')}</th><th></th></tr></thead><tbody>
+        ${sortedPag.map(p=>{const s=getSupplier(p.supplierId);const overdue=isOverdue(p.dueDate)&&p.status==="aberta";return`<tr>
           <td class="mono text-amber">${p.purchaseNumber||p.description}</td>
           <td class="mono">${p.installment}/${p.total}${p.isSaldo?` <span class="badge bg-amber" style="font-size:10px">saldo</span>`:""}</td>
           <td class="text-white">${s?s.name:"—"}</td>

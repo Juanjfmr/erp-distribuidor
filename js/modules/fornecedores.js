@@ -1,4 +1,10 @@
 // ─── FORNECEDORES ────────────────────────────────────────────────────────────
+var _fornSort=initSort('nome','asc');
+function fornSortBy(col){
+  if(_fornSort.col===col) _fornSort.dir=_fornSort.dir==='asc'?'desc':'asc';
+  else{_fornSort.col=col;_fornSort.dir='asc';}
+  filterFornecedores();
+}
 function renderFornecedores(){
   el("content").innerHTML=`
     <div class="section-header">
@@ -8,15 +14,21 @@ function renderFornecedores(){
         <button class="btn btn-primary" onclick="openSupplierModal()">+ Novo Fornecedor</button>
       </div>
     </div>
-    <div class="card"><table><thead><tr><th>Nome</th><th>CNPJ</th><th>Cidade</th><th>Contato</th><th>Prazo Pagamento</th><th>Compras</th><th></th></tr></thead>
+    <div class="card"><table><thead><tr>
+      <th onclick="fornSortBy('nome')" class="sort-th">Nome${sortIcon(_fornSort,'nome')}</th><th onclick="fornSortBy('cnpj')" class="sort-th">CNPJ${sortIcon(_fornSort,'cnpj')}</th><th onclick="fornSortBy('cidade')" class="sort-th">Cidade${sortIcon(_fornSort,'cidade')}</th><th onclick="fornSortBy('contato')" class="sort-th">Contato${sortIcon(_fornSort,'contato')}</th><th onclick="fornSortBy('prazo')" class="sort-th">Prazo Pagamento${sortIcon(_fornSort,'prazo')}</th><th onclick="fornSortBy('compras')" class="sort-th">Compras${sortIcon(_fornSort,'compras')}</th><th></th>
+    </tr></thead>
     <tbody id="forn-tbody"></tbody></table></div>`;
   filterFornecedores();
 }
 function filterFornecedores(){
   const q=norm((el("forn-search")||{}).value||"");
+  let data=state.suppliers.filter(s=>!q||norm(s.name).includes(q)||norm(s.cnpj).includes(q)||norm(s.city).includes(q)||norm(s.contact).includes(q));
+  data=sortData(data,_fornSort,{nome:s=>s.name,cnpj:s=>s.cnpj||'',cidade:s=>s.city||'',contato:s=>s.contact||'',prazo:s=>s.paymentDays||'',compras:s=>{
+    const comps=state.purchases.filter(p=>p.supplierId===s.id);
+    return comps.reduce((a,c)=>a+c.total,0);
+  }});
   const tbody=el("forn-tbody"); if(!tbody) return;
-  const list=state.suppliers.filter(s=>!q||norm(s.name).includes(q)||norm(s.cnpj).includes(q)||norm(s.city).includes(q)||norm(s.contact).includes(q));
-  tbody.innerHTML=list.length?list.map(s=>{
+  tbody.innerHTML=data.length?data.map(s=>{
     const comps=state.purchases.filter(p=>p.supplierId===s.id);
     const vol=comps.reduce((a,c)=>a+c.total,0);
     return`<tr>

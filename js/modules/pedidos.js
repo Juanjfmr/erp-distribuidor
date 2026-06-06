@@ -1,4 +1,11 @@
 // ─── PEDIDOS DE VENDA ─────────────────────────────────────────────────────────
+if(!window._pedSort) window._pedSort=initSort('data','desc');
+function pedSortBy(col){
+  var s=window._pedSort;
+  if(s.col===col) s.dir=s.dir==='asc'?'desc':'asc';
+  else{ s.col=col; s.dir='asc'; }
+  filterPedidos();
+}
 function renderPedidos(){
   el("content").innerHTML=`
     <div class="section-header">
@@ -11,7 +18,7 @@ function renderPedidos(){
     <div id="ped-status-pills" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div class="card" style="overflow-x:auto">
       <table class="table">
-        <thead><tr><th>Número</th><th>Data</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr>${thSortable('Número','numero',_pedSort,'pedSortBy')}${thSortable('Data','data',_pedSort,'pedSortBy')}${thSortable('Cliente','cliente',_pedSort,'pedSortBy')}${thSortable('Produtos','produtos',_pedSort,'pedSortBy')}${thSortable('Total','total',_pedSort,'pedSortBy')}${thSortable('Status','status',_pedSort,'pedSortBy')}<th>Ações</th></tr></thead>
         <tbody id="ped-tbody"></tbody>
       </table>
     </div>`;
@@ -40,8 +47,16 @@ function filterPedidos(){
     const matchQ=!q||norm(o.number).includes(q)||(c&&norm(c.name).includes(q));
     const matchS=!sf||o.status===sf;
     return matchQ&&matchS;
-  }).sort((a,b)=>b.id-a.id);
-  tbody.innerHTML=filtered.length?filtered.map(o=>{
+  });
+  const sorted=sortData(filtered,_pedSort,{
+    numero: function(o){ return o.number; },
+    data: function(o){ return o.date; },
+    cliente: function(o){ var c=getClient(o.clientId); return c?c.name:''; },
+    produtos: function(o){ return o.items.length; },
+    total: function(o){ return o.total; },
+    status: function(o){ return o.status; }
+  });
+  tbody.innerHTML=sorted.length?sorted.map(o=>{
     const c=getClient(o.clientId);
     const prodNames=o.items.map(it=>{ const p=getProd(it.productId); return p?`${p.name} ×${it.qty}`:it.name||'?'; });
     const prodSummary=prodNames.length<=2?prodNames.join(', '):`${prodNames[0]}, ${prodNames[1]} +${prodNames.length-2}`;
