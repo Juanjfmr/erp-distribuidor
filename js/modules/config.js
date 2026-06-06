@@ -82,14 +82,130 @@ function renderMinhaConta(){
               </div>`;
             }).join('')}
           </div>
-        </div>`:`
-        <div class="row-between">
-          <div style="font-size:13px;color:var(--text2)">Próximo vencimento: <b>${trialEndsAt?new Date(trialEndsAt).toLocaleDateString('pt-BR'):'—'}</b></div>
+        </div>`:
+        <!-- PLANO ATIVO -->
+        ${(() => {
+          const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.trial;
+          const nfThisMonth = state.invoices.filter(n => {
+            if (n.status === 'cancelada') return false;
+            const d = new Date(n.date + 'T00:00:00');
+            const now = new Date();
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          }).length;
+          const userCount = (window._companyUsers || []).length || 1;
+
+          const allFeatures = [
+            { name: 'Dashboard e KPIs', tier: 'basic', icon: '\ud83d\udcca' },
+            { name: 'Produtos e Estoque', tier: 'basic', icon: '\ud83d\udce6' },
+            { name: 'Clientes e Fornecedores', tier: 'basic', icon: '\ud83d\udc65' },
+            { name: 'Pedidos de Venda', tier: 'basic', icon: '\ud83d\udccb' },
+            { name: 'Nota Fiscal (NF-e)', tier: 'basic', icon: '\ud83e\uddfe' },
+            { name: 'Compras', tier: 'basic', icon: '\ud83d\uded2' },
+            { name: 'Contas a Receber/Pagar', tier: 'basic', icon: '\ud83d\udcb0' },
+            { name: 'Fluxo de Caixa', tier: 'basic', icon: '\ud83c\udfe6' },
+            { name: 'Configura\u00e7\u00f5es', tier: 'basic', icon: '\u2699\ufe0f' },
+            { name: 'Devolu\u00e7\u00f5es', tier: 'pro', icon: '\u21a9\ufe0f' },
+            { name: 'Curva ABC (Clientes/Produtos)', tier: 'pro', icon: '\ud83d\udcc8' },
+            { name: 'DRE e Relat\u00f3rios Avan\u00e7ados', tier: 'pro', icon: '\ud83d\udcca' },
+            { name: 'Comiss\u00e3o de Vendedores', tier: 'pro', icon: '\ud83d\udcb8' },
+            { name: 'Tabela de Pre\u00e7os por Cliente', tier: 'pro', icon: '\ud83c\udff7\ufe0f' },
+            { name: 'Estoque M\u00ednimo + Alertas', tier: 'pro', icon: '\u26a0\ufe0f' },
+            { name: 'PDV (em breve)', tier: 'enterprise', icon: '\ud83d\udecd\ufe0f' },
+            { name: 'API (em breve)', tier: 'enterprise', icon: '\ud83d\udd0c' },
+            { name: 'Suporte Priorit\u00e1rio', tier: 'enterprise', icon: '\ud83c\udfaf' },
+          ];
+
+          const hasModule = (tier) => limits.modules.includes(tier);
+          
+          const usageBars = [
+            { label: 'Produtos', used: state.products.filter(p => p.active !== false).length, limit: limits.products, icon: '\ud83d\udce6' },
+            { label: 'NFs este m\u00eas', used: nfThisMonth, limit: limits.nfMonth, icon: '\ud83e\uddfe' },
+            { label: 'Usu\u00e1rios', used: userCount, limit: limits.users, icon: '\ud83d\udc64' },
+          ].filter(b => b.limit < 90000);
+
+          const upgradePlans = [
+            plan === 'basico' ? { key: 'profissional', name: 'Profissional', price: 'R$ 197/m\u00eas', priceAnnual: 'R$ 1.891/ano', desc: '5 usu\u00e1rios, 3.000 produtos, Devolu\u00e7\u00f5es, Curva ABC, DRE' } : null,
+            (plan === 'basico' || plan === 'profissional') ? { key: 'empresarial', name: 'Empresarial', price: 'R$ 397/m\u00eas', priceAnnual: 'R$ 3.811/ano', desc: 'Ilimitado, API, PDV, Suporte priorit\u00e1rio' } : null,
+          ].filter(Boolean);
+
+          const nextDue = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString('pt-BR') : '\u2014';
+          const planName = { basico: 'Essencial', profissional: 'Profissional', empresarial: 'Empresarial' }[plan] || plan;
+
+          return `
+        <div class="row-between" style="margin-bottom:20px">
+          <div>
+            <div class="kpi-label">Plano Atual</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+              <span style="font-size:20px;font-weight:700;color:var(--text)">\${planName}</span>
+              <span class="badge bg-green">Ativo</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="kpi-label">Pr\u00f3ximo vencimento</div>
+            <div style="font-size:16px;font-weight:600;color:var(--text);margin-top:4px">\${nextDue}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Ciclo: \${window._billingCycle === 'annual' ? 'Anual (-20%)' : 'Mensal'}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <div class="section-title" style="font-size:13px;margin-bottom:10px">O que seu plano inclui</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+            \${allFeatures.map(f => {
+              const included = hasModule(f.tier);
+              return `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);\${!included ? 'opacity:.45' : ''}">
+                <span style="font-size:16px">\${f.icon}</span>
+                <span style="font-size:12px;color:\${included ? 'var(--text)' : 'var(--muted)'}">\${f.name}</span>
+                <span style="margin-left:auto;font-size:11px;font-weight:600;color:\${included ? 'var(--green)' : 'var(--muted)'}">\${included ? '\u2713' : '\ud83d\udd12'}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        \${usageBars.length > 0 ? `
+        <div style="margin-bottom:20px">
+          <div class="section-title" style="font-size:13px;margin-bottom:10px">Uso do plano</div>
+          \${usageBars.map(b => {
+            const pct = Math.min(100, Math.round((b.used / b.limit) * 100));
+            const color = pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
+            return `
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+                <span style="color:var(--text2)">\${b.icon} \${b.label}</span>
+                <span style="color:\${color};font-weight:600;font-family:var(--font-m)">\${b.used} / \${b.limit}</span>
+              </div>
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:\${pct}%;background:\${color};border-radius:3px;transition:width .4s"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        \${upgradePlans.length > 0 ? `
+        <div class="divider"></div>
+        <div style="margin-top:16px;margin-bottom:16px">
+          <div class="section-title" style="font-size:13px;margin-bottom:10px">Fazer upgrade</div>
+          <div style="display:grid;grid-template-columns:repeat(\${upgradePlans.length},1fr);gap:12px">
+            \${upgradePlans.map(p => `
+              <div style="border:1.5px solid var(--amber);border-radius:10px;padding:16px;background:rgba(245,158,11,.06)">
+                <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">\${p.name}</div>
+                <div style="font-size:16px;font-weight:700;color:var(--amber);margin-bottom:2px">\${window._billingCycle === 'annual' ? p.priceAnnual : p.price}</div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">\${p.desc}</div>
+                <button class="btn btn-primary" style="width:100%;padding:9px;font-size:13px" onclick="fazerUpgrade('\${p.key}')">Fazer upgrade</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+
+        <div class="divider"></div>
+        <div class="row-between" style="margin-top:16px">
+          <div style="font-size:12px;color:var(--muted)">Gerencie cobran\u00e7as e m\u00e9todo de pagamento no portal do Mercado Pago.</div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost" style="font-size:12px" onclick="assinarPlano('${plan}')">Gerenciar</button>
+            <button class="btn btn-ghost" style="font-size:12px" onclick="window.open('https://www.mercadopago.com.br/subscriptions','_blank')">Portal MP \u2197</button>
             <button class="btn btn-danger" style="font-size:12px" onclick="cancelarPlano()">Cancelar assinatura</button>
           </div>
-        </div>`}
+        </div>`;
+        })()`}
     </div>
 
     <div class="card" style="border-top:3px solid var(--blue)">
@@ -216,6 +332,40 @@ async function cancelarPlano() {
   btn.disabled = false;
   btn.textContent = 'Cancelar assinatura';
   renderMinhaConta();
+}
+
+async function fazerUpgrade(plan) {
+  if (!confirm(`Fazer upgrade para o plano ${plan === 'profissional' ? 'Profissional' : 'Empresarial'}?\n\nSua assinatura atual será substituída. O valor proporcional já pago será considerado na primeira cobrança do novo plano.`)) {
+    return;
+  }
+  const btn = event.currentTarget;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Redirecionando...';
+
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js');
+    const functions = getFunctions(window._app, 'us-central1');
+    const createSub = httpsCallable(functions, 'createSubscription');
+
+    const billingCycle = window._billingCycle || 'monthly';
+    const result = await createSub({ plan, billingCycle, backUrl: window.location.href });
+    const data = result.data;
+
+    if (!data.success) {
+      alert('Erro ao gerar upgrade: ' + (data.error || 'Tente novamente.'));
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return;
+    }
+
+    localStorage.setItem('pendingSubscriptionId', data.subscriptionId);
+    window.location.href = data.checkoutUrl;
+  } catch(e) {
+    alert('Erro ao gerar upgrade: ' + (e.message || 'Tente novamente.'));
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
