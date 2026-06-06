@@ -49,7 +49,7 @@ function openSupplierModal(id){
   showModal(`<div class="modal-title">${s?"Editar Fornecedor":"Novo Fornecedor"}</div>
     <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fs-name" class="form-input" value="${s?s.name:""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?s.cnpj||"":""}"></div>
+      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?s.cnpj||"":""}" onblur="buscarCnpjForn()"></div>
       <div class="form-group"><label class="form-label">Cidade</label><input id="fs-city" class="form-input" value="${s?s.city||"":""}"></div>
     </div>
     <div class="form-grid-2">
@@ -85,3 +85,17 @@ function deleteSupplier(id){
   if(refs.length){ alert("Não é possível excluir: fornecedor possui "+refs.join(", ")+" vinculado(s)."); return; }
   if(confirm("Remover fornecedor?")){ state.suppliers=state.suppliers.filter(s=>s.id!==id); saveState(); renderFornecedores(); }
 }
+async function buscarCnpjForn() {
+  const raw = el('fs-cnpj').value.replace(/\D/g,'');
+  if (raw.length !== 14) return;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${raw}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.razao_social) el('fs-name').value = d.razao_social;
+    if (d.municipio)    el('fs-city').value = d.municipio;
+    if (d.telefone)     el('fs-phone').value = d.telefone;
+    if (d.email)        el('fs-email').value = d.email;
+  } catch(e) { /* silencioso */ }
+}
+window.buscarCnpjForn = buscarCnpjForn;

@@ -54,7 +54,7 @@ function openClientModal(id){
   showModal(`<div class="modal-title">${c?"Editar Cliente":"Novo Cliente"}</div>
     <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fc-name" class="form-input" value="${c?c.name:""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?c.cnpj||"":""}"></div>
+      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?c.cnpj||"":""}" onblur="buscarCnpjCliente()"></div>
       <div class="form-group"><label class="form-label">Cidade</label><input id="fc-city" class="form-input" value="${c?c.city||"":""}"></div>
     </div>
     <div class="form-grid-2">
@@ -96,3 +96,21 @@ function deleteClient(id){
   if(refs.length){ alert("Não é possível excluir: cliente possui "+refs.join(", ")+" vinculado(s)."); return; }
   if(confirm("Remover cliente?")){ state.clients=state.clients.filter(c=>c.id!==id); saveState(); renderClientes(); }
 }
+async function buscarCnpjCliente() {
+  const raw = el('fc-cnpj').value.replace(/\D/g,'');
+  if (raw.length !== 14) return;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${raw}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.razao_social) el('fc-name').value = d.razao_social;
+    if (d.municipio)    el('fc-city').value = d.municipio;
+    if (d.uf)           el('fc-uf').value = d.uf;
+    if (d.cep)          el('fc-cep').value = d.cep.replace(/(\d{5})(\d{3})/,'$1-$2');
+    if (d.logradouro)   el('fc-street').value = d.logradouro;
+    if (d.bairro)       el('fc-district').value = d.bairro;
+    if (d.telefone)     el('fc-phone').value = d.telefone;
+    if (d.email)        el('fc-email').value = d.email;
+  } catch(e) { /* silencioso — usuário preenche manualmente */ }
+}
+window.buscarCnpjCliente = buscarCnpjCliente;
