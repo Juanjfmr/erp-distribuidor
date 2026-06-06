@@ -218,13 +218,13 @@ async function salvarPedido(num, confirmar=false){
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
   const total=sub*(1-disc/100)+freight;
-  // Bloqueio de cliente inadimplente / limite estourado
+  // Alerta de cliente inadimplente / limite estourado — vendedor decide
   if(confirmar){
     const cc = checkClientCredit(clientId, total);
     if(cc.blocked){
-      _doneSave();
-      alert(`Não é possível confirmar o pedido.\n\n${cc.reason}\n\nSalve como rascunho ou regularize a situação do cliente em Contas → Receber.`);
-      return;
+      if(!confirm(`⚠ Atenção: ${cc.reason}\n\nDeseja confirmar o pedido mesmo assim?`)){
+        _doneSave(); return;
+      }
     }
   }
   const order={
@@ -344,13 +344,13 @@ async function salvarEditPedido(id,confirmar=false){
   const freight=parseFloat(el("ped-freight").value)||0;
   const sub=pedidoGetSubtotal();
   const total=sub*(1-disc/100)+freight;
-  // Bloqueio de cliente inadimplente / limite estourado
+  // Alerta de cliente inadimplente / limite estourado — vendedor decide
   if(confirmar){
     const cc = checkClientCredit(clientId, total);
     if(cc.blocked){
-      _doneSave();
-      alert(`Não é possível confirmar o pedido.\n\n${cc.reason}\n\nSalve como rascunho ou regularize a situação do cliente em Contas → Receber.`);
-      return;
+      if(!confirm(`⚠ Atenção: ${cc.reason}\n\nDeseja confirmar o pedido mesmo assim?`)){
+        _doneSave(); return;
+      }
     }
   }
   o.date=el("ped-date").value||today();
@@ -488,12 +488,12 @@ async function emitirNFdePedido(nfNum, pedidoId){
       }
     }
   }
-  // Bloqueio de cliente inadimplente / limite estourado
+  // Alerta de cliente inadimplente / limite estourado — vendedor decide
   const ccPed = checkClientCredit(clientId, parseFloat((nfGetSubtotal()*(1-disc/100)+freight+clientCosts).toFixed(2)));
   if(ccPed.blocked){
-    _doneSave();
-    alert(`Não é possível faturar o pedido.\n\n${ccPed.reason}\n\nRegularize a situação do cliente em Contas → Receber.`);
-    return;
+    if(!confirm(`⚠ Atenção: ${ccPed.reason}\n\nDeseja faturar o pedido mesmo assim?`)){
+      _doneSave(); return;
+    }
   }
   const stockWarningsPed=state.nfItems.filter(it=>{const p=getProd(it.productId);return p&&p.stock<it.qty;});
   if(stockWarningsPed.length){

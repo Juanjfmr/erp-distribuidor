@@ -356,9 +356,9 @@ async function emitirNF(num){
   const client=clientId?getClient(clientId):null;
   const cc = checkClientCredit(clientId, total);
   if(cc.blocked){
-    _doneSave();
-    alert(`Não é possível emitir a nota.\n\n${cc.reason}\n\nRegularize a situação do cliente em Contas → Receber.`);
-    return;
+    if(!confirm(`⚠ Atenção: ${cc.reason}\n\nDeseja emitir a nota mesmo assim?`)){
+      _doneSave(); return;
+    }
   }
   const stockWarnings=state.nfItems.filter(it=>{const p=getProd(it.productId);return p&&p.stock<it.qty;});
   if(stockWarnings.length){
@@ -607,10 +607,10 @@ function checkClienteNF(clientId){
   const cc = checkClientCredit(clientId, 0); // pass 0 to check overdue only
   if(cc.blocked){
     alert.style.display='block';
-    alert.style.background='rgba(239,68,68,.12)';
-    alert.style.border='1px solid rgba(239,68,68,.3)';
-    alert.style.color='var(--red)';
-    alert.innerHTML=`🚫 <b>Bloqueado:</b> ${cc.reason}. A nota <b>não</b> poderá ser emitida para este cliente.`;
+    alert.style.background='rgba(245,158,11,.12)';
+    alert.style.border='1px solid rgba(245,158,11,.35)';
+    alert.style.color='var(--amber)';
+    alert.innerHTML=`⚠ <b>Atenção:</b> ${cc.reason}. O sistema alertará antes de emitir.`;
   } else if(cc.openAmt > 0 && cc.creditLimit > 0){
     alert.style.display='block';
     alert.style.background='rgba(245,158,11,.08)';
