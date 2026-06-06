@@ -535,7 +535,7 @@ function renderDRE(){
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
           <input type="checkbox" ${estimar?'checked':''} onchange="state.dreEstimarImpostos=this.checked;renderRelatorios()"
             style="accent-color:var(--amber);width:16px;height:16px;cursor:pointer">
-          Estimar impostos
+          Estimar impostos <span style="font-size:10px;background:var(--amber);color:#000;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:2px;vertical-align:middle">BETA</span>
         </label>
         <span style="flex:1"></span>
         <span class="text-muted" style="font-size:13px">Período:</span>
