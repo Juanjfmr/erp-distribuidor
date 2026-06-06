@@ -85,6 +85,12 @@ onAuthStateChanged(auth, async (user) => {
     const trialExpired = plan === 'trial' && trialEndsAt && new Date() > trialEndsAt;
     const isBlocked = companyData.status === 'bloqueado';
 
+    // Expor para navigate() e outros componentes
+    window._plan = plan;
+    window._trialEndsAt = trialEndsAt;
+    window._tenantStatus = companyData.status || 'trial';
+    window._companyData = companyData;
+
     if (plan !== 'owner' && (!isActive || trialExpired || isBlocked)) {
       document.getElementById('login-screen').style.setProperty('display','none','important');
       document.getElementById('app').style.setProperty('display','none','important');

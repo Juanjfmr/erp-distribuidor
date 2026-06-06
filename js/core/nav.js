@@ -15,6 +15,28 @@ const MODULE_GUARD = {
 };
 
 function navigate(v){
+  // Bloquear acesso a todos os módulos quando trial expirado ou conta bloqueada
+  const plan = window._plan || 'trial';
+  const trialEndsAt = window._trialEndsAt;
+  const tenantStatus = window._tenantStatus;
+  const trialExpired = plan === 'trial' && trialEndsAt && new Date(trialEndsAt) < new Date();
+  const isBlocked = tenantStatus === 'bloqueado';
+
+  if (plan !== 'owner' && (trialExpired || isBlocked)) {
+    if (v !== 'minha-conta') {
+      showModal(`
+        <div style="text-align:center;padding:24px">
+          <div style="font-size:32px;margin-bottom:12px">🔒</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px">${isBlocked ? 'Acesso suspenso' : 'Trial expirado'}</div>
+          <div style="color:var(--text2);margin-bottom:20px">${isBlocked ? 'Sua conta está suspensa. Renove sua assinatura para acessar os módulos.' : 'Seu período de teste encerrou. Assine um plano para continuar.'}</div>
+          <button class="btn btn-primary" onclick="navigate('minha-conta');closeModal()">Ver planos</button>
+          <button class="btn" onclick="closeModal()" style="margin-left:8px">Fechar</button>
+        </div>
+      `);
+      return;
+    }
+  }
+
   if (MODULE_GUARD[v] && !checkPlan(MODULE_GUARD[v])) {
     showPlanBlockModal(MODULE_GUARD[v]);
     return;
