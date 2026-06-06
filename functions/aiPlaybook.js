@@ -9,6 +9,21 @@ const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 const MODEL = 'deepseek-chat';
 
 // ─── Monta contexto do negócio (replicado de aiChat) ──────────────────────────
+const _COLS = ['products','clients','suppliers','invoices','purchases','receivables','payables','transactions','stockMovements','orders','returns'];
+
+async function loadCollections(companyId) {
+  const colSnaps = await Promise.all(
+    _COLS.map(c => db.collection('empresas').doc(companyId).collection(c).get())
+  );
+  const collections = {};
+  _COLS.forEach((colName, i) => {
+    const items = [];
+    colSnaps[i].forEach(d => items.push(d.data()));
+    collections[colName] = items;
+  });
+  return collections;
+}
+
 async function buildBusinessContext(companyId) {
   const snap = await db.collection('empresas').doc(companyId).get();
   if (!snap.exists) return '{}';
@@ -21,13 +36,16 @@ async function buildBusinessContext(companyId) {
     return d.toISOString().slice(0, 7);
   })();
 
-  const products = (data.products || []).filter(p => p.active !== false);
-  const clients  = (data.clients  || []);
-  const invoices = (data.invoices || []);
-  const orders   = (data.orders   || []);
-  const receivables = (data.receivables || []);
-  const payables    = (data.payables    || []);
-  const transactions = (data.transactions || []);
+  // Lê dados das subcoleções (formato atual do frontend)
+  const cols = await loadCollections(companyId);
+
+  const products = (cols.products || []).filter(p => p.active !== false);
+  const clients  = (cols.clients  || []);
+  const invoices = (cols.invoices || []);
+  const orders   = (cols.orders   || []);
+  const receivables = (cols.receivables || []);
+  const payables    = (cols.payables    || []);
+  const transactions = (cols.transactions || []);
 
   // Vendas do mês atual
   const mesInvoices = invoices.filter(n => n.date?.startsWith(mesStr) && n.status !== 'cancelada');
