@@ -180,9 +180,9 @@ Atualizar após cada plano concluído:
 | Plano B | ✅ Concluído | 2026-06-01 | Focus NFe integrado; configurar token em Configurações → Dados Fiscais |
 | Plano C | ✅ Concluído | 2026-05-31 | Wizard onboarding 4 etapas + csvImport.js (Bling, Conta Azul, genérico) |
 | Plano D | ✅ Concluído | 2026-06-05 | Role contador: convite por email, isExternal, acesso somente leitura (dashboard/relatorios/notas/caixa/contas) |
-| Plano E2 | ✅ Código completo | 2026-06-05 | mpWebhook, checkOverdue, payAffiliate — aguarda deploy (Firebase Blaze + token MP) |
-| Plano E1 | ✅ Código completo | 2026-06-05 | admin.html operacional — aguarda deploy |
-| Plano E3 | ✅ Código completo | 2026-06-05 | createSubscription + assinarPlano() + tela de bloqueio — aguarda deploy |
+| Plano E2 | ✅ Concluído | 2026-06-05 | mpWebhook, checkOverdue, payAffiliate — deployado, testado end-to-end |
+| Plano E1 | ✅ Concluído | 2026-06-05 | admin.html operacional — deployado |
+| Plano E3 | ✅ Concluído | 2026-06-05 | createSubscription + assinarPlano() + tela de bloqueio — testado sandbox MP (cartão não funciona no sandbox, usar PIX/boleto) |
 | Plano F1 | ⏳ Pendente | — | Aguarda Anthropic API Key |
 | Plano F2 | ⏳ Pendente | — | — |
 | Plano F3 | ⏳ Pendente | — | — |

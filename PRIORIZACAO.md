@@ -141,9 +141,9 @@ Atualizar após cada plano concluído:
 | Plano B | ✅ Concluído | 2026-06-02 | NF-e via Focus NFe implementada (invoiceService.js) |
 | Plano C | ✅ Concluído | 2026-06-02 | csvImport.js + onboarding.js + checklist dashboard implementados |
 | Plano D | ✅ Concluído | 2026-06-02 | Role contador em ROLE_NAV, convite por email, isExternal exclui do limite de usuários |
-| Plano E2 | ⏳ Pendente | — | Aguarda Firebase Blaze + token MP |
-| Plano E1 | ⏳ Pendente | — | — |
-| Plano E3 | ⏳ Pendente | — | — |
+| Plano E2 | ✅ Concluído | 2026-06-05 | Deployado, 8 functions no ar, testado end-to-end |
+| Plano E1 | ✅ Concluído | 2026-06-05 | admin.html deployado |
+| Plano E3 | ✅ Concluído | 2026-06-05 | Checkout MP testado sandbox (cartão não funciona no sandbox) |
 | Plano F1 | ⏳ Pendente | — | Aguarda Anthropic API Key |
 | Plano F2 | ⏳ Pendente | — | — |
 | Plano F3 | ⏳ Pendente | — | — |
