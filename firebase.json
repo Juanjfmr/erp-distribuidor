@@ -13,10 +13,16 @@
       "wiki/**",
       ".claude/**",
       ".obsidian/**",
-      "node_modules/**",
+      "**/node_modules/**",
       "0",
       "Estas",
-      "c.checked"
+      "c.checked",
+      "gbrain",
+      "NF",
+      "rodaria",
+      "cert-*",
+      "*.pem",
+      "*.pfx"
     ],
     "headers": [
       {
