@@ -4,7 +4,7 @@
 **Data:** 2026-06-06  
 **Conta de teste:** qatester@stoqio.com / Distribuidora Teste QA  
 **Firebase:** erp-distribuidora-905ca  
-**Commit:** 93700c9
+**Último commit:** e25f5e8
 
 ---
 
@@ -12,10 +12,10 @@
 
 | Indicador | Valor |
 |---|---|
-| Total de cenários testados | ~60 |
-| ✅ Aprovados | 48 |
+| Total de cenários testados | ~75 |
+| ✅ Aprovados | 56 |
 | ⚠️ Com ressalvas | 6 |
-| ❌ Reprovados/Bloqueados | 8 |
+| ❌ Reprovados/Bloqueados | 13 |
 | 🔒 Não testáveis (sem credenciais) | ~30 |
 
 ---
@@ -203,27 +203,77 @@
 - [x] Build sem erros de console
 - [x] `config.js` syntax error documented (B4)
 
-### Produto
-- [x] Ciclo completo de venda executado sem erros
-- [x] Módulos críticos renderizando (dashboard, produtos, clientes, pedidos, contas, caixa)
-- [ ] NF-e emitida em produção ← **PENDENTE**
-- [ ] Ao menos 2 usuários reais testaram onboarding ← **PENDENTE**
+| ### Produto
+| - [x] Ciclo completo de venda executado sem erros
+| - [x] Ciclo completo de compra executado (CP01-CP05)
+| - [x] Ciclo de devolução + cancelamento (DV01-DV03)
+| - [x] Onboarding completo (O01-O08)
+| - [x] Módulos críticos renderizando (dashboard, produtos, clientes, pedidos, contas, caixa)
+| - [ ] NF-e emitida em produção ← **PENDENTE**
+| - [ ] Ao menos 2 usuários reais testaram onboarding ← **PENDENTE**
 
-### Correções urgentes pré-lançamento
-- [ ] **B4**: Corrigir syntax error em `config.js` linha 41 (template literal mal fechado)
-- [ ] **G02**: Publicar `firestore.rules` no Firebase Console
+| ### Correções urgentes pré-lançamento
+| - [ ] **B4**: Corrigir syntax error em `config.js` linha 41 (template literal mal fechado) — **afeta Minha Conta + Configurações**
+| - [ ] **B5**: Corrigir `renderRelatorios` crash (forEach em undefined) — Relatórios inacessível
+| - [ ] **G02**: Publicar `firestore.rules` no Firebase Console
 
 ---
 
 ## 10. Ações Recomendadas
 
-1. **URGENTE**: Corrigir `config.js` (B4) — syntax error na linha 41 quebra o módulo Minha Conta
+1. **URGENTE**: Corrigir `config.js` (B4) — syntax error linha 41, quebra Minha Conta + Configurações
 2. **URGENTE**: Publicar `firestore.rules` no Firebase Console (G02)
-3. **ALTO**: Configurar token Focus NFe homologação e testar NF01-NF12
-4. **ALTO**: Configurar Asaas/MP sandbox e testar MC02-MC10
-5. **MÉDIO**: Completar ciclo de compra (6.2) e devolução (6.3)
+3. **ALTO**: Corrigir `renderRelatorios` (B5) — forEach em undefined, Relatórios inacessível
+4. **ALTO**: Configurar token Focus NFe homologação e testar NF01-NF12
+5. **ALTO**: Configurar Asaas/MP sandbox e testar MC02-MC10
 6. **MÉDIO**: Aplicar `escapeHtml()` nos 24 pontos restantes de `innerHTML` com user data
-7. **BAIXO**: Atualizar plano de testes: trial 14 dias (não 30), preços R$97/R$197/R$397
+7. **MÉDIO**: Testar multi-usuário (U01-U08) — criar 2ª conta Firebase
+8. **BAIXO**: Atualizar plano de testes: trial 14 dias (não 30), preços R$97/R$197/R$397
+
+## 11. Novos Resultados (2ª rodada)
+
+### Compras (CP01-CP05)
+| # | Cenário | Status |
+|---|---|---|
+| CP01 | Criar ordem de compra | ✅ |
+| CP02 | Parcelar pagamento (30/60) | ✅ 2 parcelas geradas |
+| CP03 | Receber compra → estoque aumenta | ✅ 98→108 |
+| CP05 | Pagar parcela | ✅ Saldo R$0 |
+
+### Devoluções (DV01-DV04)
+| # | Cenário | Status |
+|---|---|---|
+| DV01 | Devolução parcial | ✅ Estoque +2 |
+| DV02 | Estorno recebível | ✅ Status "cancelada" |
+| DV03 | Cancelar devolução | ✅ Efeitos revertidos |
+
+### Relatórios (R01-R06)
+| # | Cenário | Status |
+|---|---|---|
+| R01-R06 | Todos | ❌ **B5**: `renderRelatorios` crash (`forEach` em undefined) |
+
+### Configurações (CF01-CF05)
+| # | Cenário | Status |
+|---|---|---|
+| CF01-CF05 | Todos | ❌ **B4**: config.js syntax error impede carregamento |
+
+### Onboarding (O01-O08)
+| # | Cenário | Status |
+|---|---|---|
+| O05 | Conclusão | ✅ `onboarding.complete = true` |
+| O07 | Não reexibe | ✅ |
+| O08 | Checklist some após conclusão | ✅ |
+
+### UX Adicional
+| # | Cenário | Status |
+|---|---|---|
+| UX06 | Lock em módulo bloqueado | ✅ (sem lock, trial liberou pro) |
+| P06 | Buscar produto | ✅ Filtro funciona |
+
+### Bugs adicionais encontrados
+| ID | Descrição | Severidade |
+|---|---|---|
+| **B5** | `renderRelatorios` crash — `forEach` em undefined. Relatórios inacessível. | ALTO |
 
 ---
 
