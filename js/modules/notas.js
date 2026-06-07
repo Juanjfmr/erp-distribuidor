@@ -20,6 +20,9 @@ function renderNotas(){
           ${sortedNfMonths.map(m=>{const [y,mo]=m.split("-");const ml=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][parseInt(mo)-1];return`<option value="${m}">${ml}/${y}</option>`;}).join("")}
         </select>
         <button class="btn btn-primary" onclick="openNFModal()">+ Nova Nota Fiscal</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="renderNFeRecebidas()" title="NFs emitidas contra seu CNPJ">📥 Recebidas</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="inutilizarNumeracaoModal()" title="Inutilizar faixa de numeração">🔢 Inutilizar</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="importarNFeModal()" title="Importar NF de outro sistema">📄 Importar</button>
       </div>
     </div>
     <div class="card" style="overflow-x:auto"><table><thead><tr>
@@ -151,6 +154,7 @@ async function openNFModal(){
     <div id="nf-costs-list" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      ${canEmitNFe(state.company)?`<button class="btn btn-ghost" onclick="previewDANFeModal()">👁 Pré-visualizar DANFe</button>`:''}
       <button class="btn btn-primary" onclick="emitirNF('${nextNum}')">Emitir Nota</button>
     </div>`,true);
   nfRenderItems();
@@ -455,8 +459,9 @@ function viewNF(id){
     </tbody></table></div>`:""}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      ${(n.status==="emitida"||n.status==="paga"||n.status==="parcial")?`<button class="btn btn-ghost" onclick="openDevolucaoModal('${n.id}')">↩ Devolver</button>`:""}
-      ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn btn-danger" onclick="cancelNF('${n.id}');closeModal()">Cancelar NF</button>`:""}
+      ${n.focusRef?`<button class="btn btn-ghost" onclick="viewNF(${n.id});closeModal();cartaCorrecaoModal('${n.focusRef}','${n.number}')">📝 CC-e</button><button class="btn btn-ghost" onclick="viewNF(${n.id});closeModal();enviarEmailNFModal('${n.focusRef}','${n.number}')">📧 Email</button>`:''}
+      ${(n.status==="emitida"||n.status==="paga"||n.status==="parcial")?`<button class="btn btn-ghost" onclick="openDevolucaoModal('${n.id}')">↩ Devolver</button>`:''}
+      ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn btn-danger" onclick="cancelNF('${n.id}');closeModal()">Cancelar NF</button>`:''}
     </div>`,true);
 }
 async function cancelNF(id){
@@ -686,3 +691,221 @@ async function confirmarBaixa(nfId){
 }
 
 function nfFilterProds(search){ nfRenderProdList(search); }
+
+// ─── NOVAS FUNCIONALIDADES FOCUS NFe ──────────────────────────────────────────
+
+// Carta de Correção (CC-e)
+function cartaCorrecaoModal(focusRef, numero){
+  showModal(`<div class="modal-title">Carta de Correção — ${numero||focusRef}</div>
+    <div class="form-group"><label class="form-label">Texto da correção (mín. 15 caracteres)</label>
+      <textarea id="cce-texto" class="form-input" style="min-height:100px" placeholder="Ex: O endereço correto do destinatário é Rua X, 123..."></textarea>
+    </div>
+    <p style="font-size:12px;color:var(--muted)">Não é possível corrigir: valores de imposto, dados do emitente/destinatário que mudem as partes, ou data de emissão.</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="executarCartaCorrecao('${focusRef}')">Enviar CC-e</button>
+    </div>`);
+}
+async function executarCartaCorrecao(focusRef){
+  if(!_guardSave()) return;
+  const texto = (document.getElementById('cce-texto')?.value||'').trim();
+  if(texto.length < 15){ _doneSave(); return alert('O texto da correção deve ter no mínimo 15 caracteres.'); }
+  showSyncStatus('Enviando carta de correção...');
+  const result = await cartaCorrecaoNFe(focusRef, texto, state.company);
+  _doneSave();
+  if(result.success){ closeModal(); showSyncStatus('✓ Carta de correção enviada'); }
+  else alert('Erro: ' + result.error);
+}
+
+// Enviar NF por Email
+function enviarEmailNFModal(focusRef, numero){
+  const c = state.clients.find(c => state.invoices.find(n => n.focusRef===focusRef)?.clientId === c.id);
+  const emailDefault = c?.email || '';
+  showModal(`<div class="modal-title">Enviar NF por Email — ${numero||focusRef}</div>
+    <div class="form-group"><label class="form-label">Emails (separados por vírgula, máx. 10)</label>
+      <input id="nf-email-list" class="form-input" value="${emailDefault}" placeholder="cliente@email.com, contador@email.com">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="executarEnviarEmail('${focusRef}')">📧 Enviar</button>
+    </div>`);
+}
+async function executarEnviarEmail(focusRef){
+  if(!_guardSave()) return;
+  const raw = (document.getElementById('nf-email-list')?.value||'').trim();
+  if(!raw){ _doneSave(); return alert('Informe ao menos um email.'); }
+  const emails = raw.split(',').map(e => e.trim()).filter(Boolean);
+  showSyncStatus('Enviando...');
+  const result = await enviarNFeEmail(focusRef, emails, state.company);
+  _doneSave();
+  if(result.success){ closeModal(); showSyncStatus(`✓ Email enviado para ${emails.length} destinatário(s)`); }
+  else alert('Erro: ' + result.error);
+}
+
+// Pré-visualizar DANFe
+async function previewDANFeModal(){
+  if(!_guardSave()) return;
+  if(!el("nf-client").value){ _doneSave(); return alert("Selecione um cliente primeiro."); }
+  if(!state.nfItems.length){ _doneSave(); return alert("Adicione pelo menos um item."); }
+
+  const rawClientId = el("nf-client").value;
+  const isAvulso = rawClientId === 'avulso';
+  const clientId = isAvulso ? null : parseInt(rawClientId);
+  const sub = nfGetSubtotal();
+  const disc = parseFloat(el("nf-disc").value)||0;
+  const freight = parseFloat(el("nf-freight").value)||0;
+  const clientCosts = (state.nfCosts||[]).filter(c=>c.clientPays).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
+  const total = parseFloat((sub*(1-disc/100)+freight+clientCosts).toFixed(2));
+  const date = el("nf-date").value;
+
+  const previewInvoice = {
+    id: 'preview', clientId: isAvulso ? null : clientId, clientName: isAvulso ? 'Consumidor Final' : null,
+    items: [...state.nfItems], discount: disc, freight, subtotal: parseFloat(sub.toFixed(2)), total,
+  };
+
+  showSyncStatus('Gerando pré-visualização...');
+  const result = await previsualizarDANFe(previewInvoice, state.company, state.products, state.clients);
+  _doneSave();
+  if(result.success && result.danfeUrl){
+    window.open(result.danfeUrl, '_blank');
+    showSyncStatus('✓ DANFe de pré-visualização aberta');
+  } else {
+    alert('Erro na pré-visualização: ' + (result.error || 'URL não disponível'));
+  }
+}
+
+// Inutilizar Numeração
+function inutilizarNumeracaoModal(){
+  showModal(`<div class="modal-title">Inutilizar Numeração de NF-e</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Use quando um número de NF foi pulado por erro. Em situação normal a API controla a numeração automaticamente.</p>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Série</label>
+        <input id="inut-serie" class="form-input" value="1" placeholder="1">
+      </div>
+      <div class="form-group"><label class="form-label">CNPJ</label>
+        <input id="inut-cnpj" class="form-input" value="${(state.company.cnpj||'').replace(/\D/g,'')}" placeholder="00000000000000">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Número Inicial</label>
+        <input id="inut-ini" type="number" class="form-input" placeholder="100">
+      </div>
+      <div class="form-group"><label class="form-label">Número Final</label>
+        <input id="inut-fim" type="number" class="form-input" placeholder="100">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Justificativa (mín. 15 caracteres)</label>
+      <textarea id="inut-just" class="form-input" style="min-height:80px" placeholder="Ex: Número de NF pulado por erro operacional..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="executarInutilizar()">Inutilizar</button>
+    </div>`);
+}
+async function executarInutilizar(){
+  if(!_guardSave()) return;
+  const cnpj = document.getElementById('inut-cnpj')?.value||'';
+  const serie = document.getElementById('inut-serie')?.value||'';
+  const ini = parseInt(document.getElementById('inut-ini')?.value);
+  const fim = parseInt(document.getElementById('inut-fim')?.value);
+  const just = document.getElementById('inut-just')?.value||'';
+  if(!cnpj||!serie||isNaN(ini)||isNaN(fim)||!just){ _doneSave(); return alert('Preencha todos os campos.'); }
+  showSyncStatus('Inutilizando...');
+  const result = await inutilizarNumeracao(cnpj, serie, ini, fim, just, state.company);
+  _doneSave();
+  if(result.success){ closeModal(); showSyncStatus('✓ Numeração inutilizada. Protocolo: '+result.protocolo); }
+  else alert('Erro: ' + result.error);
+}
+
+// Importar NF-e (XML)
+function importarNFeModal(){
+  showModal(`<div class="modal-title">Importar NF-e</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Cole o XML completo de uma NF-e própria já emitida em outro sistema. A empresa emitente deve estar cadastrada na Focus.</p>
+    <div class="form-group"><label class="form-label">XML da NF-e</label>
+      <textarea id="import-xml" class="form-input" style="min-height:200px;font-family:monospace;font-size:11px" placeholder="Cole o XML aqui..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="executarImportarNFe()">Importar</button>
+    </div>`);
+}
+async function executarImportarNFe(){
+  if(!_guardSave()) return;
+  const xml = document.getElementById('import-xml')?.value?.trim();
+  if(!xml){ _doneSave(); return alert('Cole o XML da NF-e.'); }
+  showSyncStatus('Importando...');
+  const result = await importarNFe(xml, state.company);
+  _doneSave();
+  if(result.success){ closeModal(); showSyncStatus('✓ NF-e importada. Chave: '+(result.chave||'sucesso')); }
+  else alert('Erro: ' + result.error);
+}
+
+// NF-e Recebidas (entrada)
+async function renderNFeRecebidas(){
+  if(!_guardSave()) return;
+  showSyncStatus('Buscando NFs recebidas...');
+  const result = await listarNFeRecebidas(state.company);
+  _doneSave();
+  const notas = result.notas || [];
+  showModal(`<div class="modal-title">NF-e Recebidas <span style="font-size:12px;font-weight:400;color:var(--muted)">(${notas.length}${result.total?', total: '+result.total:''})</span></div>
+    ${notas.length ? `<div style="max-height:60vh;overflow-y:auto"><table><thead><tr><th>Chave/Número</th><th>Emitente</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+      ${notas.map(n=>`<tr>
+        <td class="mono" style="font-size:11px">${n.chave_nfe||n.chave||'—'}</td>
+        <td>${n.nome_emitente||'—'}</td>
+        <td class="mono">${n.valor_total?fmt(parseFloat(n.valor_total)):'—'}</td>
+        <td><span class="badge ${n.status==='autorizado'?'bg-green':'bg-amber'}">${n.status||'—'}</span></td>
+        <td>
+          <button class="btn-sm" onclick="verNFeRecebidaDetalhe('${n.chave_nfe||n.chave}')">Ver</button>
+          <button class="btn-sm btn-amber" onclick="manifestarNFeModal('${n.chave_nfe||n.chave}')">Manifestar</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table></div>` : '<p style="text-align:center;color:var(--muted)">Nenhuma NF recebida encontrada.</p>'}
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+    </div>`, true);
+}
+
+async function verNFeRecebidaDetalhe(chave){
+  if(!_guardSave()) return;
+  const result = await consultarNFeRecebida(chave, state.company);
+  _doneSave();
+  if(result.error){ alert('Erro: '+result.error); return; }
+  showModal(`<div class="modal-title">NF-e Recebida</div>
+    <pre style="background:var(--bg2);padding:16px;border-radius:8px;font-size:12px;overflow:auto;max-height:60vh">${JSON.stringify(result, null, 2)}</pre>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="renderNFeRecebidas()">← Voltar</button>
+      <button class="btn btn-primary" onclick="manifestarNFeModal('${chave}')">Manifestar</button>
+    </div>`, true);
+}
+
+function manifestarNFeModal(chave){
+  showModal(`<div class="modal-title">Manifestação do Destinatário</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Registre sua posição sobre esta NF recebida perante a SEFAZ.</p>
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Tipo de Manifestação</label>
+        <select id="mani-tipo" class="form-input" onchange="document.getElementById('mani-just-group').style.display=this.value==='confirmacao'||this.value==='nao_realizada'?'block':'none'">
+          <option value="ciencia">Ciência da operação</option>
+          <option value="confirmacao">Operação realizada (confirmação)</option>
+          <option value="desconhecimento">Desconhecimento da operação</option>
+          <option value="nao_realizada">Operação não realizada</option>
+        </select>
+      </div>
+      <div class="form-group" id="mani-just-group" style="display:none"><label class="form-label">Justificativa (mín. 15 caracteres)</label>
+        <input id="mani-just" class="form-input" placeholder="Justificativa...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="renderNFeRecebidas()">Cancelar</button>
+      <button class="btn btn-primary" onclick="executarManifestar('${chave}')">Registrar</button>
+    </div>`);
+}
+async function executarManifestar(chave){
+  if(!_guardSave()) return;
+  const tipo = document.getElementById('mani-tipo')?.value;
+  const just = document.getElementById('mani-just')?.value||'';
+  showSyncStatus('Registrando manifestação...');
+  const result = await manifestarNFe(chave, tipo, just, state.company);
+  _doneSave();
+  if(result.success){ closeModal(); showSyncStatus('✓ Manifestação registrada'); }
+  else alert('Erro: ' + result.error);
+}

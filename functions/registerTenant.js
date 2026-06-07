@@ -67,6 +67,22 @@ exports.registerTenant = functions.https.onCall(async (data, context) => {
       'company.fiscalData':              fiscalData,
     });
 
+    // ─── Auto-registra webhook na Focus NFe ──────────────────────────────────
+    try {
+      const functionUrl = `https://${process.env.GCLOUD_PROJECT || 'erp-distribuidora-905ca'}.cloudfunctions.net/focusWebhook`;
+      await axios.post('https://api.focusnfe.com.br/v2/webhooks', {
+        url:    functionUrl,
+        eventos: ['nfe', 'nfce', 'nfse', 'cte', 'mdfe'],
+        cnpj:   fiscalData.cnpj.replace(/\D/g, ''),
+      }, {
+        auth: { username: masterToken, password: '' },
+      });
+      console.log(`Webhook registrado para ${fiscalData.cnpj} → ${functionUrl}`);
+    } catch (webhookErr) {
+      // Webhook falhou — não é crítico, a emissão funciona sem webhook (usa polling)
+      console.warn(`Falha ao registrar webhook para ${fiscalData.cnpj}:`, webhookErr.response?.data || webhookErr.message);
+    }
+
     return { success: true };
 
   } catch (err) {
