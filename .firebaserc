@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "erp-distribuidora-905ca"
+    "default": "erp-distribuidora-905ca",
+    "prod": "erp-distribuidora-905ca",
+    "staging": "stoqio-v2-staging"
   }
 }
