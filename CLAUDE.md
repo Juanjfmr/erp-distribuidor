@@ -181,6 +181,16 @@ state = {
 | Corrigir bug | `systematic-debugging` → `verification-before-completion` |
 | Revisar e mergear | `requesting-code-review` → `finishing-a-development-branch` |
 
+## Regras de Deploy
+
+| Tipo de alteração | Deploy | Branch |
+|---|---|---|
+| Bug fix / correção | **main + v2** | Ambos |
+| Feature / implementação | **v2 apenas** | v2 (salvo ordem contrária) |
+| Dúvida sobre onde | **Perguntar ao Juan** | — |
+
+> **Sem limitante de lançamento.** Toda correção ou funcionalidade pronta vai a produção imediatamente após commit.
+
 ## Como Iniciar Nova Sessão
 1. Leia este `CLAUDE.md` completo
 2. Leia `docs/superpowers/plans/PRIORIZACAO.md` para identificar o próximo plano na fila
