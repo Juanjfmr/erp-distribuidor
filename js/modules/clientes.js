@@ -47,23 +47,23 @@ function filterClientes(){
         <button class="btn-sm btn-amber" onclick="openClientModal(${c.id})">Editar</button>
         <button class="btn-sm" onclick="deleteClient(${c.id})">✕</button>
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhum cliente encontrado.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">👥<br><b>Nenhum cliente encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro cliente ou busque por CNPJ</span></div></td></tr>`;
 }
 function openClientModal(id){
   const c=id?state.clients.find(x=>x.id===id):null;
   showModal(`<div class="modal-title">${c?"Editar Cliente":"Novo Cliente"}</div>
     <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fc-name" class="form-input" value="${c?c.name:""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?c.cnpj||"":""}" onblur="buscarCnpjCliente()"></div>
+      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?c.cnpj||"":""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjCliente()"></div>
       <div class="form-group"><label class="form-label">Cidade</label><input id="fc-city" class="form-input" value="${c?c.city||"":""}"></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Telefone</label><input id="fc-phone" class="form-input" value="${c?c.phone||"":""}"></div>
+      <div class="form-group"><label class="form-label">Telefone</label><input id="fc-phone" class="form-input" value="${c?c.phone||"":""}" oninput="applyMask(this,'phone')"></div>
       <div class="form-group"><label class="form-label">E-mail</label><input id="fc-email" class="form-input" value="${c?c.email||"":""}"></div>
     </div>
     <div class="form-grid-3">
       <div class="form-group"><label class="form-label">Inscrição Estadual</label><input id="fc-ie" class="form-input" placeholder="Isento ou número" value="${c?c.ie||'':''}"></div>
-      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}" onblur="buscarCep('cli')"></div>
+      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}" oninput="applyMask(this,'cep')" onblur="buscarCep('cli')"></div>
       <div class="form-group"><label class="form-label">UF</label><select id="fc-uf" class="form-input">${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(u=>`<option${c&&c.uf===u?' selected':''}>${u}</option>`).join('')}</select></div>
     </div>
     <div class="form-grid-2">

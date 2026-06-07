@@ -71,7 +71,7 @@ function filterProdutos(){
             <button class="btn-sm" onclick="viewPriceHistory(${p.id})" title="Histórico de preço">📈</button>
             <button class="btn-sm btn-red" onclick="deleteProd(${p.id})" title="Inativar produto">✕</button>`}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="10" class="empty">Nenhum produto.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="10" class="empty"><div style="padding:12px">📦<br><b>Nenhum produto cadastrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro produto ou importe via CSV</span></div></td></tr>`;
 }
 function openProdModal(id){
   const p=id?state.products.find(x=>x.id===id):null;

@@ -59,7 +59,7 @@ function renderContas(){
           <td class="mono fw-bold">${fmt(r.amount)}</td>
           <td><span class="badge ${r.status==="paga"?"bg-green":r.status==="cancelada"?"bg-gray":overdue?"bg-red":"bg-amber"}">${r.status==="aberta"&&overdue?"vencida":r.status}</span></td>
           <td>${r.status==="aberta"?`<button class="btn-sm btn-green" onclick="payReceivable(${r.id})">Receber</button>${state?.company?.asaasKey?`<button class="btn-sm" style="background:#6366f1;color:#fff;margin-left:3px" onclick="cobrar(${r.id},'PIX')">📱</button><button class="btn-sm" style="background:#0ea5e9;color:#fff;margin-left:2px" onclick="cobrar(${r.id},'BOLETO')">🏦</button>`:''}`:`<span class="text-muted mono" style="font-size:11px">${r.paidAt?fmtDate(r.paidAt):""}</span>`}</td>
-        </tr>`}).join("")||`<tr><td colspan="8" class="empty">Nenhum lançamento.</td></tr>`}
+        </tr>`}).join("")||`<tr><td colspan="8" class="empty"><div style="padding:12px">💰<br><b>Nenhum lançamento a receber</b><br><span style="font-size:12px;color:var(--muted)">Os recebimentos aparecem aqui após faturar pedidos</span></div></td></tr>`}
       </tbody></table>`;
   } else {
     var sortedPag=[...state.payables];
@@ -82,7 +82,7 @@ function renderContas(){
           <td class="mono fw-bold">${fmt(p.amount)}</td>
           <td><span class="badge ${p.status==="paga"?"bg-green":overdue?"bg-red":"bg-amber"}">${p.status==="aberta"&&overdue?"vencida":p.status}</span></td>
           <td>${p.status==="aberta"?`<button class="btn-sm btn-red" onclick="payPayable(${p.id})">Pagar</button>`:`<span class="text-muted mono" style="font-size:11px">${p.paidAt?fmtDate(p.paidAt):""}</span>`}</td>
-        </tr>`}).join("")||`<tr><td colspan="7" class="empty">Nenhum lançamento.</td></tr>`}
+        </tr>`}).join("")||`<tr><td colspan="7" class="empty"><div style="padding:12px">💳<br><b>Nenhum lançamento a pagar</b><br><span style="font-size:12px;color:var(--muted)">Os pagamentos aparecem aqui após registrar compras</span></div></td></tr>`}
       </tbody></table>`;
   }
 

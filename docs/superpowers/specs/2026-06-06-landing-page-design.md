@@ -149,9 +149,9 @@ Distribuidora · Construção · Alimentos · Bebidas · Pet Shop · Farmácia �
 | Plano | Preço | Destaque |
 |---|---|---|
 | Trial | Grátis · 14 dias | Tudo liberado, sem cartão |
-| Básico | R$79/mês | Ideal para começar |
-| Profissional | R$149/mês | Badge: "Mais escolhido" |
-| Empresarial | R$299/mês | Multi-usuário, suporte prioritário |
+| Essencial | R$97/mês | Ideal para começar |
+| Profissional | R$197/mês | Badge: "Mais escolhido" |
+| Empresarial | R$397/mês | Multi-usuário, suporte prioritário |
 
 CTA em cada card: `Começar agora` / `Testar grátis`
 

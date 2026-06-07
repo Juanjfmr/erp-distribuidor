@@ -3,9 +3,19 @@ function showModal(html,large){
   el("modal-box").className="modal-box"+(large?" modal-box-lg":"");
   el("modal-box").innerHTML=html;
   el("modal").style.display="flex";
+  // Focus trap: foca o modal para capturar Escape
+  setTimeout(()=>{ const mb=el("modal-box"); if(mb) mb.focus(); }, 50);
 }
 function closeModal(){ el("modal").style.display="none"; state.nfItems=[]; state.compraItems=[]; state.pedidoItems=[]; state.nfCosts=[]; }
 const openModal = showModal;
+
+// ─── MODAL ESC + CLICK-OUTSIDE ──────────────────────────────────────────────
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && el('modal').style.display==='flex'){ closeModal(); }
+});
+el('modal').addEventListener('click', function(e){
+  if(e.target===el('modal')) closeModal();
+});
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 const PAGE_TITLES={dashboard:"Dashboard",produtos:"Produtos",clientes:"Clientes",fornecedores:"Fornecedores",pedidos:"Pedidos de Venda",notas:"Nota Fiscal",devolucoes:"Devoluções",compras:"Compras",contas:"Contas",caixa:"Fluxo de Caixa",relatorios:"Relatórios",config:"Configurações",onboarding:"Configuração Inicial"};

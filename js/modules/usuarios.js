@@ -14,6 +14,7 @@ async function renderUsuarios() {
   if (window._userRole !== 'admin') { navigate('dashboard'); return; }
   el("content").innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Carregando usuários...</div>`;
   const allUsers = await loadUsers();
+  window._users = allUsers;
   const users = allUsers.filter(u => !u.isExternal);
   const contadores = allUsers.filter(u => u.isExternal && u.role === 'contador');
   el("content").innerHTML = `

@@ -6,7 +6,7 @@
 async function saveFiscalStep(fields) {
   const updates = {};
   for (const [k, v] of Object.entries(fields)) updates[`company.${k}`] = v;
-  await setDoc(doc(window._db, 'empresas', state.companyId), updates, { merge: true });
+  await window._fbFns.setDoc(window._fbFns.doc(window._db, 'empresas', state.companyId), updates, { merge: true });
   Object.assign(state.company, fields);
 }
 

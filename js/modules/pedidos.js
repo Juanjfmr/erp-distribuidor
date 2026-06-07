@@ -75,7 +75,7 @@ function filterPedidos(){
         <span style="flex:1"></span>
         ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-red" onclick="cancelarPedido('${o.id}')" title="Cancelar pedido">✕</button>`:''}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhum pedido encontrado.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">📋<br><b>Nenhum pedido encontrado</b><br><span style="font-size:12px;color:var(--muted)">Crie seu primeiro pedido de venda para começar</span></div></td></tr>`;
 }
 
 function openPedidoModal(prefill){

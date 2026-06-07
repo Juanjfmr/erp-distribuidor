@@ -62,12 +62,14 @@ async function _asaasUpsertCustomer(client) {
 
 async function asaasGerarCobranca(receivable, client, tipo) {
   const customerId = await _asaasUpsertCustomer(client);
+  const externalRef = `${window._companyId}:${receivable.id}`;
   const charge = await _asaasReq('POST', '/payments', {
     customer: customerId,
     billingType: tipo,
     value: receivable.amount,
     dueDate: receivable.dueDate,
-    description: `Parcela ${receivable.installment||1}/${receivable.total||1} — ${receivable.invoiceId||''}`
+    description: `Parcela ${receivable.installment||1}/${receivable.total||1} — ${receivable.invoiceId||''}`,
+    externalReference: externalRef,
   });
   if (tipo === 'PIX') {
     const pix = await _asaasReq('GET', `/payments/${charge.id}/pixQrCode`);

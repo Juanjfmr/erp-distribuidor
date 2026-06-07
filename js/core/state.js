@@ -401,3 +401,29 @@ async function proximoDiaUtil(dateStr) {
   return dateStr;
 }
 window.proximoDiaUtil = proximoDiaUtil;
+
+// ─── INPUT MASKS ─────────────────────────────────────────────────────────
+function maskCNPJ(v){ v=v.replace(/\D/g,'').slice(0,14); return v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2'); }
+function maskCEP(v){ v=v.replace(/\D/g,'').slice(0,8); return v.replace(/^(\d{5})(\d)/,'$1-$2'); }
+function maskPhone(v){ v=v.replace(/\D/g,'').slice(0,11); if(v.length<=10) return v.replace(/^(\d{2})(\d{4})(\d)/,'($1) $2-$3'); return v.replace(/^(\d{2})(\d{5})(\d)/,'($1) $2-$3'); }
+function unmask(v){ return (v||'').replace(/\D/g,''); }
+
+function applyMask(el, type){
+  const raw = el.value;
+  if(type==='cnpj') el.value = maskCNPJ(raw);
+  else if(type==='cep') el.value = maskCEP(raw);
+  else if(type==='phone') el.value = maskPhone(raw);
+}
+
+// ─── EMPTY STATE ─────────────────────────────────────────────────────────
+function emptyState(icon, title, subtitle, actionLabel, actionFn){
+  return `<div style="text-align:center;padding:48px 24px">
+    <div style="font-size:40px;margin-bottom:16px">${icon}</div>
+    <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">${title}</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:${actionLabel?'20':'0'}px">${subtitle}</div>
+    ${actionLabel ? `<button class="btn btn-primary" onclick="${actionFn}">${actionLabel}</button>` : ''}
+  </div>`;
+}
+
+window.maskCNPJ = maskCNPJ; window.maskCEP = maskCEP; window.maskPhone = maskPhone;
+window.unmask = unmask; window.applyMask = applyMask; window.emptyState = emptyState;

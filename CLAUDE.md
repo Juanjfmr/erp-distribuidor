@@ -57,7 +57,7 @@ state = {
 - **Multi-tenant:** isolamento por `companyId` no Firestore e nas regras de segurança
 - **Roles:** admin vê tudo; vendedor sem config/usuários; visualizador só dashboard/relatórios
 - **Programa de afiliados:** link personalizado, comissão de 20% recorrente
-- **Planos:** trial (30 dias), Básico R$79, Profissional R$149, Empresarial R$299
+- **Planos:** trial (14 dias), Essencial R$97, Profissional R$197, Empresarial R$397
 - **Numeração atômica de NF:** via `runTransaction` no Firestore — sem duplicatas com usuários simultâneos
 - **Assinatura via Mercado Pago** (integração planejada — Planos E1/E2/E3)
 
@@ -69,7 +69,7 @@ state = {
 - ✅ Camada `services/` criada: `invoiceService.js` (Focus NFe) + `csvImport.js` (onboarding CSV)
 - ✅ NF-e via Focus NFe implementada — configurar token em Configurações → Dados Fiscais
 - ✅ PLAN_LIMITS, checkPlan(), MODULE_GUARD implementados — bloqueio por plano ativo
-- ✅ Trial de 30 dias e strings do projeto antigo renomeadas (STORAGE_KEY, backup)
+- ✅ Trial de 14 dias e strings do projeto antigo renomeadas (STORAGE_KEY, backup)
 - ✅ Wizard de onboarding (4 etapas) + checklist no dashboard + importação CSV implementados
 - ✅ Role `contador` implementada — acesso somente leitura, convite por email, isExternal
 - ✅ **Bloco 1 completo** (Planos A, B, C, D) — commit `513e786`

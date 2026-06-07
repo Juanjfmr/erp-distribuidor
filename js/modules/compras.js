@@ -63,7 +63,7 @@ function filterCompras(){
         ${c.status!=="paga"?`<button class="btn-sm btn-ghost" onclick="editCompraModal(${c.id})">Editar</button>`:""}
         ${c.status!=="paga"?`<button class="btn-sm" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3)" onclick="pagarCompra(${c.id})">💰 Pagar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="9" class="empty">Nenhuma compra encontrada.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="9" class="empty"><div style="padding:12px">🛒<br><b>Nenhuma compra encontrada</b><br><span style="font-size:12px;color:var(--muted)">Registre sua primeira ordem de compra para controlar suprimentos</span></div></td></tr>`;
 }
 const CP_PAY_METHODS=["Pix","Cartão de Crédito","Crédito Fornecedor","Dinheiro","Transferência"];
 function importarNFeXML(){

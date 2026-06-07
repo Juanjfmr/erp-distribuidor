@@ -65,7 +65,7 @@ function filterNotas(){
         ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm btn-green" onclick="darBaixaNF(${n.id})">↓ Receber</button>`:""}
         ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn-sm btn-red" onclick="cancelNF(${n.id})">Cancelar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhuma nota encontrada.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">🧾<br><b>Nenhuma nota fiscal encontrada</b><br><span style="font-size:12px;color:var(--muted)">Emita sua primeira NF-e para começar a faturar</span></div></td></tr>`;
 }
 
 async function openNFModal(){

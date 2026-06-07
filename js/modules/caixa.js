@@ -71,7 +71,7 @@ function renderCaixa(){
         <td>${t.description}</td>
         <td class="mono fw-bold" style="color:${t.type==="entrada"?"var(--green)":"var(--red)"}">${t.type==="entrada"?"+":"−"}${fmt(t.amount)}</td>
         <td><button class="btn-sm btn-red" onclick="deleteTx(${t.id})">✕</button></td>
-      </tr>`).join("")||`<tr><td colspan="6" class="empty">Nenhuma transação encontrada.</td></tr>`}
+      </tr>`).join("")||`<tr><td colspan="6" class="empty"><div style="padding:12px">📊<br><b>Nenhuma transação no período</b><br><span style="font-size:12px;color:var(--muted)">Lançamentos manuais ou baixas de contas aparecem aqui</span></div></td></tr>`}
     </tbody></table></div>
 
     <!-- Despesas Fixas / Recorrentes -->

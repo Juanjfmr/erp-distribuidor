@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#8b5cf6"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Stoqio"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="icon" href="/icon-192.png" sizes="192x192"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Stoqio — Gestão Empresarial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<script
+  src="https://js.sentry-cdn.com/c5f7da09755c0bb83a69d0f3464bceae.min.js"
+  crossorigin="anonymous"
+></script>
+<script type="module">
+// ─── FIREBASE SDK ─────────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeApp as initSecondaryApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
+  authDomain: "erp-distribuidora-905ca.firebaseapp.com",
+  projectId: "erp-distribuidora-905ca",
+  storageBucket: "erp-distribuidora-905ca.firebasestorage.app",
+  messagingSenderId: "1081428850259",
+  appId: "1:1081428850259:web:6e3d83b13a033e0154b8a6"
+};
+
+const app = initializeApp(firebaseConfig);
+window._firebaseConfig = firebaseConfig;
+const db = getFirestore(app);
+const auth = getAuth(app);
+const functions = getFunctions(app);
+
+// Expose to global scope for use in non-module scripts
+window._db = db;
+window._auth = auth;
+window._app = app;
+window._functions = functions;
+window._httpsCallable = httpsCallable;
+
+// Proxies Cloud Functions (evitam CORS — frontend chama Function, Function chama API externa)
+try {
+  const region = 'us-central1';
+  const pid = firebaseConfig.projectId;
+  window.ASAAS_PROXY = `https://${region}-${pid}.cloudfunctions.net/asaasProxy`;
+  window._focusProxyUrl = `https://${region}-${pid}.cloudfunctions.net/focusProxy`;
+} catch(_) {}
+window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
+window._firebaseConfig = firebaseConfig;
+
+// Auth state listener
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    window._currentUser = user;
+    // Load user profile/role from Firestore
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        const profile = snap.data();
+        window._userProfile = profile;
+        window._userRole = profile.role || 'visualizador';
+        // companyId vem sempre do perfil do usuário — isolamento total por tenant
+        // Admins: companyId = uid (gravado em doSignup)
+        // Não-admins convidados: companyId = companyId do admin que os convidou (gravado em usuarios.js)
+        window._companyId = profile.companyId || user.uid;
+      } else {
+        // Race condition no cadastro (onAuthStateChanged disparou antes do setDoc em doSignup)
+        // ou primeiro usuário criado direto no Firebase Console.
+        const companyId = user.uid;
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        const profile = { name: user.displayName || user.email, email: user.email, role: 'admin', active: true, createdAt: new Date().toISOString(), companyId };
+        await setDoc(doc(db, 'users', user.uid), profile);
+        await setDoc(doc(db, 'empresas', companyId), { plan: 'trial', trialEndsAt, active: true }, { merge: true });
+        window._userProfile = profile;
+        window._userRole = 'admin';
+        window._companyId = companyId;
+      }
+    } catch(e) {
+      console.error('[Auth] Erro ao carregar perfil do usuário — role forçado para visualizador:', e.code || e.message, e);
+      window._userRole = 'visualizador'; // fallback seguro — nunca assumir admin
+      window._companyId = user.uid;
+    }
+    // ── Verificação de plano / trial / inadimplência ─────────────────────────
+    const companySnap = await getDoc(doc(db, 'empresas', window._companyId)).catch(()=>null);
+    const companyData = companySnap && companySnap.exists() ? companySnap.data() : {};
+    const plan = companyData.plan || 'trial';
+    const trialEndsAt = companyData.trialEndsAt ? new Date(companyData.trialEndsAt) : null;
+    const isActive = companyData.active !== false;
+    const trialExpired = plan === 'trial' && trialEndsAt && new Date() > trialEndsAt;
+    const isBlocked = companyData.status === 'bloqueado';
+
+    // Expor para navigate() e outros componentes
+    window._plan = plan;
+    window._trialEndsAt = trialEndsAt;
+    window._tenantStatus = companyData.status || 'trial';
+    window._companyData = companyData;
+
+    // Sincronizar dados da empresa do Firestore no state (evita stale do localStorage)
+    try {
+      if (companyData.company || companyData.name) {
+        const raw = localStorage.getItem('stoqio_v1');
+        if (raw) {
+          const stored = JSON.parse(raw);
+          if (companyData.company) stored.company = Object.assign(stored.company || {}, companyData.company);
+          if (companyData.name) stored.company.name = companyData.name;
+          localStorage.setItem('stoqio_v1', JSON.stringify(stored));
+        }
+      }
+    } catch(_) {}
+
+    if (plan !== 'owner' && (!isActive || trialExpired || isBlocked)) {
+      document.getElementById('login-screen').style.setProperty('display','none','important');
+      document.getElementById('app').style.setProperty('display','none','important');
+      
+      const trialBlockScreen = document.getElementById('trial-block-screen');
+      trialBlockScreen.style.setProperty('display','flex','important');
+      
+      const titleEl = trialBlockScreen.querySelector('.ls-trial-title');
+      const msgEl = document.getElementById('trial-block-msg');
+      const btnEl = trialBlockScreen.querySelector('.ls-trial-btn');
+      
+      if (isBlocked) {
+        titleEl.textContent = 'Acesso suspenso';
+        msgEl.textContent = 'Seu acesso foi suspenso por falta de pagamento ou trial expirado. Renove sua assinatura para continuar usando o sistema.';
+        btnEl.textContent = 'Renovar assinatura';
+        btnEl.removeAttribute('href');
+        btnEl.style.cursor = 'pointer';
+        btnEl.onclick = (e) => {
+          e.preventDefault();
+          trialBlockScreen.style.setProperty('display','none','important');
+          document.getElementById('app').style.setProperty('display','flex','important');
+          if (window.navigate) {
+            window.navigate('minha-conta');
+          } else {
+            state.currentView = 'minha-conta';
+            render();
+          }
+        };
+      } else if (trialExpired) {
+        titleEl.textContent = 'Seu período de teste encerrou';
+        msgEl.textContent = 'Seu período de teste de 14 dias encerrou. Renove sua assinatura para continuar usando o sistema.';
+        btnEl.textContent = 'Escolher plano';
+        btnEl.removeAttribute('href');
+        btnEl.style.cursor = 'pointer';
+        btnEl.onclick = (e) => {
+          e.preventDefault();
+          trialBlockScreen.style.setProperty('display','none','important');
+          document.getElementById('app').style.setProperty('display','flex','important');
+          if (window.navigate) {
+            window.navigate('minha-conta');
+          } else {
+            state.currentView = 'minha-conta';
+            render();
+          }
+        };
+      } else {
+        titleEl.textContent = 'Empresa inativa';
+        msgEl.textContent = 'Esta empresa foi desativada pelo administrador.';
+        btnEl.textContent = 'Falar com o suporte';
+        btnEl.setAttribute('href', 'mailto:contato@stoqio.com.br');
+        btnEl.onclick = null;
+      }
+      return;
+    }
+    window._plan = plan;
+    window._trialEndsAt = trialEndsAt;
+    window._companyData = companyData;
+
+    const loginEl = document.getElementById('login-screen');
+    const appEl = document.getElementById('app');
+    loginEl.style.setProperty('display','none','important');
+    appEl.style.setProperty('display','flex','important');
+    appEl.classList.add('visible');
+    loadFromFirebase();
+  } else {
+    window._currentUser = null;
+    window._userRole = null;
+    window._plan = null;
+    const loginEl2 = document.getElementById('login-screen');
+    const appEl2 = document.getElementById('app');
+    appEl2.style.setProperty('display','none','important');
+    appEl2.classList.remove('visible');
+    loginEl2.style.setProperty('display','flex','important');
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const passInput = document.getElementById('login-pass');
+  if(passInput) passInput.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  const emailInput = document.getElementById('login-email');
+  if(emailInput) emailInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+  // Salva código de afiliado da URL no localStorage (persiste até o cadastro)
+  const refParam = new URLSearchParams(window.location.search).get('ref');
+  if(refParam) { localStorage.setItem('_ref', refParam); showSignup(); }
+
+  // Garante re-render após todos os scripts carregarem (evita dashboard em branco
+  // quando onAuthStateChanged dispara antes dos scripts de módulo estarem prontos)
+  if (window._currentUser && typeof render === 'function' && !document.getElementById('content')?.children?.length) {
+    setTimeout(() => { if (typeof render === 'function') render(); }, 100);
+  }
+});
+
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--bg2:#171717;--bg3:#0f0f0f;
+  --border:#272727;--border2:#333333;
+  --text:#d4d4d4;--text2:#999999;--muted:#5e5e5e;
+  --primary:#a78bfa;--primary-light:#c4b5fd;--primary-dim:rgba(167,139,250,.1);--primary-border:rgba(167,139,250,.2);
+  --amber:#f59e0b;--green:#22c55e;--red:#f85149;--blue:#60a5fa;
+  --font-d:'Plus Jakarta Sans',sans-serif;--font-b:'Plus Jakarta Sans',sans-serif;--font-m:'JetBrains Mono',monospace;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px}
+body{display:flex}
+input,select,button,textarea{font-family:var(--font-b)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:0;box-shadow:0 0 0 4px rgba(139,92,246,.12)}
+#login-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg3);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#app{width:100%;height:100vh;display:none;overflow:hidden;flex-direction:column}
+#app.visible{display:flex!important}
+#sidebar{width:224px;min-width:224px;height:100vh;background:var(--bg3);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+#main{flex:1;min-width:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#topbar{flex-shrink:0;padding:15px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg)}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 28px;min-height:0}
+#sidebar-overlay{display:none}
+.hamburger-btn{display:none}
+.logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.logo-title{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--primary-light);letter-spacing:.05em;text-transform:uppercase}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.1em}
+nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-left:2px solid transparent;transition:all .15s}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor}
+.nav-item:hover{color:var(--text2);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--primary-light);background:rgba(139,92,246,.1);border-left-color:var(--primary);font-weight:600}
+.nav-sep{height:1px;background:var(--border);margin:8px 0}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--font-m)}
+.page-title{font-family:var(--font-d);font-weight:700;font-size:20px}
+.topbar-date{font-size:12px;color:var(--muted);font-family:var(--font-m)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap}
+.sort-th:hover{color:var(--primary-light);background:rgba(255,255,255,.03)}
+.sort-th{cursor:pointer;user-select:none}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.kpi-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:18px 20px}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi-value{font-family:var(--font-m);font-size:21px;font-weight:500;margin-top:6px;letter-spacing:-.02em}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.bg-green{background:rgba(63,185,80,.15);color:var(--green)}
+.bg-amber{background:rgba(240,192,64,.15);color:var(--amber)}
+.bg-red{background:rgba(248,81,73,.15);color:var(--red)}
+.bg-blue{background:rgba(88,166,255,.15);color:var(--blue)}
+.bg-gray{background:rgba(139,148,158,.15);color:var(--muted)}
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#7c3aed}
+.btn-ghost{background:var(--border);color:var(--text2)}.btn-ghost:hover{background:var(--border2)}
+.btn-danger{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+.btn-sm{padding:4px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;background:transparent;color:var(--muted);transition:all .15s}
+.btn-sm:hover{border-color:var(--primary);color:var(--primary-light)}
+.btn-amber{background:rgba(240,192,64,.1);color:var(--amber);border-color:rgba(240,192,64,.3)}
+.btn-red{background:rgba(248,81,73,.1);color:var(--red);border-color:rgba(248,81,73,.3)}
+.btn-green{background:rgba(63,185,80,.1);color:var(--green);border-color:rgba(63,185,80,.3)}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.form-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:28px;width:620px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-box-lg{width:780px}
+.modal-title{font-family:var(--font-d);font-weight:700;font-size:18px;margin-bottom:20px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.row{display:flex;align-items:center;gap:10px}
+.row-between{display:flex;align-items:center;justify-content:space-between}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--font-d);font-weight:700;font-size:16px;color:var(--text)}
+.mono{font-family:var(--font-m);font-size:12px}
+.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-red{color:var(--red)}
+.text-muted{color:var(--muted)}.text-white{color:var(--text)}.fw-bold{font-weight:600}
+.empty{text-align:center;padding:36px;color:var(--muted)}
+.alert-warn{background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:14px}
+.alert-red{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px}
+/* Notification bell */
+.notif-bell{position:relative;cursor:pointer;font-size:18px;padding:4px 6px;border-radius:6px;transition:all .15s;user-select:none;line-height:1}
+.notif-bell:hover{background:rgba(255,255,255,.06)}
+.notif-badge{position:absolute;top:-2px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;line-height:1}
+.notif-dropdown{display:none;position:absolute;top:100%;right:0;margin-top:8px;width:380px;max-height:420px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.55);z-index:100;padding:0}
+.notif-dropdown.open{display:block}
+.notif-item{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:default;transition:background .1s;align-items:flex-start}
+.notif-item:hover{background:rgba(255,255,255,.02)}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.notif-msg{font-size:11px;color:var(--text2);line-height:1.4}
+.notif-action{font-size:11px;color:var(--primary-light);cursor:pointer;margin-top:4px;display:inline-block}
+.notif-action:hover{text-decoration:underline}
+.notif-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px}
+/* Tooltips */
+.tip{position:relative;display:inline-flex;align-items:center;cursor:help;color:var(--muted);font-size:13px;vertical-align:middle}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-size:11px;font-weight:400;white-space:normal;width:280px;text-align:left;line-height:1.4;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.tip:hover::after{opacity:1}
+.bar-wrap{margin-bottom:13px}
+.bar-info{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px}
+.bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;font-weight:500}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--primary-light);border-bottom-color:var(--primary)}
+.items-box{background:var(--bg);border-radius:6px;padding:12px;margin-top:8px}
+.item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.item-row:last-child{border-bottom:none}
+.totals-box{background:rgba(240,192,64,.05);border:1px solid rgba(240,192,64,.15);border-radius:6px;padding:14px}
+.cancelled-row td{opacity:.5;text-decoration:line-through}
+.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:40px;width:360px;max-width:92vw}
+.login-logo{font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--primary-light);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--muted);letter-spacing:.08em;margin-bottom:28px}
+.login-err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px;display:none}
+@media print{body{background:#fff;color:#000}#sidebar,#topbar,#modal{display:none!important}#content{padding:0}}
+.print-only{display:none}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+  body{display:flex;flex-direction:column;overflow:hidden}
+  #app{flex:1;display:none;flex-direction:column;overflow:hidden;min-height:0}
+  #topbar{height:52px;padding:0 12px;z-index:50;gap:10px}
+  .page-title{font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar-date{display:none}
+  #sync-status{display:none}
+  .hamburger-btn{display:flex;background:none;border:1px solid var(--border2);color:var(--text);border-radius:6px;width:38px;height:38px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+  #main{flex:1;overflow:hidden;min-height:0}
+  #content{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 10px;min-height:0;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  #sidebar{position:fixed;top:52px;left:-260px;bottom:0;width:240px;height:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;z-index:200;transition:left .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.7)}
+  #sidebar.open{left:0}
+  #sidebar-overlay{display:none;position:fixed;top:52px;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:150}
+  #sidebar-overlay.show{display:block}
+  .logo{padding:16px 18px 14px}
+  .logo-title{font-size:14px}
+  nav{padding:10px 0;gap:1px}
+  .nav-item{padding:12px 18px;font-size:14px;border-left-width:3px;-webkit-tap-highlight-color:rgba(139,92,246,.2)}
+  .nav-item:active{background:rgba(139,92,246,.1)}
+  .nav-sep{margin:6px 0}
+  .sidebar-footer{padding:12px 18px}
+  .card{padding:12px;margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12px}
+  th{padding:7px 8px;font-size:10px}
+  td{padding:7px 8px;white-space:nowrap}
+  tr:hover td{background:none}
+  .kpi-grid,.kpi-grid-3,.kpi-grid-2{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .grid-2,.grid-3{grid-template-columns:1fr;gap:10px}
+  .kpi{padding:12px}
+  .kpi-label{font-size:10px}
+  .kpi-value{font-size:16px;margin-top:5px}
+  .kpi-sub{font-size:10px;margin-top:3px}
+  .badge{padding:2px 7px;font-size:10px}
+  .btn{padding:9px 14px;-webkit-tap-highlight-color:rgba(0,0,0,.1)}
+  .btn-primary:hover,.btn-ghost:hover{background:unset}
+  .btn-sm{padding:5px 9px;font-size:11px}
+  .form-group{margin-bottom:12px}
+  .form-input{padding:10px 12px;font-size:14px}
+  .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr;gap:12px}
+  .modal-overlay{align-items:flex-end}
+  .modal-box,.modal-box-lg{border-radius:16px 16px 0 0;padding:20px 16px;width:100%;max-height:88vh;-webkit-overflow-scrolling:touch}
+  .modal-title{font-size:16px;margin-bottom:16px}
+  .modal-footer{margin-top:20px;flex-wrap:wrap}
+  .divider{margin:14px 0}
+  .row{flex-wrap:wrap;gap:8px}
+  .row-between{flex-wrap:wrap;gap:6px}
+  .section-header{margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .section-title{font-size:15px}
+  .mono{font-size:11px}
+  .empty{padding:28px}
+  .alert-warn,.alert-red{padding:9px 12px;font-size:11px;margin-bottom:12px}
+  .bar-wrap{margin-bottom:10px}
+  .bar-info{margin-bottom:4px;font-size:12px}
+  .bar-track{height:5px}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:14px}
+  .tab{padding:9px 14px;font-size:12px;white-space:nowrap}
+  .items-box{padding:10px}
+  .item-row{padding:6px 0}
+  .totals-box{padding:12px}
+}
+</style>
+<style>
+/* ── Login Screen Redesign (ls-*) ─────────────────────────────────────────── */
+#login-screen{flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;overflow:hidden}
+.ls-brand{flex:0 0 60%;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;position:relative;background:linear-gradient(135deg,#0a0a0a 0%,#111111 60%,#141414 100%);overflow:hidden}
+.ls-brand::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 40%,rgba(167,139,250,.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 85% 70%,rgba(167,139,250,.04) 0%,transparent 70%);pointer-events:none}
+.ls-brand::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;opacity:.6}
+.ls-brand-inner{position:relative;z-index:1;max-width:480px}
+.ls-logo{display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.ls-logo-icon{flex-shrink:0;background:var(--primary-dim);border:1px solid var(--primary-border);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:center}
+.ls-logo-text{font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--primary-light);letter-spacing:.04em;line-height:1;text-transform:uppercase}
+.ls-logo-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:3px}
+.ls-tagline{font-family:var(--font-d);font-weight:700;font-size:32px;line-height:1.2;color:var(--text);margin-bottom:12px}
+.ls-tagline span{color:var(--primary-light)}
+.ls-desc{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:40px}
+.ls-benefits{list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:48px}
+.ls-benefits li{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text2)}
+.ls-benefits li svg{flex-shrink:0;color:var(--green)}
+.ls-cta-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary-light);text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:opacity .15s}
+.ls-cta-link:hover{opacity:.8}
+.ls-trial-badge{margin-top:24px;font-size:12px;color:var(--muted);padding-top:20px;border-top:1px solid var(--border)}
+.nf-ft-btn{background:transparent;border:none;padding:6px 14px;font-size:12px;font-family:var(--font-b);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nf-ft-btn.nf-ft-active{background:var(--primary);color:#fff;font-weight:700}
+.seg-card{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:11.5px;color:var(--text2);transition:all .15s;background:var(--bg);white-space:nowrap;overflow:hidden}
+.seg-card:hover{border-color:var(--primary);color:var(--text)}
+.seg-card.seg-active{border-color:var(--primary);background:rgba(139,92,246,.1);color:var(--primary-light)}
+.ls-form-side{flex:0 0 40%;display:flex;align-items:center;justify-content:center;background:var(--bg2);padding:40px 48px;overflow-y:auto}
+.ls-form-wrap{width:100%;max-width:360px}
+.ls-form-title{font-family:var(--font-d);font-weight:700;font-size:22px;color:var(--text);margin-bottom:6px}
+.ls-form-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5}
+.ls-field{margin-bottom:16px}
+.ls-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.04em}
+.ls-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text);font-size:14px;transition:border-color .15s,box-shadow .15s}
+.ls-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+.ls-input::placeholder{color:var(--muted)}
+.ls-btn-primary{width:100%;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.02em}
+.ls-btn-primary:hover{background:#7c3aed}
+.ls-btn-primary:active{transform:scale(.99)}
+.ls-divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.ls-divider::before,.ls-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.ls-divider span{font-size:11px;color:var(--muted)}
+.ls-btn-google{width:100%;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .15s,background .15s}
+.ls-btn-google:hover{border-color:var(--border);background:rgba(255,255,255,.03)}
+.ls-footer-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+.ls-link{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px;transition:color .15s}
+.ls-link:hover{color:var(--text2)}
+.ls-link-amber{font-size:12px;color:var(--primary-light);cursor:pointer;font-weight:600;transition:opacity .15s}
+.ls-link-amber:hover{opacity:.8}
+.ls-err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:7px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:16px;display:none}
+/* Transition entre login/signup */
+.ls-panel{transition:opacity .25s,transform .25s}
+.ls-panel.ls-hidden{opacity:0;pointer-events:none;transform:translateY(6px);position:absolute;width:100%}
+.ls-form-wrap{position:relative}
+/* Trial block */
+.ls-trial-card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:52px 44px;width:420px;max-width:92vw;text-align:center}
+.ls-trial-icon{margin-bottom:20px;display:flex;justify-content:center}
+.ls-trial-title{font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--primary-light);margin-bottom:10px}
+.ls-trial-sub{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:32px}
+.ls-trial-btn{display:block;background:var(--primary);color:#fff;border-radius:8px;padding:13px 24px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:14px;transition:background .15s}
+.ls-trial-btn:hover{background:#7c3aed}
+.ls-trial-logout{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.ls-trial-logout:hover{color:var(--text2)}
+@media(max-width:768px){
+  .ls-brand{display:none!important}
+  .ls-form-side{flex:1;padding:32px 24px}
+}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="logo">
+    <div class="logo-title" style="display:flex;align-items:center;gap:8px">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="9" fill="url(#sb-grad)"/><path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/><defs><linearGradient id="sb-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient></defs></svg>
+      Stoqio
+    </div>
+    <div class="logo-sub">GESTÃO EMPRESARIAL</div>
+  </div>
+  <nav id="nav">
+    <div class="nav-item active" onclick="navigate('dashboard')" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="navigate('produtos')" data-view="produtos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Produtos</div>
+    <div class="nav-item" onclick="navigate('clientes')" data-view="clientes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Clientes</div>
+    <div class="nav-item" onclick="navigate('fornecedores')" data-view="fornecedores"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Fornecedores</div>
+    <div class="nav-item" onclick="navigate('pedidos')" data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg> Pedidos</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="navigate('notas')" data-view="notas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Nota Fiscal</div>
+    <div class="nav-item" onclick="navigate('devolucoes')" data-view="devolucoes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.79"/></svg> Devoluções</div>
+    <div class="nav-item" onclick="navigate('compras')" data-view="compras"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Compras</div>
+    <div class="nav-item" onclick="navigate('contas')" data-view="contas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Contas</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="navigate('caixa')" data-view="caixa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Fluxo de Caixa</div>
+    <div class="nav-item" onclick="navigate('relatorios')" data-view="relatorios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Relatórios</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="navigate('config')" data-view="config"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Configurações</div>
+    <div class="nav-item" onclick="navigate('usuarios')" data-view="usuarios" id="nav-usuarios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Usuários</div>
+    <div class="nav-item" onclick="navigate('minha-conta')" data-view="minha-conta" id="nav-minhaconta"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Minha Conta</div>
+  </nav>
+  <div class="sidebar-footer" id="sb-footer">v2.0</div>
+</div>
+<div id="main">
+  
+<div id="app">
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="topbar">
+    <div class="row" style="gap:12px"><button class="hamburger-btn" id="hamburger" onclick="toggleSidebar()">☰</button><div class="page-title" id="page-title">Dashboard</div></div>
+    <div class="row" style="gap:12px">
+  <span id="sync-status" style="font-size:11px;font-family:var(--font-m);color:var(--green);opacity:0;transition:opacity 1s"></span>
+  <div style="position:relative" id="notif-bell-wrap">
+    <div class="notif-bell" id="notif-bell" onclick="toggleNotifications(event)" title="Notificações">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></div>
+    <div class="notif-dropdown" id="notif-dropdown"></div>
+  </div>
+  <div class="topbar-date role-badge-wrap" id="topbar-date"></div>
+  <span id="role-badge" style="font-size:11px;font-family:var(--font-m);color:var(--muted)"></span>
+  <button class="btn-sm" onclick="doLogout()" title="Sair" style="font-size:11px">Sair ↩</button>
+</div>
+  </div>
+  <div id="content"></div>
+</div>
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/core/firebase.js"></script>
+<script src="js/core/fiscalStatus.js"></script>
+<script src="js/core/nav.js"></script>
+<script src="js/core/print.js"></script>
+<script src="js/modules/dashboard.js"></script>
+<script src="js/modules/aiChat.js"></script>
+<script src="js/modules/produtos.js"></script>
+<script src="js/modules/clientes.js"></script>
+<script src="js/modules/fornecedores.js"></script>
+<script src="js/services/invoiceService.js"></script>
+<script src="js/modules/fiscal.js"></script>
+<script src="js/modules/notas.js"></script>
+<script src="js/modules/compras.js"></script>
+<script src="js/modules/contas.js"></script>
+<script src="js/modules/caixa.js"></script>
+<script src="js/modules/relatorios.js"></script>
+<script src="js/modules/config.js"></script>
+<script src="js/modules/usuarios.js"></script>
+<script src="js/modules/pedidos.js"></script>
+<script src="js/modules/devolucoes.js"></script>
+<script src="js/services/csvImport.js"></script>
+<script src="js/services/asaasService.js"></script>
+<script src="js/modules/onboarding.js"></script>
+<script src="js/app.js"></script>
+</div><!-- #app -->
+<div id="login-screen">
+  <!-- Painel esquerdo: branding -->
+  <div class="ls-brand">
+    <div class="ls-brand-inner">
+      <div class="ls-logo">
+        <div class="ls-logo-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="9" fill="url(#stoqio-grad)"/>
+            <path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="stoqio-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#6d28d9"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <div class="ls-logo-text">Stoqio</div>
+          <div class="ls-logo-sub">GESTÃO EMPRESARIAL</div>
+        </div>
+      </div>
+      <div class="ls-tagline">Estoque, pedidos e NF-e<br><span>no lugar certo</span></div>
+      <div class="ls-desc">Controle total do seu negócio em uma plataforma simples, rápida e acessível de qualquer lugar.</div>
+      <ul class="ls-benefits">
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Controle de estoque em tempo real
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Emissão de pedidos e notas fiscais
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Fluxo de caixa integrado
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#3fb950" stroke-width="1.5"/><path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Acesso em qualquer dispositivo
+        </li>
+      </ul>
+      <span class="ls-cta-link" onclick="showSignup()">
+        Criar conta grátis
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div class="ls-trial-badge">Teste grátis por 14 dias &nbsp;·&nbsp; Sem cartão de crédito</div>
+    </div>
+  </div>
+
+  <!-- Painel direito: formulário -->
+  <div class="ls-form-side">
+    <div class="ls-form-wrap">
+
+      <!-- Formulário de Login -->
+      <div id="ls-login-panel" class="ls-panel">
+        <div class="ls-form-title">Bem-vindo de volta</div>
+        <div class="ls-form-sub">Entre com sua conta para continuar</div>
+        <div class="ls-err" id="login-err">E-mail ou senha incorretos.</div>
+        <div class="ls-field">
+          <label class="ls-label">E-MAIL</label>
+          <input id="login-email" type="email" class="ls-input" placeholder="seu@email.com">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SENHA</label>
+          <input id="login-pass" type="password" class="ls-input" placeholder="••••••••">
+        </div>
+        <button class="ls-btn-primary" onclick="doLogin()">Entrar</button>
+        <div class="ls-divider"><span>ou</span></div>
+        <button id="btn-google-login" class="ls-btn-google" onclick="doGoogleLogin()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Entrar com Google
+        </button>
+        <div class="ls-footer-links">
+          <span class="ls-link" onclick="doResetPassword()">Esqueci minha senha</span>
+          <span class="ls-link-amber" onclick="showSignup()">Criar conta grátis →</span>
+        </div>
+      </div>
+
+      <!-- Formulário de Cadastro -->
+      <div id="signup-box" class="ls-panel ls-hidden">
+        <div class="ls-form-title">Crie sua conta</div>
+        <div class="ls-form-sub">Teste grátis por 14 dias · Sem cartão de crédito</div>
+        <div class="ls-err" id="signup-err"></div>
+        <div class="ls-field">
+          <label class="ls-label">NOME DA EMPRESA</label>
+          <input id="signup-company" type="text" class="ls-input" placeholder="Ex: Distribuidora Silva Ltda">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SEU NOME</label>
+          <input id="signup-name" type="text" class="ls-input" placeholder="Nome completo">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">E-MAIL</label>
+          <input id="signup-email" type="email" class="ls-input" placeholder="seu@email.com">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SENHA</label>
+          <input id="signup-pass" type="password" class="ls-input" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="ls-field">
+          <label class="ls-label">SEU SEGMENTO</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:4px;max-height:260px;overflow-y:auto;padding-right:2px">
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="distribuidor" checked style="display:none">
+              <div class="seg-card seg-active" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Distribuidora</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="construcao" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 12 2 21 9 21 20 3 20"/><rect x="9" y="14" width="6" height="6"/></svg><span>Construção</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="alimentos" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg><span>Alimentos</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="bebidas" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="8" y2="8"/><line x1="16" y1="2" x2="16" y2="8"/><path d="M5 8h14l-1.5 9A2 2 0 0 1 15.5 19h-7a2 2 0 0 1-2-1.8L5 8z"/></svg><span>Bebidas</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="laticinios" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3 13h12l3-13"/><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/></svg><span>Laticínios</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="hortifruti" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12"/><path d="M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10"/><path d="M12 2C9.5 4.5 8 8 8 12s1.5 7.5 4 10"/><line x1="2" y1="12" x2="22" y2="12"/></svg><span>Hortifruti</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="padaria" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Padaria</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="autopecas" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M14.83 9.17a4 4 0 0 1 0 5.66M9.17 9.17a4 4 0 0 0 0 5.66"/></svg><span>Auto Peças</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="ferragens" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Ferragens</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="agricola" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M17.47 3.64a4 4 0 0 1 5 5C21.55 10.63 15.1 11.2 12 12c-.8-3.1-.23-9.55 5.47-8.36z"/></svg><span>Agrícola</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="descartaveis" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>Embalagens</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="pet" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5"/><path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.96-1.45-2.344-2.5"/><path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75z"/><path d="M4.42 20A2 2 0 0 0 6 22h12a2 2 0 0 0 1.58-.8l3.37-4.49c.33-.44-.06-1.23-.63-.99a4.93 4.93 0 0 1-3.11.18c-1.38-.35-2.64-1.23-3.63-2.62a4.96 4.96 0 0 0-7.97 0C6.63 14.55 5.37 15.43 4 15.78a4.93 4.93 0 0 1-3.1-.18c-.57-.24-.96.55-.63.99L4.42 20z"/></svg><span>Pet Shop</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="informatica" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Informática</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="tecidos" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg><span>Moda/Tecidos</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="papelaria" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Papelaria</span></div>
+            </label>
+            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="outro" style="display:none">
+              <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Outro</span></div>
+            </label>
+          </div>
+        </div>
+        <button class="ls-btn-primary" onclick="doSignup()">Criar conta grátis</button>
+        <div class="ls-footer-links" style="justify-content:center;margin-top:16px">
+          <span class="ls-link" onclick="showLogin()">← Voltar ao login</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="trial-block-screen" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg3);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+  <div class="ls-trial-card">
+    <div class="ls-trial-icon">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="26" cy="26" r="25" stroke="rgba(139,92,246,.3)" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="18" fill="rgba(139,92,246,.1)"/>
+        <rect x="19" y="22" width="14" height="12" rx="2" fill="none" stroke="#a78bfa" stroke-width="1.8"/>
+        <path d="M22 22v-3a4 4 0 0 1 8 0v3" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="26" cy="28" r="1.5" fill="#a78bfa"/>
+        <path d="M26 29.5v2.5" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="ls-trial-title">Seu período de teste encerrou</div>
+    <div class="ls-trial-sub" id="trial-block-msg">Seu acesso foi suspenso. Entre em contato com nossa equipe para continuar usando o Stoqio.</div>
+    <a href="mailto:contato@stoqio.com.br" class="ls-trial-btn">Falar com o suporte</a>
+    <span class="ls-trial-logout" onclick="window._fbFns.signOut(window._auth)">Sair da conta</span>
+  </div>
+</div>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
+</body>
+</html>

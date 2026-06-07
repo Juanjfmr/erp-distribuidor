@@ -42,18 +42,18 @@ function filterFornecedores(){
         <button class="btn-sm btn-amber" onclick="openSupplierModal(${s.id})">Editar</button>
         <button class="btn-sm btn-red" onclick="deleteSupplier(${s.id})">✕</button>
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty">Nenhum fornecedor encontrado.</td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">🏭<br><b>Nenhum fornecedor encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre fornecedores para criar ordens de compra</span></div></td></tr>`;
 }
 function openSupplierModal(id){
   const s=id?state.suppliers.find(x=>x.id===id):null;
   showModal(`<div class="modal-title">${s?"Editar Fornecedor":"Novo Fornecedor"}</div>
     <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fs-name" class="form-input" value="${s?s.name:""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?s.cnpj||"":""}" onblur="buscarCnpjForn()"></div>
+      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?s.cnpj||"":""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjForn()"></div>
       <div class="form-group"><label class="form-label">Cidade</label><input id="fs-city" class="form-input" value="${s?s.city||"":""}"></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Telefone</label><input id="fs-phone" class="form-input" value="${s?s.phone||"":""}"></div>
+      <div class="form-group"><label class="form-label">Telefone</label><input id="fs-phone" class="form-input" value="${s?s.phone||"":""}" oninput="applyMask(this,'phone')"></div>
       <div class="form-group"><label class="form-label">Contato</label><input id="fs-contact" class="form-input" value="${s?s.contact||"":""}"></div>
     </div>
     <div class="form-grid-2">
