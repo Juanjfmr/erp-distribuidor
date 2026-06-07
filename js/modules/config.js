@@ -83,8 +83,7 @@ function renderMinhaConta(){
             }).join('')}
           </div>
         </div>`:
-        <!-- PLANO ATIVO -->
-        ${(() => {
+        (() => {
           const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.trial;
           const nfThisMonth = state.invoices.filter(n => {
             if (n.status === 'cancelada') return false;
@@ -205,7 +204,7 @@ function renderMinhaConta(){
             <button class="btn btn-danger" style="font-size:12px" onclick="cancelarPlano()">Cancelar assinatura</button>
           </div>
         </div>`;
-        })()`}
+        })()}
     </div>
 
     <div class="card" style="border-top:3px solid var(--blue)">

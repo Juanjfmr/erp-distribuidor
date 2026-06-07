@@ -85,7 +85,7 @@ function renderCaixa(){
         : `<table><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Frequência</th><th>Próx. vencimento</th><th>Ativo</th><th></th></tr></thead><tbody>
           ${state.recurringExpenses.map((r,i)=>`
             <tr style="${!r.active?'opacity:.4':r.nextDueDate<today()?'background:rgba(239,68,68,.06)':''}">
-              <td class="text-white">${r.description}${r.nextDueDate<today()&&r.active?' <span style="font-size:10px;color:var(--red)">atrasada</span>':''}</td>
+              <td class="text-white">${escapeHtml(r.description)}${r.nextDueDate<today()&&r.active?' <span style="font-size:10px;color:var(--red)">atrasada</span>':''}</td>
               <td>${r.category}</td>
               <td class="mono text-red">${fmt(r.amount)}</td>
               <td><span class="badge bg-blue" style="font-size:11px">${r.frequency==='monthly'?'Mensal':r.frequency==='weekly'?'Semanal':r.frequency==='biweekly'?'Quinzenal':r.frequency}</span></td>
@@ -149,7 +149,7 @@ function openRecurringModal(index){
   const cats = CAT_FIN.saida;
   showModal(`<div class="modal-title">${r?'Editar':'Nova'} Despesa Fixa</div>
     <div class="form-group"><label class="form-label">Descrição</label>
-      <input id="rec-desc" class="form-input" value="${r?r.description:''}" placeholder="Ex: Aluguel, Internet, Salário...">
+      <input id="rec-desc" class="form-input" value="${r?escapeHtml(r.description):''}" placeholder="Ex: Aluguel, Internet, Salário...">
     </div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Categoria</label>

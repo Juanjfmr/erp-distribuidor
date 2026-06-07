@@ -124,7 +124,7 @@ function renderDashboard(){
   // ─── Popula notificações ──────────────────────────────────────────────────
   clearNotifications();
   if (lowStock.length) {
-    const names = lowStock.map(p => `${p.name} (${p.stock} ${p.unit||'UN'})`).join(', ');
+    const names = lowStock.map(p => `${escapeHtml(p.name)} (${p.stock} ${p.unit||'UN'})`).join(', ');
     addNotification('estoque', `${lowStock.length} produto(s) com estoque baixo`,
       names.substring(0, 120) + (names.length > 120 ? '...' : ''),
       'Ver produtos', "navigate('produtos');toggleNotifications(new Event('click'))");

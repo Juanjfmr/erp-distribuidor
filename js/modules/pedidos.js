@@ -58,12 +58,12 @@ function filterPedidos(){
   });
   tbody.innerHTML=sorted.length?sorted.map(o=>{
     const c=getClient(o.clientId);
-    const prodNames=o.items.map(it=>{ const p=getProd(it.productId); return p?`${p.name} ×${it.qty}`:it.name||'?'; });
+    const prodNames=o.items.map(it=>{ const p=getProd(it.productId); return p?`${escapeHtml(p.name)} ×${it.qty}`:escapeHtml(it.name||'?'); });
     const prodSummary=prodNames.length<=2?prodNames.join(', '):`${prodNames[0]}, ${prodNames[1]} +${prodNames.length-2}`;
     return `<tr>
       <td class="mono text-amber">${o.number}</td>
       <td>${fmtDate(o.date)}</td>
-      <td class="text-white fw-bold">${c?c.name:"—"}</td>
+      <td class="text-white fw-bold">${c?escapeHtml(c.name):"—"}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:12px">${prodSummary}</td>
       <td class="mono fw-bold">${fmt(o.total)}</td>
       <td><span class="badge ${statusBadge[o.status]||'bg-gray'}">${statusLabel[o.status]||o.status}</span></td>

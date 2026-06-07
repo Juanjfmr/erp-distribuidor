@@ -52,7 +52,7 @@ function filterCompras(){
     return`<tr>
       <td class="mono text-amber">${c.number}</td>
       <td>${fmtDate(c.date)}</td>
-      <td class="text-white">${sup?sup.name:"—"}</td>
+      <td class="text-white">${sup?escapeHtml(sup.name):"—"}</td>
       <td class="mono">${c.freight>0?fmt(c.freight):"—"}</td>
       <td class="mono fw-bold">${fmt(c.total)}</td>
       <td><span class="badge bg-blue" style="font-size:10px">${c.paymentMethod||c.paymentTerms||"—"}</span></td>

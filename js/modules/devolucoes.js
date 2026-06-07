@@ -31,10 +31,10 @@ function filterDevolucoes(){
       <td><span class="badge">${d.number}</span></td>
       <td>${fmtDate(d.date)}</td>
       <td>${d.nfId?`<span class="badge" style="background:var(--bg2);cursor:pointer;text-decoration:underline" onclick="viewNF(${d.nfId})" title="Ver NF">${d.nfNumber||"—"}</span>`:`<span class="badge" style="background:var(--bg2)">${d.nfNumber||"—"}</span>`}</td>
-      <td>${c?c.name:"—"}</td>
+      <td>${c?escapeHtml(c.name):"—"}</td>
       <td>${d.items.length} item(s)</td>
       <td style="color:${d.status==="cancelada"?"var(--muted)":"var(--amber)"};${d.status==="cancelada"?"text-decoration:line-through":""}">${fmt(d.total)}</td>
-      <td style="color:var(--muted);font-size:12px">${d.reason||"—"}</td>
+      <td style="color:var(--muted);font-size:12px">${escapeHtml(d.reason||"—")}</td>
       <td><span class="badge ${d.status==="cancelada"?"bg-gray":"bg-green"}">${d.status==="cancelada"?"cancelada":"ativa"}</span></td>
       <td>${d.status!=="cancelada"?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;color:var(--red)" onclick="cancelarDevolucao('${d.id}')">Cancelar</button>`:""}</td>
     </tr>`;}).join(""):`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Nenhuma devolução registrada</td></tr>`;
@@ -63,7 +63,7 @@ function openDevolucaoModal(nfId){
   if(nf.status==="cancelada"){ alert("Não é possível devolver uma NF cancelada."); return; }
   const c=getClient(nf.clientId);
   openModal(`<div class="modal-title">Registrar Devolução — ${nf.number}</div>
-    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Cliente: <b style="color:var(--text)">${c?c.name:"—"}</b> &nbsp;|&nbsp; Data NF: <b style="color:var(--text)">${fmtDate(nf.date)}</b></div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Cliente: <b style="color:var(--text)">${c?escapeHtml(c.name):"—"}</b> &nbsp;|&nbsp; Data NF: <b style="color:var(--text)">${fmtDate(nf.date)}</b></div>
     <div class="form-group"><label class="form-label">Data da Devolução</label>
       <input id="dev-date" type="date" class="form-input" value="${today()}">
     </div>
@@ -76,7 +76,7 @@ function openDevolucaoModal(nfId){
       <thead><tr><th><input type="checkbox" onchange="document.querySelectorAll('.dev-item-chk').forEach(c=>c.checked=this.checked)"></th><th>Produto</th><th>Qtd NF</th><th>Qtd Devolver</th></tr></thead>
       <tbody>${nf.items.map((it,i)=>{const p=getProd(it.productId);return `<tr>
         <td><input type="checkbox" class="dev-item-chk" data-idx="${i}" checked></td>
-        <td>${p?p.name:it.productId}</td>
+        <td>${p?escapeHtml(p.name):it.productId}</td>
         <td>${it.qty} ${p?p.unit:""}</td>
         <td><input type="number" class="form-input dev-item-qty" data-idx="${i}" value="${it.qty}" min="1" max="${it.qty}" style="width:80px"></td>
       </tr>`;}).join("")}

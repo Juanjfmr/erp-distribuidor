@@ -28,8 +28,8 @@ async function renderUsuarios() {
         const isMe = window._currentUser && u.uid === window._currentUser.uid;
         const roleBg = u.role==='admin'?'bg-amber':u.role==='vendedor'?'bg-blue':'bg-gray';
         return `<tr>
-          <td class="text-white fw-bold">${u.name||'—'}${isMe?' <span class="badge bg-amber" style="font-size:10px">Você</span>':''}</td>
-          <td class="mono">${u.email||'—'}</td>
+          <td class="text-white fw-bold">${escapeHtml(u.name||'—')}${isMe?' <span class="badge bg-amber" style="font-size:10px">Você</span>':''}</td>
+          <td class="mono">${escapeHtml(u.email||'—')}</td>
           <td><span class="badge ${roleBg}">${ROLE_LABELS[u.role]||u.role}</span></td>
           <td class="mono text-muted">${u.createdAt?fmtDate(u.createdAt.slice(0,10)):'—'}</td>
           <td><span class="badge ${u.active!==false?'bg-green':'bg-red'}">${u.active!==false?'Ativo':'Inativo'}</span></td>
@@ -53,8 +53,8 @@ async function renderUsuarios() {
         : contadores.map(c => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
               <div>
-                <div style="font-weight:600">${c.name||'—'}</div>
-                <div style="font-size:12px;color:var(--text2)">${c.email||'—'}</div>
+                <div style="font-weight:600">${escapeHtml(c.name||'—')}</div>
+                <div style="font-size:12px;color:var(--text2)">${escapeHtml(c.email||'—')}</div>
               </div>
               <button class="btn-sm btn-red" onclick="toggleUserActive('${c.uid}',${c.active!==false})">${c.active!==false?'Revogar acesso':'Reativar'}</button>
             </div>

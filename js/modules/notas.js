@@ -504,8 +504,8 @@ function nfClientSearch(q){
       const overdue=state.receivables.filter(r=>r.clientId==c.id&&r.status==='aberta'&&isOverdue(r.dueDate));
       return`<div style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="nfClientSelect(${c.id},'${c.name.replace(/'/g,"\\'")}')">
         <div>
-          <div style="font-size:13px;color:var(--text);font-weight:600">${c.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${c.cnpj||''} ${c.city?'· '+c.city:''}</div>
+          <div style="font-size:13px;color:var(--text);font-weight:600">${escapeHtml(c.name)}</div>
+          <div style="font-size:11px;color:var(--muted)">${escapeHtml(c.cnpj||'')} ${c.city?'· '+escapeHtml(c.city):''}</div>
         </div>
         ${overdue.length?`<span class="badge bg-red" style="font-size:10px">${overdue.length} venc.</span>`:''}
       </div>`;

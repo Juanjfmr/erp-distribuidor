@@ -159,7 +159,7 @@ function renderRelatorios(){
         <div class="section-title" style="margin-bottom:14px">Margem por Produto</div>
         <table><thead><tr><th>Produto</th><th>Custo</th><th>Venda</th><th>Margem</th></tr></thead><tbody>
           ${marginProds.slice(0,8).map(p=>{const m=p.margin;return`<tr>
-            <td style="font-size:12px">${p.name}</td>
+            <td style="font-size:12px">${escapeHtml(p.name)}</td>
             <td class="mono">${fmt(p.costPrice||0)}</td>
             <td class="mono">${fmt(p.salePrice)}</td>
             <td class="mono" style="color:${m===null?"var(--muted)":m>=30?"var(--green)":m>=15?"var(--amber)":"var(--red)"};font-weight:600">${m===null?"—":m.toFixed(1)+"%"}</td>
@@ -172,7 +172,7 @@ function renderRelatorios(){
       <div class="section-title" style="margin-bottom:14px">⚠ Inadimplência</div>
       <table><thead><tr><th>Cliente</th><th>Parcelas vencidas</th><th>Total em atraso</th><th>Mais antiga</th></tr></thead><tbody>
         ${delinqArr.map(({client:c,amount,count,oldest})=>`<tr>
-          <td class="text-white fw-bold">${c?c.name:"—"}</td>
+          <td class="text-white fw-bold">${c?escapeHtml(c.name):"—"}</td>
           <td class="mono text-red">${count}</td>
           <td class="mono fw-bold text-red">${fmt(amount)}</td>
           <td class="mono">${fmtDate(oldest)}</td>
@@ -229,7 +229,7 @@ function filterRelNF(){
       onclick="state.relNfId=${n.id};filterRelNF();renderRelNFDetail(state.invoices.find(x=>x.id===${n.id}))">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:var(--text)">${n.number} <span class="text-muted" style="font-size:11px">· ${fmtDate(n.date)}</span></div>
-        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c?c.name:"—"}</div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c?escapeHtml(c.name):"—"}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div class="mono" style="font-size:13px;color:var(--amber)">${fmt(n.total)}</div>
@@ -263,7 +263,7 @@ function renderRelNFDetail(nf){
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text)">${nf.number}</div>
-          <div style="font-size:13px;color:var(--muted)">${fmtDate(nf.date)} · ${c?c.name:"—"} · ${nf.paymentTerms}</div>
+          <div style="font-size:13px;color:var(--muted)">${fmtDate(nf.date)} · ${c?escapeHtml(c.name):"—"} · ${nf.paymentTerms}</div>
         </div>
         <div class="row">
           <span class="badge ${statusColor}">${nf.status}</span>
@@ -277,7 +277,7 @@ function renderRelNFDetail(nf){
           </tr></thead>
           <tbody>
             ${items.map(it=>`<tr>
-              <td style="font-size:12px">${it.p?it.p.name:"—"}${it.itemDiscount>0?` <span class="badge bg-amber" style="font-size:10px">${it.itemDiscount}% desc</span>`:""}</td>
+              <td style="font-size:12px">${it.p?escapeHtml(it.p.name):"—"}${it.itemDiscount>0?` <span class="badge bg-amber" style="font-size:10px">${it.itemDiscount}% desc</span>`:""}</td>
               <td class="mono">${it.qty}</td>
               <td class="mono">${fmt(it.price)}</td>
               <td class="mono">${it.unitCost?fmt(it.unitCost):`<span class="text-muted">—</span>`}</td>
@@ -364,7 +364,7 @@ function renderCurvaABC(){
           const colorMap={A:"var(--green)",B:"var(--amber)",C:"var(--muted)"};
           return `<tr>
             <td style="color:var(--muted)">${i+1}</td>
-            <td>${p?p.name:x.productId}</td>
+            <td>${p?escapeHtml(p.name):x.productId}</td>
             <td>${fmt(x.revenue)}</td>
             <td>${x.percent.toFixed(1)}%</td>
             <td>
@@ -436,7 +436,7 @@ function renderCurvaABCClientes(){
           const colorMap={A:"var(--green)",B:"var(--amber)",C:"var(--muted)"};
           return `<tr>
             <td style="color:var(--muted)">${i+1}</td>
-            <td>${item.client?item.client.name:'—'}</td>
+            <td>${item.client?escapeHtml(item.client.name):'—'}</td>
             <td>${fmt(item.val)}</td>
             <td>
               <div style="display:flex;align-items:center;gap:8px">
