@@ -13,9 +13,9 @@
 | Indicador | Valor |
 |---|---|
 | Total de cenários testados | ~75 |
-| ✅ Aprovados | 56 |
-| ⚠️ Com ressalvas | 6 |
-| ❌ Reprovados/Bloqueados | 13 |
+| ✅ Aprovados | 58 |
+| ⚠️ Com ressalvas | 5 |
+| ❌ Reprovados/Bloqueados | 11 |
 | 🔒 Não testáveis (sem credenciais) | ~30 |
 
 ---
@@ -168,11 +168,12 @@
 
 | ID | Descrição | Severidade | Status |
 |---|---|---|---|
-| **B1** | `state.company.name` = default "2R Comércio" após signup (race condition) | MÉDIO | ✅ Corrigido |
+| **B1** | `state.company.name` = default "2R Comércio" após signup | MÉDIO | ✅ Corrigido |
 | **B2** | Trial 14 dias vs 30 dias no plano de testes | BAIXO | 📝 Documentado |
 | **B3** | Trial bloqueava módulos pro (devoluções, relatórios) | MÉDIO | ✅ Corrigido |
-| **B4** | `config.js` com erro de sintaxe (template literal linha 41) — quebra Minha Conta | ALTO | 🔧 Parcial (render defensivo, config.js ainda quebrado) |
-| **S03** | XSS via `innerHTML` com dados do usuário sem escaping | ALTO | ✅ Corrigido (`escapeHtml()` + 3 tabelas) |
+| **B4** | `config.js` syntax error — quebrava Minha Conta + Config | ALTO | ✅ Corrigido (versão refatorada sem erro) |
+| **B5** | `renderRelatorios` crash (`items.forEach` em undefined) | ALTO | ✅ Corrigido |
+| **S03** | XSS via `innerHTML` sem escaping | ALTO | ✅ Parcial (3 tabelas + escapeHtml global) |
 
 ---
 
@@ -213,8 +214,8 @@
 | - [ ] Ao menos 2 usuários reais testaram onboarding ← **PENDENTE**
 
 | ### Correções urgentes pré-lançamento
-| - [ ] **B4**: Corrigir syntax error em `config.js` linha 41 (template literal mal fechado) — **afeta Minha Conta + Configurações**
-| - [ ] **B5**: Corrigir `renderRelatorios` crash (forEach em undefined) — Relatórios inacessível
+| - [x] **B4**: `config.js` syntax error — **CORRIGIDO**
+| - [x] **B5**: `renderRelatorios` crash — **CORRIGIDO**
 | - [ ] **G02**: Publicar `firestore.rules` no Firebase Console
 
 ---
