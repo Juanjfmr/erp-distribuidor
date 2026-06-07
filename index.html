@@ -41,6 +41,14 @@ window._auth = auth;
 window._app = app;
 window._functions = functions;
 window._httpsCallable = httpsCallable;
+
+// Proxies Cloud Functions (evitam CORS — frontend chama Function, Function chama API externa)
+try {
+  const region = 'us-central1';
+  const pid = firebaseConfig.projectId;
+  window.ASAAS_PROXY = `https://${region}-${pid}.cloudfunctions.net/asaasProxy`;
+  window._focusProxyUrl = `https://${region}-${pid}.cloudfunctions.net/focusProxy`;
+} catch(_) {}
 window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
 window._firebaseConfig = firebaseConfig;
 
