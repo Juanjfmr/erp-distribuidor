@@ -9,7 +9,7 @@ const FOCUS_PROXY = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.
 // Chama o focusProxy e retorna { success, data } ou { success, error }
 
 async function _focusCall(action, payload) {
-  const companyId = (typeof state !== 'undefined' && state?.companyId) || null;
+  const companyId = (typeof state !== 'undefined' && (state?._companyId || state?.companyId || window?._companyId)) || null;
   if (!companyId) return { success: false, error: 'companyId não disponível.' };
 
   try {
