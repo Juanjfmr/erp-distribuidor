@@ -12,3 +12,4 @@ exports.checkCertExpiry   = require('./checkCertExpiry').checkCertExpiry;
 exports.aiChat            = require('./aiChat').aiChat;
 exports.aiPlaybook        = require('./aiPlaybook').aiPlaybook;
 exports.focusWebhook      = require('./focusWebhook').focusWebhook;
+exports.focusProxy        = require('./focusProxy').focusProxy;
