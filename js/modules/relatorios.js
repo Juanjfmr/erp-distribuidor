@@ -5,7 +5,7 @@ function exportRelatorioCSV(){
   const rows = [['Número','Data','Cliente','CNPJ','Produtos','Total','Status']];
   filteredInv.forEach(n=>{
     const c = getClient(n.clientId);
-    const prods = n.items.map(it=>{ const p=getProd(it.productId); return p?p.name:it.productId; }).join(' | ');
+    const prods = (n.items||[]).map(it=>{ const p=getProd(it.productId); return p?p.name:it.productId; }).join(' | ');
     rows.push([n.number, n.date, c?c.name:'—', c?c.cnpj||'':'', prods, n.total.toFixed(2), n.status]);
   });
   const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -53,7 +53,7 @@ function renderRelatorios(){
   const maxCat=catArr[0]?.[1]||1;
 
   const byProd={};
-  filteredInv.forEach(n=>n.items.forEach(it=>{byProd[it.productId]=(byProd[it.productId]||0)+(it.qty*it.price*(1-(it.itemDiscount||0)/100));}));
+  filteredInv.forEach(n=>(n.items||[]).forEach(it=>{byProd[it.productId]=(byProd[it.productId]||0)+(it.qty*it.price*(1-(it.itemDiscount||0)/100));}));
   const topProds=Object.entries(byProd).map(([id,v])=>({p:getProd(parseInt(id)),v})).filter(x=>x.p).sort((a,b)=>b.v-a.v).slice(0,8);
   const maxProd=topProds[0]?.v||1;
 
@@ -316,7 +316,7 @@ function renderCurvaABC(){
   const {label,filter}=getRelPeriod();
   const filteredInv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
   const byProd={};
-  filteredInv.forEach(n=>n.items.forEach(it=>{
+  filteredInv.forEach(n=>(n.items||[]).forEach(it=>{
     const key=it.productId;
     if(!byProd[key]) byProd[key]={productId:key,revenue:0,qty:0};
     const val=it.qty*it.price*(1-(it.itemDiscount||0)/100);
