@@ -3,8 +3,8 @@
 // Docs: https://docs.asaas.com
 
 var ASAAS_BASE = {
-  sandbox:  'https://sandbox.asaas.com/api/v3',
-  producao: 'https://www.asaas.com/api/v3'
+  sandbox:  'https://api-sandbox.asaas.com/v3',
+  producao: 'https://api.asaas.com/v3'
 };
 
 async function _asaasReq(method, path, body) {
