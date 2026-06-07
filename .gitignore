@@ -18,3 +18,5 @@ Thumbs.db
 *.env
 functions/.env
 functions/.env.*
+firebase-debug.log
+functions/firebase-debug.log
