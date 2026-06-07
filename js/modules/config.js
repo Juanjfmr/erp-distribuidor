@@ -20,6 +20,55 @@ function renderMinhaConta(){
   const planLabel = {trial:'Teste Grátis', basico:'Essencial', profissional:'Profissional', empresarial:'Empresarial'}[plan] || plan;
   const planColor = plan==='trial'?'bg-amber': plan==='basico'?'bg-blue':'bg-green';
 
+  let planSection = '';
+  if (plan === 'trial') {
+    planSection = `
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted)">
+            <span>Periodo de teste</span>
+              <span>${trialDaysLeft} dias restantes de 14</span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${trialPct}%;background:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};border-radius:4px;transition:width .4s"></div>
+          </div>
+          ${trialDaysLeft<=7?`<div class="alert-warn" style="margin-top:12px;margin-bottom:0">&#9888; Seu teste encerra em ${trialDaysLeft} dia(s). Assine para nao perder o acesso.</div>`:''}
+        </div>
+        <div class="divider"></div>
+        <div style="margin-bottom:16px">
+          <div class="row-between" style="margin-bottom:12px">
+            <div class="section-title" style="font-size:14px">Escolha seu plano</div>
+            <div style="display:flex;background:var(--bg);border-radius:8px;padding:3px;border:1px solid var(--border)">
+              <div onclick="window._billingCycle='monthly';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='monthly'?'background:var(--primary);color:#fff':'color:var(--muted)'}">Mensal</div>
+              <div onclick="window._billingCycle='annual';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='annual'?'background:var(--green);color:#fff':'color:var(--muted)'}">Anual <span style="font-size:10px;opacity:.8">-20%</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            ${[
+              {key:'basico', name:'Essencial', price:'R$ 97/mes', priceAnnual:'R$ 931/ano', features:['1 usuario','500 produtos','150 NFs/mes','Pedidos + NF + Caixa']},
+              {key:'profissional', name:'Profissional', price:'R$ 197/mes', priceAnnual:'R$ 1.891/ano', features:['5 usuarios','3.000 produtos','1.000 NFs/mes','Devolucoes + Comissoes','Curva ABC + DRE'], highlight:true},
+              {key:'empresarial', name:'Empresarial', price:'R$ 397/mes', priceAnnual:'R$ 3.811/ano', features:['Usuarios ilimitados','Produtos ilimitados','NFs ilimitadas','API + PDV (em breve)','Suporte prioritario']}
+            ].map(p=>{
+              const isCurrent = plan === p.key;
+              return `
+              <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
+                ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
+                <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
+                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:2px">${window._billingCycle==='annual'?p.priceAnnual:p.price}</div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${window._billingCycle==='annual'?'Cobranca unica anual (-20%)':'ou '+p.priceAnnual+' (-20%)'}</div>
+                ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">&#10003; ${f}</div>`).join('')}
+                ${isCurrent ? `
+                  <div style="text-align:center;padding:9px;background:rgba(34,197,94,.1);border-radius:6px;color:var(--green);font-weight:700;margin-top:12px;font-size:13px">
+                    &#10003; Plano atual
+                  </div>
+                ` : `
+                  <button class="btn ${p.highlight?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:12px;padding:9px" onclick="assinarPlano('${p.key}')">Assinar ${p.name}</button>
+                `}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+  }
+
   el("content").innerHTML=`
     <div class="section-title" style="margin-bottom:24px">Minha Conta</div>
     <div style="max-width:680px;display:flex;flex-direction:column;gap:20px">
@@ -33,178 +82,7 @@ function renderMinhaConta(){
             <span class="badge ${planColor}">${plan==='trial'?'Em teste':'Ativo'}</span>
           </div>
         </div>
-        ${plan==='trial'?`<div style="text-align:right">
-          <div class="kpi-label">Dias restantes</div>
-          <div style="font-size:28px;font-weight:700;color:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};margin-top:4px">${trialDaysLeft}</div>
-        </div>`:''}
-      </div>
-      ${plan==='trial'?`
-        <div style="margin-bottom:16px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--muted)">
-            <span>Período de teste</span>
-              <span>${trialDaysLeft} dias restantes de 14</span>
-          </div>
-          <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${trialPct}%;background:${trialDaysLeft<=3?'var(--red)':trialDaysLeft<=7?'var(--amber)':'var(--green)'};border-radius:4px;transition:width .4s"></div>
-          </div>
-          ${trialDaysLeft<=7?`<div class="alert-warn" style="margin-top:12px;margin-bottom:0">⚠ Seu teste encerra em ${trialDaysLeft} dia(s). Assine para não perder o acesso.</div>`:''}
-        </div>
-        <div class="divider"></div>
-        <div style="margin-bottom:16px">
-          <div class="row-between" style="margin-bottom:12px">
-            <div class="section-title" style="font-size:14px">Escolha seu plano</div>
-            <div style="display:flex;background:var(--bg);border-radius:8px;padding:3px;border:1px solid var(--border)">
-              <div onclick="window._billingCycle='monthly';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='monthly'?'background:var(--primary);color:#fff':'color:var(--muted)'}">Mensal</div>
-              <div onclick="window._billingCycle='annual';renderMinhaConta()" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;${window._billingCycle==='annual'?'background:var(--green);color:#fff':'color:var(--muted)'}">Anual <span style="font-size:10px;opacity:.8">-20%</span></div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            ${[
-              {key:'basico', name:'Essencial', price:'R$ 97/mês', priceAnnual:'R$ 931/ano', features:['1 usuário','500 produtos','150 NFs/mês','Pedidos + NF + Caixa']},
-              {key:'profissional', name:'Profissional', price:'R$ 197/mês', priceAnnual:'R$ 1.891/ano', features:['5 usuários','3.000 produtos','1.000 NFs/mês','Devoluções + Comissões','Curva ABC + DRE'], highlight:true},
-              {key:'empresarial', name:'Empresarial', price:'R$ 397/mês', priceAnnual:'R$ 3.811/ano', features:['Usuários ilimitados','Produtos ilimitados','NFs ilimitadas','API + PDV (em breve)','Suporte prioritário']}
-            ].map(p=>{
-              const isCurrent = plan === p.key;
-              return `
-              <div style="border:1.5px solid ${p.highlight?'var(--amber)':'var(--border2)'};border-radius:10px;padding:16px;${p.highlight?'background:rgba(245,158,11,.06)':''}">
-                ${p.highlight?`<div style="font-size:10px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:6px">MAIS POPULAR</div>`:''}
-                <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">${p.name}</div>
-                <div style="font-size:18px;font-weight:700;color:${p.highlight?'var(--amber)':'var(--text2)'};margin-bottom:2px">${window._billingCycle==='annual'?p.priceAnnual:p.price}</div>
-                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${window._billingCycle==='annual'?'Cobrança única anual (-20%)':'ou '+p.priceAnnual+' (-20%)'}</div>
-                ${p.features.map(f=>`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">✓ ${f}</div>`).join('')}
-                ${isCurrent ? `
-                  <div style="text-align:center;padding:9px;background:rgba(34,197,94,.1);border-radius:6px;color:var(--green);font-weight:700;margin-top:12px;font-size:13px">
-                    ✓ Plano atual
-                  </div>
-                ` : `
-                  <button class="btn ${p.highlight?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:12px;padding:9px" onclick="assinarPlano('${p.key}')">Assinar ${p.name}</button>
-                `}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`:
-        (() => {
-          const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.trial;
-          const nfThisMonth = state.invoices.filter(n => {
-            if (n.status === 'cancelada') return false;
-            const d = new Date(n.date + 'T00:00:00');
-            const now = new Date();
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          }).length;
-          const userCount = (window._companyUsers || []).length || 1;
-
-          const allFeatures = [
-            { name: 'Dashboard e KPIs', tier: 'basic', icon: '\ud83d\udcca' },
-            { name: 'Produtos e Estoque', tier: 'basic', icon: '\ud83d\udce6' },
-            { name: 'Clientes e Fornecedores', tier: 'basic', icon: '\ud83d\udc65' },
-            { name: 'Pedidos de Venda', tier: 'basic', icon: '\ud83d\udccb' },
-            { name: 'Nota Fiscal (NF-e)', tier: 'basic', icon: '\ud83e\uddfe' },
-            { name: 'Compras', tier: 'basic', icon: '\ud83d\uded2' },
-            { name: 'Contas a Receber/Pagar', tier: 'basic', icon: '\ud83d\udcb0' },
-            { name: 'Fluxo de Caixa', tier: 'basic', icon: '\ud83c\udfe6' },
-            { name: 'Configura\u00e7\u00f5es', tier: 'basic', icon: '\u2699\ufe0f' },
-            { name: 'Devolu\u00e7\u00f5es', tier: 'pro', icon: '\u21a9\ufe0f' },
-            { name: 'Curva ABC (Clientes/Produtos)', tier: 'pro', icon: '\ud83d\udcc8' },
-            { name: 'DRE e Relat\u00f3rios Avan\u00e7ados', tier: 'pro', icon: '\ud83d\udcca' },
-            { name: 'Comiss\u00e3o de Vendedores', tier: 'pro', icon: '\ud83d\udcb8' },
-            { name: 'Tabela de Pre\u00e7os por Cliente', tier: 'pro', icon: '\ud83c\udff7\ufe0f' },
-            { name: 'Estoque M\u00ednimo + Alertas', tier: 'pro', icon: '\u26a0\ufe0f' },
-            { name: 'PDV (em breve)', tier: 'enterprise', icon: '\ud83d\udecd\ufe0f' },
-            { name: 'API (em breve)', tier: 'enterprise', icon: '\ud83d\udd0c' },
-            { name: 'Suporte Priorit\u00e1rio', tier: 'enterprise', icon: '\ud83c\udfaf' },
-          ];
-
-          const hasModule = (tier) => limits.modules.includes(tier);
-          
-          const usageBars = [
-            { label: 'Produtos', used: state.products.filter(p => p.active !== false).length, limit: limits.products, icon: '\ud83d\udce6' },
-            { label: 'NFs este m\u00eas', used: nfThisMonth, limit: limits.nfMonth, icon: '\ud83e\uddfe' },
-            { label: 'Usu\u00e1rios', used: userCount, limit: limits.users, icon: '\ud83d\udc64' },
-          ].filter(b => b.limit < 90000);
-
-          const upgradePlans = [
-            plan === 'basico' ? { key: 'profissional', name: 'Profissional', price: 'R$ 197/m\u00eas', priceAnnual: 'R$ 1.891/ano', desc: '5 usu\u00e1rios, 3.000 produtos, Devolu\u00e7\u00f5es, Curva ABC, DRE' } : null,
-            (plan === 'basico' || plan === 'profissional') ? { key: 'empresarial', name: 'Empresarial', price: 'R$ 397/m\u00eas', priceAnnual: 'R$ 3.811/ano', desc: 'Ilimitado, API, PDV, Suporte priorit\u00e1rio' } : null,
-          ].filter(Boolean);
-
-          const nextDue = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString('pt-BR') : '\u2014';
-          const planName = { basico: 'Essencial', profissional: 'Profissional', empresarial: 'Empresarial' }[plan] || plan;
-
-          return `
-        <div class="row-between" style="margin-bottom:20px">
-          <div>
-            <div class="kpi-label">Plano Atual</div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-              <span style="font-size:20px;font-weight:700;color:var(--text)">\${planName}</span>
-              <span class="badge bg-green">Ativo</span>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div class="kpi-label">Pr\u00f3ximo vencimento</div>
-            <div style="font-size:16px;font-weight:600;color:var(--text);margin-top:4px">\${nextDue}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">Ciclo: \${window._billingCycle === 'annual' ? 'Anual (-20%)' : 'Mensal'}</div>
-          </div>
-        </div>
-
-        <div style="margin-bottom:20px">
-          <div class="section-title" style="font-size:13px;margin-bottom:10px">O que seu plano inclui</div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
-            \${allFeatures.map(f => {
-              const included = hasModule(f.tier);
-              return `
-              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);\${!included ? 'opacity:.45' : ''}">
-                <span style="font-size:16px">\${f.icon}</span>
-                <span style="font-size:12px;color:\${included ? 'var(--text)' : 'var(--muted)'}">\${f.name}</span>
-                <span style="margin-left:auto;font-size:11px;font-weight:600;color:\${included ? 'var(--green)' : 'var(--muted)'}">\${included ? '\u2713' : '\ud83d\udd12'}</span>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-
-        \${usageBars.length > 0 ? `
-        <div style="margin-bottom:20px">
-          <div class="section-title" style="font-size:13px;margin-bottom:10px">Uso do plano</div>
-          \${usageBars.map(b => {
-            const pct = Math.min(100, Math.round((b.used / b.limit) * 100));
-            const color = pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
-            return `
-            <div style="margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
-                <span style="color:var(--text2)">\${b.icon} \${b.label}</span>
-                <span style="color:\${color};font-weight:600;font-family:var(--font-m)">\${b.used} / \${b.limit}</span>
-              </div>
-              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-                <div style="height:100%;width:\${pct}%;background:\${color};border-radius:3px;transition:width .4s"></div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>` : ''}
-
-        \${upgradePlans.length > 0 ? `
-        <div class="divider"></div>
-        <div style="margin-top:16px;margin-bottom:16px">
-          <div class="section-title" style="font-size:13px;margin-bottom:10px">Fazer upgrade</div>
-          <div style="display:grid;grid-template-columns:repeat(\${upgradePlans.length},1fr);gap:12px">
-            \${upgradePlans.map(p => `
-              <div style="border:1.5px solid var(--amber);border-radius:10px;padding:16px;background:rgba(245,158,11,.06)">
-                <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">\${p.name}</div>
-                <div style="font-size:16px;font-weight:700;color:var(--amber);margin-bottom:2px">\${window._billingCycle === 'annual' ? p.priceAnnual : p.price}</div>
-                <div style="font-size:11px;color:var(--muted);margin-bottom:10px">\${p.desc}</div>
-                <button class="btn btn-primary" style="width:100%;padding:9px;font-size:13px" onclick="fazerUpgrade('\${p.key}')">Fazer upgrade</button>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-
-        <div class="divider"></div>
-        <div class="row-between" style="margin-top:16px">
-          <div style="font-size:12px;color:var(--muted)">Gerencie cobran\u00e7as e m\u00e9todo de pagamento no portal do Mercado Pago.</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost" style="font-size:12px" onclick="window.open('https://www.mercadopago.com.br/subscriptions','_blank')">Portal MP \u2197</button>
-            <button class="btn btn-danger" style="font-size:12px" onclick="cancelarPlano()">Cancelar assinatura</button>
-          </div>
-        </div>`;
-        })()}
+        ${planSection}
     </div>
 
     <div class="card" style="border-top:3px solid var(--blue)">

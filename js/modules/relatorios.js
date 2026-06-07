@@ -30,17 +30,21 @@ function renderRelatorios(){
   if(state.relTab==="nf"){ renderRelatorioNF(); return; }
   if(state.relTab==="abc-cli"){ renderCurvaABCClientes(); return; }
   if(state.relTab==="dre"){ renderDRE(); return; }
+  const invoices = state.invoices || [];
+  const transactions = state.transactions || [];
+  const purchases = state.purchases || [];
+  const receivables = state.receivables || [];
   const {label,filter}=getRelPeriod();
-  const filteredInv=state.invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
-  const filteredTx=state.transactions.filter(t=>filter(t.date));
+  const filteredInv=invoices.filter(n=>n.status!=="cancelada"&&filter(n.date));
+  const filteredTx=transactions.filter(t=>filter(t.date));
   const tIn=filteredTx.filter(t=>t.type==="entrada").reduce((s,t)=>s+t.amount,0);
   const tOut=filteredTx.filter(t=>t.type==="saida").reduce((s,t)=>s+t.amount,0);
   const totalSales=filteredInv.reduce((s,n)=>s+n.total,0);
   const margem=tIn>0?((tIn-tOut)/tIn*100):0;
 
   const months=new Set();
-  state.invoices.forEach(n=>{ if(n.date) months.add(n.date.slice(0,7)); });
-  state.transactions.forEach(t=>{ if(t.date) months.add(t.date.slice(0,7)); });
+  invoices.forEach(n=>{ if(n.date) months.add(n.date.slice(0,7)); });
+  transactions.forEach(t=>{ if(t.date) months.add(t.date.slice(0,7)); });
   const sortedMonths=[...months].sort().reverse();
 
   const byCat={};
@@ -53,7 +57,7 @@ function renderRelatorios(){
   const topProds=Object.entries(byProd).map(([id,v])=>({p:getProd(parseInt(id)),v})).filter(x=>x.p).sort((a,b)=>b.v-a.v).slice(0,8);
   const maxProd=topProds[0]?.v||1;
 
-  const filteredPurch=state.purchases.filter(p=>filter(p.date));
+  const filteredPurch=purchases.filter(p=>filter(p.date));
   const bySup={};
   filteredPurch.forEach(c=>{ bySup[c.supplierId]=(bySup[c.supplierId]||0)+c.total; });
   const supArr=Object.entries(bySup).map(([id,v])=>({s:getSupplier(parseInt(id)),v})).filter(x=>x.s).sort((a,b)=>b.v-a.v);
@@ -64,13 +68,13 @@ function renderRelatorios(){
     const d=new Date(); d.setMonth(d.getMonth()-i);
     const ym=d.toISOString().slice(0,7);
     const mLabel=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][d.getMonth()];
-    const sales=state.invoices.filter(n=>n.status!=="cancelada"&&n.date&&n.date.startsWith(ym)).reduce((s,n)=>s+n.total,0);
-    const costs=state.transactions.filter(t=>t.type==="saida"&&t.date&&t.date.startsWith(ym)).reduce((s,t)=>s+t.amount,0);
+    const sales=invoices.filter(n=>n.status!=="cancelada"&&n.date&&n.date.startsWith(ym)).reduce((s,n)=>s+n.total,0);
+    const costs=transactions.filter(t=>t.type==="saida"&&t.date&&t.date.startsWith(ym)).reduce((s,t)=>s+t.amount,0);
     monthlyData.push({label:`${mLabel}/${d.getFullYear().toString().slice(2)}`,sales,costs});
   }
   const maxMonth=Math.max(...monthlyData.map(m=>Math.max(m.sales,m.costs)),1);
 
-  const overdueRec=state.receivables.filter(r=>r.status==="aberta"&&isOverdue(r.dueDate));
+  const overdueRec=receivables.filter(r=>r.status==="aberta"&&isOverdue(r.dueDate));
   const delinqClients={};
   overdueRec.forEach(r=>{ if(!delinqClients[r.clientId]) delinqClients[r.clientId]={client:getClient(r.clientId),amount:0,count:0,oldest:r.dueDate}; delinqClients[r.clientId].amount+=r.amount; delinqClients[r.clientId].count++; if(r.dueDate<delinqClients[r.clientId].oldest) delinqClients[r.clientId].oldest=r.dueDate; });
   const delinqArr=Object.values(delinqClients).sort((a,b)=>b.amount-a.amount);
