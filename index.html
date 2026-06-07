@@ -196,6 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Salva código de afiliado da URL no localStorage (persiste até o cadastro)
   const refParam = new URLSearchParams(window.location.search).get('ref');
   if(refParam) { localStorage.setItem('_ref', refParam); showSignup(); }
+
+  // Garante re-render após todos os scripts carregarem (evita dashboard em branco
+  // quando onAuthStateChanged dispara antes dos scripts de módulo estarem prontos)
+  if (window._currentUser && typeof render === 'function' && !document.getElementById('content')?.children?.length) {
+    setTimeout(() => { if (typeof render === 'function') render(); }, 100);
+  }
 });
 
 </script>
