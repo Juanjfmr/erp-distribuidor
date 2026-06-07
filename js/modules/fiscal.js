@@ -2,6 +2,10 @@
 // Wizard de configuração fiscal self-service e dashboard fiscal.
 // Acessa: state.company (leitura/escrita), Firebase Functions (registerTenant, uploadCertificate)
 
+// Cert temporário em memória — disponível do passo 3 até registerTenant (passo 5) consumi-lo.
+// NUNCA persistido nem logado; zerado imediatamente após o uso.
+let _wizardCert = null;
+
 // Salva progresso de uma etapa no Firestore sem navegar fora do wizard.
 async function saveFiscalStep(fields) {
   const updates = {};
@@ -71,10 +75,13 @@ function renderFiscalDashboardHTML() {
   const statusColors = {
     PRODUCAO_ATIVA:         'bg-green',
     CONFIGURADO_TESTADO:    'bg-green',
+    CERTIFICADO_INSTALADO:  'bg-green',
+    REGISTRANDO:            'bg-blue',
     CONFIGURADO:            'bg-blue',
     CONFIGURADO_NAO_TESTADO:'bg-amber',
     SEM_CERTIFICADO:        'bg-amber',
     ERRO_REGISTRO:          'bg-red',
+    ERRO_CERTIFICADO:       'bg-red',
     BLOQUEADO_CPF:          'bg-gray',
     NAO_CONFIGURADO:        'bg-gray',
   };
@@ -299,6 +306,7 @@ async function wizardUploadCert() {
       if (result.data.success) {
         state.company.certExpiresAt = result.data.expiresAt;
         state.company.fiscalStatus  = 'SEM_CERTIFICADO';
+        _wizardCert = { pfxBase64, certSenha: senha }; // retido para registerTenant no passo 5
         wizardGoTo(4);
       } else {
         if (errEl) errEl.textContent = result.data.error || 'Erro ao processar certificado.';
@@ -366,14 +374,17 @@ async function wizardRegisterFocusNFe() {
 
   try {
     const registerFn = firebase.functions().httpsCallable('registerTenant');
+    const certPayload = _wizardCert || {};
+    _wizardCert = null; // limpa da memória antes da chamada async
     const result     = await registerFn({
       companyId:  state.companyId,
       fiscalData: state.company.fiscalData,
       env:        state.company.focusNfeEnv || 'homologacao',
+      ...certPayload,
     });
 
     if (result.data.success) {
-      state.company.fiscalStatus = 'CONFIGURADO';
+      state.company.fiscalStatus = result.data.certInstalado ? 'CERTIFICADO_INSTALADO' : 'CONFIGURADO';
       wizardGoTo(6);
     } else {
       state.company.fiscalStatus = 'ERRO_REGISTRO';

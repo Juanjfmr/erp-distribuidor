@@ -1,11 +1,13 @@
 // functions/uploadCertificate.js
-// Valida certificado A1 (.pfx) e armazena encriptado no Firestore.
+// Valida certificado A1 (.pfx), armazena encriptado no Firestore e envia para a Focus NFe.
 // A chave de encriptação NUNCA vai ao Firestore — fica em variável de ambiente.
+// A senha do certificado NUNCA é persistida — só usada em memória para validação e envio.
 
 const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
 const forge     = require('node-forge');
 const crypto    = require('crypto');
+const axios     = require('axios');
 
 function encryptCert(pfxBuffer, encKey) {
   const iv     = crypto.randomBytes(16);
@@ -79,10 +81,57 @@ exports.uploadCertificate = functions.https.onCall(async (data, context) => {
 
   const { iv, data: encData } = encryptCert(pfxBuffer, encKey);
 
+  // Verifica se empresa já está registrada na Focus (tem token) — renovação vs. primeiro setup
+  const companyDoc = await admin.firestore().doc(`empresas/${companyId}`).get();
+  const company    = companyDoc.data()?.company || {};
+  const hasToken   = !!company.focusNfeToken;
+
+  if (!hasToken) {
+    // Primeiro setup: empresa ainda não existe na Focus — cert será enviado em registerTenant
+    await admin.firestore().doc(`empresas/${companyId}`).update({
+      'company.certEncrypted': { iv, data: encData },
+      'company.certExpiresAt': expiresAt,
+      'company.fiscalStatus':  'SEM_CERTIFICADO',
+    });
+    return { success: true, expiresAt };
+  }
+
+  // Renovação: empresa já registrada — salva e PATCH direto na Focus
   await admin.firestore().doc(`empresas/${companyId}`).update({
     'company.certEncrypted': { iv, data: encData },
     'company.certExpiresAt': expiresAt,
-    'company.fiscalStatus':  'SEM_CERTIFICADO',
+    'company.fiscalStatus':  'ENVIANDO_CERTIFICADO',
+  });
+
+  let masterToken = (functions.config().focusnfe?.master_token) || process.env.FOCUS_NFE_MASTER_TOKEN;
+  if (!masterToken) {
+    const masterTokenDoc = await admin.firestore().doc('config/focusNfe').get();
+    masterToken = masterTokenDoc.data()?.masterToken;
+  }
+  if (!masterToken) {
+    await admin.firestore().doc(`empresas/${companyId}`).update({ 'company.fiscalStatus': 'ERRO_CERTIFICADO' });
+    return { success: false, error: 'Token master Focus NFe não configurado no servidor.' };
+  }
+
+  const cnpjLimpo = cnpj.replace(/\D/g, '');
+  try {
+    await axios.patch(
+      `https://api.focusnfe.com.br/v2/empresas/${cnpjLimpo}`,
+      { arquivo_certificado_base64: pfxBase64, senha_certificado: senha },
+      { auth: { username: masterToken, password: '' } }
+    );
+  } catch (err) {
+    const focusMsg = err.response?.data?.mensagem || err.response?.data?.erros?.[0]?.mensagem || err.message;
+    await admin.firestore().doc(`empresas/${companyId}`).update({
+      'company.fiscalStatus':  'ERRO_CERTIFICADO',
+      'company.certLastError': focusMsg,
+    });
+    return { success: false, error: focusMsg };
+  }
+
+  await admin.firestore().doc(`empresas/${companyId}`).update({
+    'company.fiscalStatus':  'CERTIFICADO_INSTALADO',
+    'company.certLastError': admin.firestore.FieldValue.delete(),
   });
 
   return { success: true, expiresAt };

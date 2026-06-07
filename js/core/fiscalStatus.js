@@ -5,8 +5,11 @@
 const FISCAL_STATUS = {
   NAO_CONFIGURADO:        'NAO_CONFIGURADO',
   BLOQUEADO_CPF:          'BLOQUEADO_CPF',
+  REGISTRANDO:            'REGISTRANDO',
   SEM_CERTIFICADO:        'SEM_CERTIFICADO',
   ERRO_REGISTRO:          'ERRO_REGISTRO',
+  CERTIFICADO_INSTALADO:  'CERTIFICADO_INSTALADO',
+  ERRO_CERTIFICADO:       'ERRO_CERTIFICADO',
   CONFIGURADO:            'CONFIGURADO',
   CONFIGURADO_NAO_TESTADO:'CONFIGURADO_NAO_TESTADO',
   CONFIGURADO_TESTADO:    'CONFIGURADO_TESTADO',
@@ -16,7 +19,8 @@ const FISCAL_STATUS = {
 // Retorna true se o tenant pode emitir NF-e via Focus NFe.
 function canEmitNFe(company) {
   const s = company?.fiscalStatus;
-  return s === FISCAL_STATUS.CONFIGURADO
+  return s === FISCAL_STATUS.CERTIFICADO_INSTALADO
+      || s === FISCAL_STATUS.CONFIGURADO
       || s === FISCAL_STATUS.CONFIGURADO_NAO_TESTADO
       || s === FISCAL_STATUS.CONFIGURADO_TESTADO
       || s === FISCAL_STATUS.PRODUCAO_ATIVA;
@@ -44,6 +48,10 @@ function getBannerConfig(company) {
       icone: 'ℹ️', ctaLabel: 'Saiba mais', ctaAction: gotoFiscal,
       texto: 'Você usa CPF — faturas disponíveis. NF-e requer CNPJ.',
     },
+    [FISCAL_STATUS.REGISTRANDO]: {
+      icone: '⏳', ctaLabel: 'Ver detalhes', ctaAction: gotoFiscal,
+      texto: 'Registro em andamento. Se persistir, tente novamente.',
+    },
     [FISCAL_STATUS.SEM_CERTIFICADO]: {
       icone: '⚠️', ctaLabel: 'Completar', ctaAction: gotoFiscal,
       texto: 'Dados salvos. Faça upload do certificado A1 para emitir NF-e.',
@@ -51,6 +59,14 @@ function getBannerConfig(company) {
     [FISCAL_STATUS.ERRO_REGISTRO]: {
       icone: '🔴', ctaLabel: 'Tentar novamente', ctaAction: gotoFiscal,
       texto: `Erro ao registrar na Focus NFe: ${company?.fiscalData?.lastError?.mensagem || 'verifique os dados.'}`,
+    },
+    [FISCAL_STATUS.CERTIFICADO_INSTALADO]: {
+      icone: '✅', ctaLabel: 'Testar agora', ctaAction: gotoFiscal,
+      texto: 'Empresa registrada com certificado instalado. Recomendamos testar em homologação.',
+    },
+    [FISCAL_STATUS.ERRO_CERTIFICADO]: {
+      icone: '🔴', ctaLabel: 'Corrigir', ctaAction: gotoFiscal,
+      texto: `Erro ao instalar certificado: ${company?.certLastError || 'verifique o arquivo e a senha.'}`,
     },
     [FISCAL_STATUS.CONFIGURADO]: {
       icone: '✅', ctaLabel: 'Testar agora', ctaAction: gotoFiscal,
