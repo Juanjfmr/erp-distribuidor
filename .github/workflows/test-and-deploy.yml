@@ -1,0 +1,109 @@
+# .github/workflows/test-and-deploy.yml
+# CI/CD do Stoqio — roda testes Playwright e faz deploy no Firebase.
+# Regras de deploy (definidas pelo Juan):
+#   - Bug fix → main + v2
+#   - Feature  → v2 apenas
+# Como o workflow não sabe o que é bug vs feature, deploy sempre em v2.
+# Se for bug fix, faça merge da v2 para main manualmente (ou abra um PR).
+
+name: Test + Deploy
+
+on:
+  push:
+    branches: [v2, main]
+  pull_request:
+    branches: [v2, main]
+
+jobs:
+  test:
+    name: 🧪 Playwright Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./tests
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./tests
+        run: npx playwright install chromium
+
+      - name: Run tests
+        working-directory: ./tests
+        run: npx playwright test --project=chromium
+        env:
+          # Variáveis de ambiente para os testes (se necessário)
+          CI: true
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results (screenshots/video)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/test-results/
+          retention-days: 7
+
+  notify:
+    name: 🔔 Notificar
+    needs: test
+    if: always() && github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Telegram
+        if: secrets.TELEGRAM_BOT_TOKEN != ''
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            *Stoqio — ${{ needs.test.result == 'success' && '✅ Deploy OK' || '❌ Testes falharam' }}*
+            Branch: \`${{ github.ref_name }}\`
+            Commit: \`${{ github.sha }}\`
+            Autor: ${{ github.actor }}
+            ${{ needs.test.result == 'success' && 'Deploy automático em instantes...' || 'Veja o log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}' }}
+
+  deploy:
+    name: 🚀 Deploy Firebase
+    needs: test
+    if: success() && github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy to Firebase
+        run: |
+          firebase deploy \
+            --project erp-distribuidora-905ca \
+            --token "${{ secrets.FIREBASE_DEPLOY_TOKEN }}" \
+            --only hosting,functions
