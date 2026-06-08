@@ -273,11 +273,6 @@ function _onboardingStep3() {
           ? 'Você tem pedidos cadastrados. Vá em Nota Fiscal e fature um pedido para emitir sua primeira NF-e.'
           : 'Vá em Nota Fiscal e emita sua primeira nota fiscal eletrônica.'}
       </div>
-      ${!state.company?.focusToken ? `
-        <div style="background:var(--amber-bg,#fff8e1);border:1px solid var(--amber,#f59e0b);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
-          ⚠ Configure o Token Focus NFe em <b>Configurações</b> antes de emitir NF-e.
-        </div>
-      ` : ''}
       <button class="btn btn-primary" style="width:100%" onclick="navigate('notas')">
         Ir para Nota Fiscal →
       </button>

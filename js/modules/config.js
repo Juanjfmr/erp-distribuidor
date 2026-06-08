@@ -283,26 +283,7 @@ function renderConfig(activeTab){
       </div>
       <button class="btn btn-primary" onclick="saveConfig()">Salvar Configurações</button>
     </div>
-    <div class="card" style="max-width:580px;margin-top:0">
-      <div class="section-title" style="margin-bottom:4px">Integração Focus NFe</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Token da API Focus NFe para emissão de NF-e. Obtenha em <b>app.focusnfe.com.br</b>.</div>
-      <div class="form-group">
-        <label class="form-label">Token da API</label>
-        <input id="cfg-focus-token" class="form-input" type="password" placeholder="Cole seu token aqui" value="${window._focusToken||''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ambiente</label>
-        <select id="cfg-focus-env" class="form-input">
-          <option value="homologacao" ${(window._focusEnv||'homologacao')==='homologacao'?'selected':''}>Homologação (testes)</option>
-          <option value="producao" ${window._focusEnv==='producao'?'selected':''}>Produção</option>
-        </select>
-      </div>
-      <div id="cfg-focus-status" style="font-size:12px;margin-bottom:10px;display:none"></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="saveFocusToken()">Salvar token</button>
-        <button class="btn" onclick="testFocusToken()">Testar conexão</button>
-      </div>
-    </div>
+
     <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:4px">Categorias de Produtos</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Usado nos formulários de produto. Ex: Bebidas, Alimentos, Higiene</div>
@@ -334,12 +315,7 @@ function renderConfig(activeTab){
       <div style="margin-top:12px">
         <button class="btn btn-danger" style="background:rgba(248,81,73,.08)" onclick="resetData()">⚠ Resetar todos os dados</button>
       </div>
-      <!-- ⚠ TEMPORÁRIO — remover após testes do onboarding -->
-      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">DEV: Reiniciar wizard de onboarding</div>
-        <button class="btn" style="font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="state.onboarding={complete:false,step:0,checklist:{empresa:false,dados:false,pedido:false,nfe:false,recebimento:false,certificado:false}};saveState();navigate('onboarding')">↩ Reiniciar onboarding</button>
-      </div>
-      <!-- /TEMPORÁRIO -->
+
     </div>
     </div>
     <div id="config-tab-fiscal" style="display:${activeTab==='fiscal'?'block':'none'}">
@@ -407,51 +383,8 @@ function importData(){
     r.readAsText(f);
   }; inp.click();
 }
-async function saveFocusToken() {
-  const token = el('cfg-focus-token').value.trim();
-  const env = el('cfg-focus-env').value;
-  const statusEl = el('cfg-focus-status');
-  if (!token) { statusEl.style.display='block'; statusEl.style.color='var(--red)'; statusEl.textContent='Informe o token.'; return; }
-  try {
-    const { doc, setDoc } = window._fbFns;
-    await setDoc(doc(window._db, 'config', 'focusNfe'), { token, env });
-    window._focusToken = token;
-    window._focusEnv = env;
-    statusEl.style.display='block'; statusEl.style.color='var(--green)';
-    statusEl.textContent='✓ Token salvo com sucesso.';
-    showSyncStatus('✓ Token Focus NFe salvo');
-  } catch(e) {
-    statusEl.style.display='block'; statusEl.style.color='var(--red)';
-    statusEl.textContent='Erro ao salvar: ' + e.message;
-  }
-}
-
-async function testFocusToken() {
-  const token = el('cfg-focus-token').value.trim() || window._focusToken;
-  const env = el('cfg-focus-env').value || window._focusEnv || 'homologacao';
-  const statusEl = el('cfg-focus-status');
-  if (!token) { statusEl.style.display='block'; statusEl.style.color='var(--red)'; statusEl.textContent='Nenhum token para testar.'; return; }
-  statusEl.style.display='block'; statusEl.style.color='var(--muted)'; statusEl.textContent='Testando conexão...';
-  try {
-    const baseUrl = env === 'producao' ? 'https://api.focusnfe.com.br' : 'https://homologacao.focusnfe.com.br';
-    const resp = await fetch(`${baseUrl}/v2/nfe?ref=ping_test`, {
-      method: 'GET',
-      headers: { 'Authorization': 'Basic ' + btoa(token + ':') },
-    });
-    if (resp.status === 200 || resp.status === 404) {
-      statusEl.style.color='var(--green)'; statusEl.textContent=`✓ Conexão OK (${env}).`;
-    } else if (resp.status === 401) {
-      statusEl.style.color='var(--red)'; statusEl.textContent='Token inválido ou sem permissão.';
-    } else {
-      statusEl.style.color='var(--amber)'; statusEl.textContent=`Resposta inesperada: HTTP ${resp.status}.`;
-    }
-  } catch(e) {
-    statusEl.style.color='var(--red)'; statusEl.textContent='Erro de conexão: ' + e.message;
-  }
-}
-
 async function resetData(){
-  const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\n\nEsta operação não pode ser desfeita. Deseja continuar?");
+  const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\\n\\nEsta operação não pode ser desfeita. Deseja continuar?");
   if(!confirm1) return;
   const typed = prompt('Para confirmar, digite exatamente: RESETAR');
   if(typed !== 'RESETAR'){ alert("Confirmação incorreta. Operação cancelada."); return; }
