@@ -142,6 +142,15 @@ function renderDashboard(){
   }
   updateNotifBell();
 
+  // ─── Notificação fiscal (fora do dashboard) ─────────────────────────────
+  if (needsBanner(state.company)) {
+    const cfg = getBannerConfig(state.company);
+    addNotification('fiscal', cfg.titulo || 'Configure sua NF-e',
+      cfg.texto || 'Configure seus dados fiscais para emitir notas fiscais.',
+      'Configurar', `navigate('config');toggleNotifications(new Event('click'))`);
+    updateNotifBell();
+  }
+
   const ob = state.onboarding;
   const onboardingHtml = (!ob || ob.complete) ? '' : (() => {
     const items = [
@@ -174,7 +183,7 @@ function renderDashboard(){
     `;
   })();
 
-  el("content").innerHTML = renderFiscalBanner() + `
+  el("content").innerHTML = `
     ${onboardingHtml}
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button class="btn-sm${period==='hoje'?' btn-amber':''}" onclick="window._dashPeriod='hoje';renderDashboard()">Hoje</button>

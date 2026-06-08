@@ -89,6 +89,18 @@ function applyRoleUI() {
   });
   const badge = document.getElementById('role-badge');
   if (badge) { badge.textContent = ROLE_LABELS[role]||role; badge.style.color = ROLE_COLORS[role]||'var(--muted)'; }
+  // Sidebar mini-profile
+  const sbEmail = document.getElementById('sb-email');
+  const sbAvatar = document.getElementById('sb-avatar');
+  if (sbEmail) {
+    const email = window._currentUser?.email || 'usuário';
+    sbEmail.textContent = email;
+  }
+  if (sbAvatar) {
+    const name = window._userProfile?.name || window._currentUser?.email || '?';
+    const initial = name.trim().charAt(0).toUpperCase();
+    sbAvatar.textContent = initial;
+  }
   if (role === 'visualizador' || role === 'contador') {
     document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm.btn-red, .btn-sm.btn-amber').forEach(b => b.style.display='none');
   }
