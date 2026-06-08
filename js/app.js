@@ -5,7 +5,7 @@
   const months=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
   const now=new Date();
   el("topbar-date").textContent=`${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]} de ${now.getFullYear()}`;
-  el("sb-footer").textContent=`v2.0 · ${state.company&&state.company.name?state.company.name:"2R Comércio"}`;
+  // Sidebar mini-profile é gerenciado por applyRoleUI() em nav.js — não sobrescrever
   // Auto-completar onboarding se a empresa já tem dados reais (evita bloquear empresas existentes)
   if (state.onboarding && !state.onboarding.complete) {
     const hasData = (state.products && state.products.length > 0)

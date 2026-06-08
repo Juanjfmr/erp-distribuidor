@@ -214,6 +214,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window._currentUser && typeof render === 'function' && !document.getElementById('content')?.children?.length) {
     setTimeout(() => { if (typeof render === 'function') render(); }, 100);
   }
+
+  // Fast-path: se já tem sessão cached no localStorage, mostra o app IMEDIATAMENTE
+  // sem esperar a resposta async do onAuthStateChanged + Firestore
+  const cachedUid = localStorage.getItem('stoqio_uid');
+  if (cachedUid && loadState && typeof loadState === 'function') {
+    const raw = localStorage.getItem('stoqio_v1');
+    if (raw) {
+      try {
+        const st = JSON.parse(raw);
+        if (st && st.company && st.company.name) {
+          const loginEl = document.getElementById('login-screen');
+          const appEl = document.getElementById('app');
+          if (loginEl) loginEl.style.setProperty('display','none','important');
+          if (appEl) { appEl.style.setProperty('display','flex','important'); appEl.classList.add('visible'); }
+        }
+      } catch(_) {}
+    }
+  }
 });
 
 </script>
