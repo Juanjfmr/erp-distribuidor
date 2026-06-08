@@ -1,52 +1,69 @@
 # .github/workflows/test-and-deploy.yml
-# CI/CD do Stoqio — roda testes Playwright e faz deploy no Firebase.
-# Regras de deploy (definidas pelo Juan):
-#   - Bug fix → main + v2
-#   - Feature  → v2 apenas
-# Como o workflow não sabe o que é bug vs feature, deploy sempre em v2.
-# Se for bug fix, faça merge da v2 para main manualmente (ou abra um PR).
+# CI/CD do Stoqio — regras de deploy definidas pelo Juan:
+#   - Bug fix → testa + deploy em v2 E main
+#   - Feature  → testa + deploy apenas em v2
+#   - Dúvida   → perguntar (não automático)
+#
+# Como detectamos: se a mensagem do commit começa com "fix:" ou contém
+# "corrige"/"correção"/"hotfix", é bug fix. Senão, é feature.
 
 name: Test + Deploy
 
 on:
   push:
     branches: [v2, main]
-  pull_request:
-    branches: [v2, main]
 
 jobs:
+  detect:
+    name: 🔍 Detectar tipo
+    runs-on: ubuntu-latest
+    outputs:
+      is_bugfix: ${{ steps.check.outputs.is_bugfix }}
+
+    steps:
+      - name: Check commit message
+        id: check
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          echo "Commit: $MSG"
+          # Bug fix se começar com fix:, conter fix(, corrige, correção, hotfix
+          if echo "$MSG" | grep -qiE '^(fix|fix\\(|corrige|correção|hotfix)'; then
+            echo "is_bugfix=true" >> $GITHUB_OUTPUT
+            echo "→ Bug fix detectado"
+          else
+            echo "is_bugfix=false" >> $GITHUB_OUTPUT
+            echo "→ Feature detectada"
+          fi
+
   test:
-    name: 🧪 Playwright Tests
+    name: 🧪 Testes
+    needs: detect
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: tests/package-lock.json
 
-      - name: Install dependencies
+      - name: Install deps
         working-directory: ./tests
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Install browsers
         working-directory: ./tests
         run: npx playwright install chromium
 
-      - name: Run tests
+      - name: Run 83 testes
         working-directory: ./tests
         run: npx playwright test --project=chromium
         env:
-          # Variáveis de ambiente para os testes (se necessário)
           CI: true
 
-      - name: Upload test report
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -54,7 +71,7 @@ jobs:
           path: tests/playwright-report/
           retention-days: 7
 
-      - name: Upload test results (screenshots/video)
+      - name: Upload failures
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -62,10 +79,78 @@ jobs:
           path: tests/test-results/
           retention-days: 7
 
+  deploy-v2:
+    name: 🚀 Deploy v2
+    needs: [test, detect]
+    if: success() && github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy v2 → Firebase
+        run: |
+          echo "🚀 Deployando v2..."
+          firebase deploy \
+            --project erp-distribuidora-905ca \
+            --token "${{ secrets.FIREBASE_DEPLOY_TOKEN }}" \
+            --only hosting,functions
+          echo "✅ v2 no ar!"
+
+  deploy-main:
+    name: 🚀 Deploy main (bug fix)
+    needs: [test, detect]
+    if: success() && needs.detect.outputs.is_bugfix == 'true' && github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Push para main
+        run: |
+          git fetch origin main
+          git checkout main
+          git merge v2 --no-edit
+          git push origin main
+          echo "✅ v2 mergeado na main — deploy automático via push em main"
+
+  deploy-main-direct:
+    name: 🚀 Deploy main (push direto)
+    needs: test
+    if: success() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy main → Firebase
+        run: |
+          echo "🚀 Deployando main..."
+          firebase deploy \
+            --project erp-distribuidora-905ca \
+            --token "${{ secrets.FIREBASE_DEPLOY_TOKEN }}" \
+            --only hosting,functions
+          echo "✅ main no ar!"
+
   notify:
     name: 🔔 Notificar
-    needs: test
-    if: always() && github.ref == 'refs/heads/v2'
+    needs: [deploy-v2, deploy-main, deploy-main-direct, detect]
+    if: always()
     runs-on: ubuntu-latest
 
     steps:
@@ -77,33 +162,8 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            *Stoqio — ${{ needs.test.result == 'success' && '✅ Deploy OK' || '❌ Testes falharam' }}*
+            *Stoqio — ${{ contains(needs.*.result, 'failure') && '❌ Falhou' || '✅ Sucesso' }}*
             Branch: \`${{ github.ref_name }}\`
-            Commit: \`${{ github.sha }}\`
-            Autor: ${{ github.actor }}
-            ${{ needs.test.result == 'success' && 'Deploy automático em instantes...' || 'Veja o log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}' }}
-
-  deploy:
-    name: 🚀 Deploy Firebase
-    needs: test
-    if: success() && github.ref == 'refs/heads/v2'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Deploy to Firebase
-        run: |
-          firebase deploy \
-            --project erp-distribuidora-905ca \
-            --token "${{ secrets.FIREBASE_DEPLOY_TOKEN }}" \
-            --only hosting,functions
+            Tipo: ${{ needs.detect.outputs.is_bugfix == 'true' && '🐛 Bug fix' || '✨ Feature' }}
+            Deploys: ${{ needs.detect.outputs.is_bugfix == 'true' && 'v2 + main' || 'v2' }}
+            Commit: ${{ github.sha }}
