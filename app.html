@@ -325,7 +325,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--border-focus);ou
 .logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
 .logo-title{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--primary);letter-spacing:.05em;text-transform:uppercase}
 .logo-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.1em}
-nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;padding:8px 20px 4px;margin-top:4px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all .15s}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor}
 .nav-item:hover{color:var(--text-secondary);background:var(--bg-hover)}
@@ -578,30 +579,33 @@ tr:hover td{background:var(--bg-hover)}
   </div>
   <nav id="nav">
     <div class="nav-item active" onclick="navigate('dashboard')" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</div>
-    <div class="nav-sep"></div>
+
+    <div class="nav-section">Vendas</div>
     <div class="nav-item" onclick="navigate('produtos')" data-view="produtos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Produtos</div>
     <div class="nav-item" onclick="navigate('clientes')" data-view="clientes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Clientes</div>
     <div class="nav-item" onclick="navigate('pedidos')" data-view="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg> Pedidos</div>
     <div class="nav-item" onclick="navigate('notas')" data-view="notas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Nota Fiscal</div>
     <div class="nav-item" onclick="navigate('devolucoes')" data-view="devolucoes"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.79"/></svg> Devoluções</div>
-    <div class="nav-sep"></div>
+
+    <div class="nav-section">Financeiro</div>
     <div class="nav-item" onclick="navigate('contas')" data-view="contas"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Contas</div>
     <div class="nav-item" onclick="navigate('caixa')" data-view="caixa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Fluxo de Caixa</div>
     <div class="nav-item" onclick="navigate('compras')" data-view="compras"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Compras</div>
-    <div class="nav-sep"></div>
+
+    <div class="nav-section">Gestão</div>
     <div class="nav-item" onclick="navigate('fornecedores')" data-view="fornecedores"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Fornecedores</div>
     <div class="nav-item" onclick="navigate('relatorios')" data-view="relatorios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Relatórios</div>
-    <div class="nav-sep"></div>
+
+    <div class="nav-section">Sistema</div>
     <div class="nav-item" onclick="navigate('config')" data-view="config"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Configurações</div>
     <div class="nav-item" onclick="navigate('usuarios')" data-view="usuarios" id="nav-usuarios"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Usuários</div>
     <div class="nav-item" onclick="navigate('minha-conta')" data-view="minha-conta" id="nav-minhaconta"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Minha Conta</div>
   </nav>
   <div class="sidebar-footer" id="sb-footer">
-    <div id="sb-user-mini" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;margin-bottom:6px" onclick="navigate('minha-conta')">
+    <div id="sb-user-mini" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer" onclick="navigate('minha-conta')">
       <div id="sb-avatar" style="width:28px;height:28px;border-radius:50%;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;font-family:var(--font-m)">?</div>
       <span id="sb-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">carregando...</span>
     </div>
-    <button id="theme-toggle" onclick="toggleTheme()" style="width:100%;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text-muted);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all .15s">🌙 Escuro</button>
   </div>
 </div>
 <div id="main">
@@ -612,6 +616,7 @@ tr:hover td{background:var(--bg-hover)}
     <div class="row" style="gap:12px"><button class="hamburger-btn" id="hamburger" onclick="toggleSidebar()">☰</button><div class="page-title" id="page-title">Dashboard</div></div>
     <div class="row" style="gap:12px">
   <span id="sync-status" style="font-size:11px;font-family:var(--font-m);color:var(--green);opacity:0;transition:opacity 1s"></span>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:13px;cursor:pointer;color:var(--text-muted);line-height:1">🌙</button>
   <div style="position:relative" id="notif-bell-wrap">
     <div class="notif-bell" id="notif-bell" onclick="toggleNotifications(event)" title="Notificações">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></div>
     <div class="notif-dropdown" id="notif-dropdown"></div>
