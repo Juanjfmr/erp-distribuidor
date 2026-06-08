@@ -63,7 +63,24 @@ function navigate(v){
 }
 function render(){
   try {
-    ({dashboard:renderDashboard,produtos:renderProdutos,clientes:renderClientes,fornecedores:renderFornecedores,pedidos:renderPedidos,notas:renderNotas,devolucoes:renderDevolucoes,compras:renderCompras,contas:renderContas,caixa:renderCaixa,relatorios:renderRelatorios,config:typeof renderConfig!=='undefined'?renderConfig:undefined,usuarios:renderUsuarios,'minha-conta':typeof renderMinhaConta!=='undefined'?renderMinhaConta:undefined,onboarding:renderOnboarding})[state.currentView]?.();
+    const fn = ({
+      dashboard:typeof renderDashboard!=='undefined'?renderDashboard:0,
+      produtos:typeof renderProdutos!=='undefined'?renderProdutos:0,
+      clientes:typeof renderClientes!=='undefined'?renderClientes:0,
+      fornecedores:typeof renderFornecedores!=='undefined'?renderFornecedores:0,
+      pedidos:typeof renderPedidos!=='undefined'?renderPedidos:0,
+      notas:typeof renderNotas!=='undefined'?renderNotas:0,
+      devolucoes:typeof renderDevolucoes!=='undefined'?renderDevolucoes:0,
+      compras:typeof renderCompras!=='undefined'?renderCompras:0,
+      contas:typeof renderContas!=='undefined'?renderContas:0,
+      caixa:typeof renderCaixa!=='undefined'?renderCaixa:0,
+      relatorios:typeof renderRelatorios!=='undefined'?renderRelatorios:0,
+      config:typeof renderConfig!=='undefined'?renderConfig:0,
+      usuarios:typeof renderUsuarios!=='undefined'?renderUsuarios:0,
+      'minha-conta':typeof renderMinhaConta!=='undefined'?renderMinhaConta:0,
+      onboarding:typeof renderOnboarding!=='undefined'?renderOnboarding:0,
+    })[state.currentView];
+    if (typeof fn==='function') fn();
   } catch(e) {
     console.error('Render error:', state.currentView, e.message);
   }

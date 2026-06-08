@@ -23,6 +23,7 @@ function renderDashboard(){
 
   const nfsPeriod = state.invoices.filter(n=>n.status!=="cancelada"&&n.date>=dateFrom&&n.date<=dateTo);
   const totalVendas = nfsPeriod.reduce((s,n)=>s+n.total,0);
+  const totalNFs = nfsPeriod.length;
   const tIn=totalIn(), tOut=totalOut(), saldo=tIn-tOut;
   const overdueRec=state.receivables.filter(r=>r.status==="aberta"&&isOverdue(r.dueDate));
   const aReceber=state.receivables.filter(r=>r.status==="aberta").reduce((s,r)=>s+r.amount,0);
