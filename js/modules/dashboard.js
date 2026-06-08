@@ -157,7 +157,7 @@ function renderDashboard(){
       </div>
     </div>
 
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div class="kpi-grid" style="gap:12px;margin-bottom:20px">
       <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value">${fmt(totalVendas)}</div><div class="kpi-sub">${totalNFs} NFs emitidas</div></div>
       <div class="kpi"><div class="kpi-label">Saldo em Caixa</div><div class="kpi-value" style="color:${saldo>=0?'var(--success)':'var(--danger)'}">${fmt(saldo)}</div><div class="kpi-sub">Entradas − Saídas</div></div>
       <div class="kpi"><div class="kpi-label">A Receber</div><div class="kpi-value" style="color:var(--warning)">${fmt(aReceber)}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==='aberta').length} parcelas</div></div>
