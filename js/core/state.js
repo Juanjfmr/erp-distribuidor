@@ -1,5 +1,9 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "stoqio_v1";
+// Bump CACHE_VERSION toda vez que deployar mudanças no frontend.
+// Isso força o navegador a descartar localStorage obsoleto e buscar dados frescos do Firestore.
+// SEMPRE incrementar ao finalizar uma sessão de desenvolvimento antes do deploy.
+const CACHE_VERSION = 1;
 
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
@@ -99,6 +103,13 @@ const defaultState = {
 let state = {};
 
 function loadState(){
+  // Se a versão do cache não bate, descarta localStorage inteiro
+  // (evita usuário ficar preso em dados obsoletos após deploy)
+  const cachedVer = localStorage.getItem('stoqio_cache_v');
+  if (cachedVer !== String(CACHE_VERSION)) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem('stoqio_cache_v', String(CACHE_VERSION));
+  }
   try{
     const s = localStorage.getItem(STORAGE_KEY);
     if(s){ state = JSON.parse(s); }
