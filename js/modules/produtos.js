@@ -67,9 +67,9 @@ function filterProdutos(){
         ${inactive
           ?`<button class="btn-sm" style="background:var(--green);color:#000" onclick="reativarProd(${p.id})">Reativar</button>`
           :`<button class="btn-sm btn-amber" onclick="openProdModal(${p.id})">Editar</button>
-            <button class="btn-sm" onclick="viewMovements(${p.id})" title="Movimentações">📋</button>
-            <button class="btn-sm" onclick="viewPriceHistory(${p.id})" title="Histórico de preço">📈</button>
-            <button class="btn-sm btn-red" onclick="deleteProd(${p.id})" title="Inativar produto">✕</button>`}
+            <button class="btn-sm" onclick="viewMovements(${p.id})" title="Movimentações"><svg width="14" height="14"><use href="#icon-bar-chart"/></svg></button>
+            <button class="btn-sm" onclick="viewPriceHistory(${p.id})" title="Histórico de preço"><svg width="14" height="14"><use href="#icon-trending-up"/></svg></button>
+            <button class="btn-sm btn-red" onclick="deleteProd(${p.id})" title="Inativar produto"><svg width="14" height="14"><use href="#icon-x"/></svg></button>`
       </div></td>
     </tr>`;}).join(""):`<tr><td colspan="10" class="empty"><div style="padding:12px">📦<br><b>Nenhum produto cadastrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro produto ou importe via CSV</span></div></td></tr>`;
 }
