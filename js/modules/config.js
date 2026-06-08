@@ -384,7 +384,7 @@ function importData(){
   }; inp.click();
 }
 async function resetData(){
-  const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\\n\\nEsta operação não pode ser desfeita. Deseja continuar?");
+  const confirm1 = confirm("⚠ ATENÇÃO: Esta ação apagará TODOS os dados permanentemente.\n\nEsta operação não pode ser desfeita. Deseja continuar?");
   if(!confirm1) return;
   const typed = prompt('Para confirmar, digite exatamente: RESETAR');
   if(typed !== 'RESETAR'){ alert("Confirmação incorreta. Operação cancelada."); return; }
