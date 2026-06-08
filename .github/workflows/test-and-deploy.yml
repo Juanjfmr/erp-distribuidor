@@ -155,7 +155,9 @@ jobs:
 
     steps:
       - name: Notify Telegram
-        if: secrets.TELEGRAM_BOT_TOKEN != ''
+        if: env.TELEGRAM_BOT_TOKEN != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
