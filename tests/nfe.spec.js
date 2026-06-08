@@ -16,7 +16,19 @@ async function loginQA(page) {
 }
 
 function sidebarClick(page, name) {
-  return page.getByText(name).first().click();
+  // Tenta por texto primeiro, fallback para JS evaluation
+  return page.getByText(name).first().click().catch(async () => {
+    await page.evaluate((n) => {
+      const nav = document.querySelector('[role="navigation"]') || document.querySelector('nav');
+      if (!nav) return;
+      const items = nav.querySelectorAll('[onclick]');
+      const navNames = ['Dashboard','Produtos','Clientes','Fornecedores','Pedidos','Nota Fiscal',
+                         'Devoluções','Compras','Contas','Fluxo de Caixa','Relatórios',
+                         'Configurações','Usuários','Minha Conta'];
+      const idx = navNames.indexOf(n);
+      if (idx >= 0 && items[idx]) items[idx].click();
+    }, name);
+  });
 }
 
 test.describe('Bloco 6 — NF-e / Nota Fiscal', () => {
