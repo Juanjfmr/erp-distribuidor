@@ -118,6 +118,12 @@ function applyRoleUI() {
     const initial = name.trim().charAt(0).toUpperCase();
     sbAvatar.textContent = initial;
   }
+  // Theme toggle sync
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    const isDark = document.documentElement.classList.contains('dark');
+    themeBtn.textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
+  }
   if (role === 'visualizador' || role === 'contador') {
     document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm.btn-red, .btn-sm.btn-amber').forEach(b => b.style.display='none');
   }
@@ -145,6 +151,13 @@ function toggleSidebar(){
   const ov=document.getElementById('sidebar-overlay');
   if(sb.classList.contains('open')){sb.classList.remove('open');ov.classList.remove('show');}
   else{sb.classList.add('open');ov.classList.add('show');}
+}
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.classList.toggle('dark');
+  localStorage.setItem('stoqio_theme', isDark?'dark':'light');
+  const btn=document.getElementById('theme-toggle');
+  if(btn) btn.textContent=isDark?'☀️ Claro':'🌙 Escuro';
 }
 function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
