@@ -70,8 +70,8 @@ function renderCaixa(){
         <td>${t.category}</td>
         <td>${t.description}</td>
         <td class="mono fw-bold" style="color:${t.type==="entrada"?"var(--green)":"var(--red)"}">${t.type==="entrada"?"+":"−"}${fmt(t.amount)}</td>
-        <td><button class="btn-sm btn-red" onclick="deleteTx(${t.id})">✕</button></td>
-      </tr>`).join("")||`<tr><td colspan="6" class="empty"><div style="padding:12px">📊<br><b>Nenhuma transação no período</b><br><span style="font-size:12px;color:var(--muted)">Lançamentos manuais ou baixas de contas aparecem aqui</span></div></td></tr>`}
+        <td><button class="btn-sm btn-red" onclick="deleteTx(${t.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button></td>
+      </tr>`).join("")||`<tr><td colspan="6" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-bar-chart"/></svg><br><b>Nenhuma transação no período</b><br><span style="font-size:12px;color:var(--muted)">Lançamentos manuais ou baixas de contas aparecem aqui</span></div></td></tr>`}
     </tbody></table></div>
 
     <!-- Despesas Fixas / Recorrentes -->
@@ -93,7 +93,7 @@ function renderCaixa(){
               <td><button class="btn-sm ${r.active?'bg-green':'bg-gray'}" onclick="toggleRecurring(${i})" style="font-size:10px;min-width:50px">${r.active?'Sim':'Não'}</button></td>
               <td>
                 ${r.nextDueDate<today()&&r.active?`<button class="btn-sm btn-amber" onclick="processSingleRecurring(${i})" title="Lançar esta despesa agora e avançar data">Regularizar</button>`:''}
-                <button class="btn-sm btn-amber" onclick="openRecurringModal(${i})">Editar</button><button class="btn-sm btn-red" onclick="deleteRecurring(${i})">✕</button>
+                <button class="btn-sm btn-amber" onclick="openRecurringModal(${i})">Editar</button><button class="btn-sm btn-red" onclick="deleteRecurring(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
               </td>
             </tr>`).join('')}
         </tbody></table>`}
@@ -139,9 +139,9 @@ function saveTx(){
   const val=parseFloat(el("tx-val").value);
   if(!desc||!val) return alert("Preencha descrição e valor.");
   state.transactions.push({id:uid(),date:el("tx-date").value,type:el("tx-type").value,category:el("tx-cat").value,description:desc,amount:val});
-  saveState(); closeModal(); renderCaixa();
+  saveState(); closeModal(); renderCaixa(); showToast("Lançamento salvo!", "success");
 }
-function deleteTx(id){ if(confirm("Remover este lançamento?")){ state.transactions=state.transactions.filter(t=>t.id!==id); saveState(); renderCaixa(); } }
+function deleteTx(id){ if(confirm("Remover este lançamento?")){ state.transactions=state.transactions.filter(t=>t.id!==id); saveState(); renderCaixa(); showToast("Lançamento removido.", "success"); } }
 
 // ─── DESPESAS RECORRENTES ────────────────────────────────────────────────────
 function openRecurringModal(index){
@@ -212,7 +212,7 @@ function toggleRecurring(index){
 function deleteRecurring(index){
   if(!confirm('Remover esta despesa recorrente?')) return;
   state.recurringExpenses.splice(index,1);
-  saveState(); renderCaixa();
+  saveState(); renderCaixa(); showToast("Despesa recorrente removida.", "success");
 }
 function processSingleRecurring(index){
   const r = state.recurringExpenses[index];

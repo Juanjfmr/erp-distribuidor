@@ -166,3 +166,22 @@ function closeSidebar(){
 document.addEventListener('click',function(e){
   if(e.target.closest('.nav-item')) setTimeout(closeSidebar,50);
 },true);
+
+// ─── TOAST SYSTEM ────────────────────────────────────────────────────────────
+function showToast(msg, type, duration){
+  type = type || 'info';
+  duration = duration || 3500;
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = 'toast toast-'+type;
+  t.textContent = msg;
+  t.onclick = function(){ removeToast(t); };
+  container.appendChild(t);
+  setTimeout(function(){ removeToast(t); }, duration);
+}
+function removeToast(el){
+  if (!el || el.classList.contains('toast-leaving')) return;
+  el.classList.add('toast-leaving');
+  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 260);
+}

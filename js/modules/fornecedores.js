@@ -40,7 +40,7 @@ function filterFornecedores(){
       <td class="mono">${comps.length} · ${fmt(vol)}</td>
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="openSupplierModal(${s.id})">Editar</button>
-        <button class="btn-sm btn-red" onclick="deleteSupplier(${s.id})">✕</button>
+        <button class="btn-sm btn-red" onclick="deleteSupplier(${s.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
       </div></td>
     </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">🏭<br><b>Nenhum fornecedor encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre fornecedores para criar ordens de compra</span></div></td></tr>`;
 }
@@ -83,7 +83,7 @@ function deleteSupplier(id){
   if((state.purchases||[]).some(p=>p.supplierId==id&&p.status!=="cancelada")) refs.push("compras");
   if((state.payables||[]).some(p=>p.supplierId==id&&p.status==="a pagar")) refs.push("pagamentos em aberto");
   if(refs.length){ alert("Não é possível excluir: fornecedor possui "+refs.join(", ")+" vinculado(s)."); return; }
-  if(confirm("Remover fornecedor?")){ state.suppliers=state.suppliers.filter(s=>s.id!==id); saveState(); renderFornecedores(); }
+  if(confirm("Remover fornecedor?")){ state.suppliers=state.suppliers.filter(s=>s.id!==id); saveState(); renderFornecedores(); showToast("Fornecedor removido.", "success"); }
 }
 async function buscarCnpjForn() {
   const raw = el('fs-cnpj').value.replace(/\D/g,'');

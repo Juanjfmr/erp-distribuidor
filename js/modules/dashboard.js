@@ -115,20 +115,20 @@ function renderDashboard(){
   let feedContent = '';
   if (feedTab==='nfs') {
     feedContent = recentNF.length
-      ? recentNF.map(n=>feedRow('📄', (state.clients.find(c=>c.id==n.clientId)?.name||'—'), fmt(n.total), fmtDateRel(n.date), n.status==='autorizada'?'✅':n.status==='cancelada'?'❌':'⏳')).join('')
+      ? recentNF.map(n=>feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-file-text\"/></svg>', (state.clients.find(c=>c.id==n.clientId)?.name||'—'), fmt(n.total), fmtDateRel(n.date), n.status==='autorizada'?'✅':n.status==='cancelada'?'❌':'⏳')).join('')
       : '<div class="empty" style="padding:24px">Nenhuma NF emitida no período</div>';
   } else if (feedTab==='pedidos') {
     feedContent = recentOrders.length
       ? recentOrders.map(o=>{
           const c=state.clients.find(cl=>cl.id==o.clientId);
-          return feedRow('📋', (c?.name||'—'), fmt(o.total||0), fmtDateRel(o.date), o.status==='confirmado'?'✅':o.status==='rascunho'?'⏳':'❌');
+          return feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-clipboard\"/></svg>', (c?.name||'—'), fmt(o.total||0), fmtDateRel(o.date), o.status==='confirmado'?'✅':o.status==='rascunho'?'⏳':'❌');
         }).join('')
       : '<div class="empty" style="padding:24px">Nenhum pedido ainda</div>';
   } else {
     feedContent = recentRec.length
       ? recentRec.map(r=>{
           const c=state.clients.find(cl=>cl.id==r.clientId);
-          return feedRow('💰', (c?.name||'—'), fmt(r.amount), fmtDateRel(r.dueDate), isOverdue(r.dueDate)?'⚠️':'✅');
+          return feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-credit-card\"/></svg>', (c?.name||'—'), fmt(r.amount), fmtDateRel(r.dueDate), isOverdue(r.dueDate)?'⚠️':'✅');
         }).join('')
       : '<div class="empty" style="padding:24px">Nenhum recebível pendente</div>';
   }
@@ -166,7 +166,7 @@ function renderDashboard(){
 
     <div class="card" style="padding:0">
       <div style="display:flex;border-bottom:1px solid var(--border);padding:0 16px">
-        ${['nfs','pedidos','financeiro'].map(t=>`<button style="padding:10px 14px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid ${feedTab===t?'var(--primary)':'transparent'};color:${feedTab===t?'var(--primary)':'var(--text-muted)'};cursor:pointer" onclick="window._feedTab='${t}';renderDashboard()">${t==='nfs'?'📄 NFs':t==='pedidos'?'📋 Pedidos':'💰 Financeiro'}</button>`).join('')}
+        ${['nfs','pedidos','financeiro'].map(t=>`<button style="padding:10px 14px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid ${feedTab===t?'var(--primary)':'transparent'};color:${feedTab===t?'var(--primary)':'var(--text-muted)'};cursor:pointer" onclick="window._feedTab='${t}';renderDashboard()">${t==='nfs'?'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-file-text\"/></svg> NFs':t==='pedidos'?'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-clipboard\"/></svg> Pedidos':'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-credit-card\"/></svg> Financeiro'}</button>`).join('')}
       </div>
       <div style="padding:4px 16px 12px">
         ${feedContent}
@@ -175,9 +175,9 @@ function renderDashboard(){
     </div>
 
     <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="navigate('notas')" style="display:flex;align-items:center;gap:6px;font-size:13px">➕ Nova NF-e</button>
-      <button class="btn btn-ghost" onclick="navigate('pedidos')" style="display:flex;align-items:center;gap:6px;font-size:13px">📦 Novo Pedido</button>
-      <button class="btn btn-ghost" onclick="navigate('clientes')" style="display:flex;align-items:center;gap:6px;font-size:13px">👤 Novo Cliente</button>
+      <button class="btn btn-primary" onclick="navigate('notas')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-plus"/></svg> Nova NF-e</button>
+      <button class="btn btn-ghost" onclick="navigate('pedidos')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-package"/></svg> Novo Pedido</button>
+      <button class="btn btn-ghost" onclick="navigate('clientes')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-users"/></svg> Novo Cliente</button>
     </div>`;
 }
 

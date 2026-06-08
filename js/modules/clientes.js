@@ -45,7 +45,7 @@ function filterClientes(){
       <td><span class="badge ${overdue?"bg-red":openAmt>0?"bg-amber":"bg-green"}">${overdue?"Inadimplente · "+daysLate+"d":openAmt>0?"Em aberto: "+fmt(openAmt):"Em dia"}</span></td>
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="openClientModal(${c.id})">Editar</button>
-        <button class="btn-sm" onclick="deleteClient(${c.id})">✕</button>
+        <button class="btn-sm" onclick="deleteClient(${c.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
       </div></td>
     </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">👥<br><b>Nenhum cliente encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro cliente ou busque por CNPJ</span></div></td></tr>`;
 }
@@ -94,7 +94,7 @@ function deleteClient(id){
   if((state.orders||[]).some(o=>o.clientId==id&&o.status!=="cancelado")) refs.push("pedidos");
   if((state.receivables||[]).some(r=>r.clientId==id&&r.status==="aberta")) refs.push("recebíveis em aberto");
   if(refs.length){ alert("Não é possível excluir: cliente possui "+refs.join(", ")+" vinculado(s)."); return; }
-  if(confirm("Remover cliente?")){ state.clients=state.clients.filter(c=>c.id!==id); saveState(); renderClientes(); }
+  if(confirm("Remover cliente?")){ state.clients=state.clients.filter(c=>c.id!==id); saveState(); renderClientes(); showToast("Cliente removido.", "success"); }
 }
 async function buscarCnpjCliente() {
   const raw = el('fc-cnpj').value.replace(/\D/g,'');

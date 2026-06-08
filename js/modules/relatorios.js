@@ -202,12 +202,12 @@ function renderRelatorioNF(){
     <div class="grid-2" style="gap:16px;align-items:start">
       <div class="card">
         <div class="section-title" style="margin-bottom:12px">Notas Fiscais</div>
-        <input id="rel-nf-search" class="form-input" style="margin-bottom:10px;width:100%" placeholder="🔍 Buscar por número ou cliente..." oninput="filterRelNF()">
+        <input id="rel-nf-search" class="form-input" style="margin-bottom:10px;width:100%" placeholder="Buscar por número ou cliente..." oninput="filterRelNF()">
         <div id="rel-nf-list" style="max-height:520px;overflow-y:auto"></div>
       </div>
       <div id="rel-nf-detail">
         <div class="card" style="text-align:center;padding:40px 20px;color:var(--muted)">
-          <div style="font-size:36px;margin-bottom:10px">📋</div>
+          <svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-clipboard"/></svg>
           <div>Selecione uma nota à esquerda para ver o relatório completo</div>
         </div>
       </div>

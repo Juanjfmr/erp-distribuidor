@@ -73,9 +73,9 @@ function filterPedidos(){
         ${o.status==='rascunho'?`<button class="btn-sm btn-green" onclick="confirmarPedido('${o.id}')">✓ Confirmar</button>`:''}
         ${o.status==='confirmado'?`<button class="btn-sm btn-green" onclick="faturarPedido('${o.id}')">↗ Faturar</button>`:''}
         <span style="flex:1"></span>
-        ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-red" onclick="cancelarPedido('${o.id}')" title="Cancelar pedido">✕</button>`:''}
+        ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-red" onclick="cancelarPedido('${o.id}')" title="Cancelar pedido"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>`:''}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">📋<br><b>Nenhum pedido encontrado</b><br><span style="font-size:12px;color:var(--muted)">Crie seu primeiro pedido de venda para começar</span></div></td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-clipboard"/></svg><br><b>Nenhum pedido encontrado</b><br><span style="font-size:12px;color:var(--muted)">Crie seu primeiro pedido de venda para começar</span></div></td></tr>`;
 }
 
 function openPedidoModal(prefill){
@@ -203,7 +203,7 @@ function pedidoRenderItems(){
   const sub=pedidoGetSubtotal();
   const discAmt=sub*disc/100;
   const total=sub-discAmt+freight;
-  listEl.innerHTML=state.pedidoItems.length?`<table class="table" style="margin-bottom:8px"><thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desc%</th><th>Subtotal</th><th></th></tr></thead><tbody>${state.pedidoItems.map((it,i)=>`<tr><td>${it.name}</td><td>${it.qty} ${it.unit}</td><td>${fmt(it.price)}</td><td>${it.itemDiscount||0}%</td><td>${fmt(it.qty*it.price*(1-(it.itemDiscount||0)/100))}</td><td><button class="btn btn-ghost" style="padding:2px 6px;font-size:11px;color:var(--red)" onclick="pedidoRemItem(${i})">✕</button></td></tr>`).join("")}</tbody></table>`:"<p style='color:var(--muted);font-size:13px;text-align:center;padding:12px 0'>Nenhum item adicionado</p>";
+  listEl.innerHTML=state.pedidoItems.length?`<table class="table" style="margin-bottom:8px"><thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desc%</th><th>Subtotal</th><th></th></tr></thead><tbody>${state.pedidoItems.map((it,i)=>`<tr><td>${it.name}</td><td>${it.qty} ${it.unit}</td><td>${fmt(it.price)}</td><td>${it.itemDiscount||0}%</td><td>${fmt(it.qty*it.price*(1-(it.itemDiscount||0)/100))}</td><td><button class="btn btn-ghost" style="padding:2px 6px;font-size:11px;color:var(--red)" onclick="pedidoRemItem(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button></td></tr>`).join("")}</tbody></table>`:"<p style='color:var(--muted);font-size:13px;text-align:center;padding:12px 0'>Nenhum item adicionado</p>";
   totEl.innerHTML=`<div style="text-align:right;font-size:13px;color:var(--muted)">Subtotal: <b style="color:var(--text)">${fmt(sub)}</b> &nbsp; Desconto: <b style="color:var(--red)">-${fmt(discAmt)}</b> &nbsp; Frete: <b style="color:var(--text)">+${fmt(freight)}</b> &nbsp; <span style="font-size:15px;font-weight:700;color:var(--amber)">Total: ${fmt(total)}</span></div>`;
 }
 function pedidoPreencheCliente(clientId){
@@ -476,7 +476,7 @@ async function faturarPedido(id){
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">ITENS DA NOTA</div>
     <div style="margin-bottom:10px">
-      <input id="nf-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="🔍 Buscar produto pelo nome..." oninput="nfRenderProdList(this.value)" autocomplete="off">
+      <input id="nf-prod-search" class="form-input" style="width:100%;margin-bottom:6px" placeholder="Buscar produto pelo nome..." oninput="nfRenderProdList(this.value)" autocomplete="off">
       <div id="nf-prod-list" style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
     </div>
     <div id="nf-items-list"></div>

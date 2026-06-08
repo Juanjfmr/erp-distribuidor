@@ -61,9 +61,9 @@ function filterCompras(){
       <td><div class="row">
         <button class="btn-sm btn-amber" onclick="viewCompra(${c.id})">Ver</button>
         ${c.status!=="paga"?`<button class="btn-sm btn-ghost" onclick="editCompraModal(${c.id})">Editar</button>`:""}
-        ${c.status!=="paga"?`<button class="btn-sm" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3)" onclick="pagarCompra(${c.id})">💰 Pagar</button>`:""}
+        ${c.status!=="paga"?`<button class="btn-sm" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3)" onclick="pagarCompra(${c.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-credit-card"/></svg> Pagar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="9" class="empty"><div style="padding:12px">🛒<br><b>Nenhuma compra encontrada</b><br><span style="font-size:12px;color:var(--muted)">Registre sua primeira ordem de compra para controlar suprimentos</span></div></td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="9" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-shopping-cart"/></svg><br><b>Nenhuma compra encontrada</b><br><span style="font-size:12px;color:var(--muted)">Registre sua primeira ordem de compra para controlar suprimentos</span></div></td></tr>`;
 }
 const CP_PAY_METHODS=["Pix","Cartão de Crédito","Crédito Fornecedor","Dinheiro","Transferência"];
 function importarNFeXML(){
@@ -265,7 +265,7 @@ function compraRenderItems(){
             <div class="row">
               <span class="mono text-muted">${it.qty} × ${fmt(it.unitCost)}</span>
               <span class="mono text-amber" style="min-width:90px;text-align:right">${fmt(it.qty*it.unitCost)}</span>
-              <button class="btn-sm btn-red" onclick="compraRemItem(${i})">✕</button>
+              <button class="btn-sm btn-red" onclick="compraRemItem(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
             </div>
           </div>`;
         }
@@ -274,7 +274,7 @@ function compraRenderItems(){
           <div class="row">
             <span class="mono text-muted">${it.qty} × ${fmt(it.unitCost)}</span>
             <span class="mono text-white" style="min-width:90px;text-align:right">${fmt(it.qty*it.unitCost)}</span>
-            <button class="btn-sm btn-red" onclick="compraRemItem(${i})">✕</button>
+            <button class="btn-sm btn-red" onclick="compraRemItem(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
           </div>
         </div>`;}).join("")}
     </div>`:"";
@@ -387,7 +387,7 @@ function viewCompra(id){
     </tbody></table></div>`:""}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      ${hasOpen?`<button class="btn btn-primary" style="background:var(--green)" onclick="closeModal();pagarCompra(${c.id})">💰 Registrar Pagamento</button>`:""}
+      ${hasOpen?`<button class="btn btn-primary" style="background:var(--green)" onclick="closeModal();pagarCompra(${c.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-credit-card"/></svg> Registrar Pagamento</button>`:""}
     </div>`,true);
 }
 function pagarCompra(compraId){

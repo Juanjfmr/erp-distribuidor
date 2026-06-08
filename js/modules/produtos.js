@@ -71,7 +71,7 @@ function filterProdutos(){
             <button class="btn-sm" onclick="viewPriceHistory(${p.id})" title="Histórico de preço"><svg width="14" height="14"><use href="#icon-trending-up"/></svg></button>
             <button class="btn-sm btn-red" onclick="deleteProd(${p.id})" title="Inativar produto"><svg width="14" height="14"><use href="#icon-x"/></svg></button>`
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="10" class="empty"><div style="padding:12px">📦<br><b>Nenhum produto cadastrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro produto ou importe via CSV</span></div></td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="10" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-package"/></svg><br><b>Nenhum produto cadastrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro produto ou importe via CSV</span></div></td></tr>`;
 }
 function openProdModal(id){
   const p=id?state.products.find(x=>x.id===id):null;
@@ -91,7 +91,7 @@ function openProdModal(id){
       <div class="form-group"><label class="form-label">NCM</label>
         <div style="display:flex;gap:6px;align-items:center">
           <input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}" oninput="updateSTTip()" style="flex:1">
-          <button type="button" class="btn btn-secondary" style="white-space:nowrap" onclick="abrirBuscaNCM()">🔍 Buscar</button>
+          <button type="button" class="btn btn-secondary" style="white-space:nowrap" onclick="abrirBuscaNCM()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-search"/></svg> Buscar</button>
         </div>
       </div>
       <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?p.cfop||'':''}"></div>
@@ -132,7 +132,7 @@ function saveProd(id){
     if (ativos >= limite) {
       showModal(`
         <div style="text-align:center;padding:24px">
-          <div style="font-size:32px;margin-bottom:12px">🔒</div>
+          <svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-lock"/></svg>
           <div style="font-size:18px;font-weight:700;margin-bottom:8px">Limite atingido</div>
           <div style="color:var(--text2);margin-bottom:20px">
             Seu plano permite até <b>${limite} produtos</b>. Você tem <b>${ativos}</b> cadastrados.<br>
@@ -251,7 +251,7 @@ async function abrirBuscaNCM() {
   const termo = el('f-name')?.value?.trim() || el('f-ncm')?.value?.trim() || '';
   if (!termo) return alert('Digite o nome do produto primeiro.');
   const btn = document.querySelector('[onclick="abrirBuscaNCM()"]');
-  if (btn) btn.textContent = '⏳';
+  if (btn) btn.innerHTML = '<svg width="14" height="14" style="vertical-align:middle;animation:spin 1s linear infinite"><use href="#icon-loader"/></svg>';
   try {
     const r = await fetch(`https://brasilapi.com.br/api/ncm/v1?search=${encodeURIComponent(termo)}`);
     const lista = await r.json();
@@ -271,7 +271,7 @@ async function abrirBuscaNCM() {
     panel.innerHTML = `
       <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:700;font-size:15px">Selecione o NCM</span>
-        <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px" onclick="fecharPainelNCM()">✕</button>
+        <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px" onclick="fecharPainelNCM()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
       </div>
       <div style="font-size:12px;color:var(--muted);padding:8px 16px">Busca: "${termo}"</div>
       <div style="overflow-y:auto;flex:1">${opts}</div>`;
@@ -281,7 +281,7 @@ async function abrirBuscaNCM() {
   } catch(e) {
     alert('Erro ao buscar NCM. Verifique sua conexão.');
   } finally {
-    if (btn) btn.textContent = '🔍 Buscar';
+    if (btn) btn.innerHTML = '<svg width="14" height="14" style="vertical-align:middle"><use href="#icon-search"/></svg> Buscar';
   }
 }
 function selecionarNCM(codigo) {

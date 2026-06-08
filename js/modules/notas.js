@@ -20,9 +20,9 @@ function renderNotas(){
           ${sortedNfMonths.map(m=>{const [y,mo]=m.split("-");const ml=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][parseInt(mo)-1];return`<option value="${m}">${ml}/${y}</option>`;}).join("")}
         </select>
         <button class="btn btn-primary" onclick="openNFModal()">+ Nova Nota Fiscal</button>
-        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="renderNFeRecebidas()" title="NFs emitidas contra seu CNPJ">📥 Recebidas</button>
-        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="inutilizarNumeracaoModal()" title="Inutilizar faixa de numeração">🔢 Inutilizar</button>
-        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="importarNFeModal()" title="Importar NF de outro sistema">📄 Importar</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="renderNFeRecebidas()" title="NFs emitidas contra seu CNPJ"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-download"/></svg> Recebidas</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="inutilizarNumeracaoModal()" title="Inutilizar faixa de numeração"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-hash"/></svg> Inutilizar</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px" onclick="importarNFeModal()" title="Importar NF de outro sistema"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-upload"/></svg> Importar</button>
       </div>
     </div>
     <div class="card" style="overflow-x:auto"><table><thead><tr>
@@ -65,7 +65,7 @@ function filterNotas(){
         ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm btn-green" onclick="darBaixaNF(${n.id})">↓ Receber</button>`:""}
         ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn-sm btn-red" onclick="cancelNF(${n.id})">Cancelar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">🧾<br><b>Nenhuma nota fiscal encontrada</b><br><span style="font-size:12px;color:var(--muted)">Emita sua primeira NF-e para começar a faturar</span></div></td></tr>`;
+    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-file-text"/></svg><br><b>Nenhuma nota fiscal encontrada</b><br><span style="font-size:12px;color:var(--muted)">Emita sua primeira NF-e para começar a faturar</span></div></td></tr>`;
 }
 
 async function openNFModal(){
@@ -82,7 +82,7 @@ async function openNFModal(){
         <input id="nf-client" type="hidden" value="">
         <div id="nf-client-selected" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;font-size:12px;display:flex;justify-content:space-between;align-items:center">
           <span id="nf-client-selected-name" style="color:var(--amber);font-weight:600"></span>
-          <span style="cursor:pointer;color:var(--muted);font-size:11px" onclick="nfClientClear()">✕ trocar</span>
+          <span style="cursor:pointer;color:var(--muted);font-size:11px" onclick="nfClientClear()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg> trocar</span>
         </div>
         <div style="display:flex;gap:8px;margin-top:6px">
           <button type="button" class="btn-sm" onclick="nfClientAvulso()" style="font-size:11px">+ Consumidor Final (avulso)</button>
@@ -154,7 +154,7 @@ async function openNFModal(){
     <div id="nf-costs-list" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      ${canEmitNFe(state.company)?`<button class="btn btn-ghost" onclick="previewDANFeModal()">👁 Pré-visualizar DANFe</button>`:''}
+      ${canEmitNFe(state.company)?`<button class="btn btn-ghost" onclick="previewDANFeModal()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-eye"/></svg> Pré-visualizar DANFe</button>`:''}
       <button class="btn btn-primary" onclick="emitirNF('${nextNum}')">Emitir Nota</button>
     </div>`,true);
   nfRenderItems();
@@ -228,7 +228,7 @@ function nfRenderCosts(){
         <span>Cliente paga</span>
       </label>
       <span style="font-size:11px;color:var(--muted);white-space:nowrap">${c.clientPays?"→ entra no total da NF":"→ lança saída no caixa"}</span>
-      <button class="btn-sm btn-red" onclick="nfRemCost(${i})">✕</button>
+      <button class="btn-sm btn-red" onclick="nfRemCost(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
     </div>`).join("");
 }
 function nfRenderProdList(search){
@@ -297,7 +297,7 @@ function nfRenderItems(){
             <span class="mono text-muted" style="font-size:12px">× ${fmt(it.price)}</span>
             ${it.itemDiscount>0?`<span class="badge bg-amber" style="font-size:10px">${it.itemDiscount}%</span>`:""}
             <span class="mono text-white" style="min-width:80px;text-align:right">${fmt(lineTotal)}</span>
-            <button class="btn-sm btn-red" onclick="nfRemItem(${i})">✕</button>
+            <button class="btn-sm btn-red" onclick="nfRemItem(${i})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
           </div>
         </div>`}).join("")}
     </div>`:"";
@@ -419,7 +419,7 @@ function viewNF(id){
     <div class="row-between" style="margin-bottom:20px">
       <div class="modal-title" style="margin:0">${n.number}</div>
       <div class="row"><span class="badge ${statusColor}">${n.status}</span>
-        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="printNF(${n.id})">🖨 Imprimir</button>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="printNF(${n.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-printer"/></svg> Imprimir</button>
       </div>
     </div>
     <div class="form-grid-2" style="margin-bottom:16px">
