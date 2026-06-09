@@ -65,7 +65,7 @@ function showPlanBlockModal(module) {
 }
 const defaultState = {
   company:{
-    name:"2R Comércio", cnpj:"", address:"", city:"", uf:"MS", phone:"", email:"",
+    name:"Stoqio", cnpj:"", address:"", city:"", uf:"MS", phone:"", email:"",
     ie:"", regime:"1", cep:"",
     // Fiscal
     fiscalStatus: "NAO_CONFIGURADO",

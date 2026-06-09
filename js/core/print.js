@@ -24,7 +24,9 @@ function printNF(id){
     .parcelas{margin-top:14px}
   </style></head><body>
   <div class="header">
-    <div><h1>${co.name||"Empresa"}</h1><div class="co-info">
+    <div style="display:flex;align-items:center;gap:12px">
+      ${co.logo?`<img src="${co.logo}" style="height:48px;max-width:120px;object-fit:contain">`:''}
+      <div><h1>${co.name||"Empresa"}</h1><div class="co-info">
       ${co.cnpj?"CNPJ: "+co.cnpj+"<br>":""}
       ${co.address?co.address+"<br>":""}
       ${co.city?co.city+(co.uf?" - "+co.uf:"")+"<br>":""}
@@ -59,7 +61,7 @@ function printNF(id){
   ${recs.map(r=>`<tr><td>${r.installment}/${r.total}</td><td>${fmtDate(r.dueDate)}</td><td>R$ ${fmtNum(r.amount)}</td><td>${r.status.toUpperCase()}</td></tr>`).join("")}
   </tbody></table>`:recs.length===1?`<div>Vencimento: ${fmtDate(recs[0].dueDate)} — R$ ${fmtNum(recs[0].amount)}</div>`:""}
   </div>
-  <div class="footer">Documento gerado pelo sistema 2R Comércio em ${fmtDate(today())}</div>
+  <div class="footer">Documento gerado pelo ${co.name||"Stoqio"} em ${fmtDate(today())}</div>
 </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),500);

@@ -194,7 +194,7 @@ function updateTopbar() {
   const dateEl = document.getElementById('topbar-date');
   if(dateEl) dateEl.textContent=`${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]} de ${now.getFullYear()}`;
   const footer = document.getElementById('sb-footer');
-  if(footer) footer.textContent=`v2.0 · ${state.company&&state.company.name?state.company.name:"2R Comércio"}`;
+  if(footer) footer.textContent=`v2.0 · ${state.company&&state.company.name?state.company.name:"Stoqio"}`;
 }
 
 async function doLogin() {

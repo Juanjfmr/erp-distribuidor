@@ -141,23 +141,6 @@ function applyRoleUI() {
     const isDark = document.documentElement.classList.contains('dark');
     themeBtn.textContent = isDark ? '☀️' : '🌙';
   }
-  // Sidebar company logo
-  var logoImg = document.getElementById('sidebar-logo-img');
-  var logoSvg = document.getElementById('sidebar-logo-svg');
-  var logoText = document.getElementById('sidebar-logo-text');
-  var logoSub = document.querySelector('#sidebar-logo .logo-sub');
-  if (logoImg && state && state.company && state.company.logo) {
-    logoImg.src = state.company.logo;
-    logoImg.style.display = 'inline';
-    if (logoSvg) logoSvg.style.display = 'none';
-    if (logoText) logoText.style.display = 'none';
-    if (logoSub) logoSub.style.display = 'none';
-  } else if (logoImg) {
-    logoImg.style.display = 'none';
-    if (logoSvg) logoSvg.style.display = '';
-    if (logoText) logoText.style.display = '';
-    if (logoSub) logoSub.style.display = '';
-  }
   if (role === 'visualizador' || role === 'contador') {
     document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm.btn-red, .btn-sm.btn-amber').forEach(b => b.style.display='none');
   }
