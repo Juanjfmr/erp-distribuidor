@@ -353,12 +353,9 @@ async function doSignup() {
         preset.units.forEach(u => { if (!seenUnits[u]) { allUnits.push(u); seenUnits[u] = true; } });
       }
     });
-    const refCode = new URLSearchParams(window.location.search).get('ref') || localStorage.getItem('_ref') || null;
-    if(refCode) localStorage.removeItem('_ref');
-    const affiliateCode = uid.slice(0,8).toUpperCase();
     await setDoc(window._fbFns.doc(window._db, 'empresas', uid), {
       name: company, plan: 'trial', trialEndsAt, active: true,
-      createdAt: new Date().toISOString(), affiliateCode, referredBy: refCode,
+      createdAt: new Date().toISOString(),
       company: { name: company, segments: segKeysNorm, categories: allCats, units: allUnits }
     });
   } catch(e) {

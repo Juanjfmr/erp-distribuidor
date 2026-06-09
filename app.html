@@ -201,9 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if(passInput) passInput.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   const emailInput = document.getElementById('login-email');
   if(emailInput) emailInput.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
-  // Salva código de afiliado da URL no localStorage (persiste até o cadastro)
-  const refParam = new URLSearchParams(window.location.search).get('ref');
-  if(refParam) { localStorage.setItem('_ref', refParam); showSignup(); }
 
   // Garante re-render após todos os scripts carregarem (evita dashboard em branco
   // quando onAuthStateChanged dispara antes dos scripts de módulo estarem prontos)

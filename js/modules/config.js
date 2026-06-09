@@ -5,11 +5,6 @@ function renderMinhaConta(){
   const trialEndsAt = window._trialEndsAt;
   const co = state.company || {};
   const companyData = window._companyData || {};
-  const affiliateCode = companyData.affiliateCode || (window._companyId||'').slice(0,8).toUpperCase();
-  const referredBy = companyData.referredBy || null;
-  const baseUrl = window.location.origin + window.location.pathname;
-  const affiliateLink = `${baseUrl}?ref=${affiliateCode}`;
-
   let trialDaysLeft = 0, trialPct = 0;
   if(plan==='trial' && trialEndsAt){
     const msLeft = new Date(trialEndsAt) - new Date();
@@ -103,46 +98,9 @@ function renderMinhaConta(){
       </div>
     </div>
 
-    <div class="card" style="border-top:3px solid var(--green)">
-      <div class="row-between" style="margin-bottom:14px">
-        <div class="section-title" style="font-size:14px">Programa de Afiliados</div>
-        <span class="badge bg-green">Ativo</span>
-      </div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">
-        Indique o Stoqio e ganhe <b style="color:var(--amber)">20% de comissão</b> recorrente enquanto o indicado for cliente ativo.
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.06em">SEU LINK DE AFILIADO</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input id="affiliate-link-input" class="form-input" value="${affiliateLink}" readonly style="flex:1;font-family:var(--font-m);font-size:12px;color:var(--amber)">
-        <button class="btn btn-ghost" onclick="copyAffiliateLink()" style="flex-shrink:0">Copiar</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:20px;font-weight:700;color:var(--green);font-family:var(--font-m)" id="aff-count">—</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Indicações</div>
-        </div>
-        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:20px;font-weight:700;color:var(--amber);font-family:var(--font-m)" id="aff-active">—</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Ativos</div>
-        </div>
-        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-m)" id="aff-commission">R$ —</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Comissão/mês</div>
-        </div>
-      </div>
-      ${referredBy?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">Você foi indicado por um afiliado. Obrigado por escolher o Stoqio!</div>`:''}
-      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
-        Para receber suas comissões, entre em contato: <a href="mailto:contato@stoqio.com.br" style="color:var(--amber)">contato@stoqio.com.br</a>
-      </div>
-    </div>
-
     </div>`;
 }
 
-function copyAffiliateLink(){
-  const inp = el('affiliate-link-input');
-  if(inp){ inp.select(); document.execCommand('copy'); showSyncStatus('✓ Link copiado!'); }
-}
 
 async function assinarPlano(plan) {
   const btn = event.currentTarget;
