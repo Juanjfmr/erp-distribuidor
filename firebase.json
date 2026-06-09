@@ -59,6 +59,8 @@
     ],
     "rewrites": [
       { "source": "/admin", "destination": "/admin.html" },
+      { "source": "/termos", "destination": "/termos.html" },
+      { "source": "/privacidade", "destination": "/privacidade.html" },
       { "source": "/login", "destination": "/app.html" }
     ]
   },
