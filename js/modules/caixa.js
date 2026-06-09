@@ -71,7 +71,7 @@ function renderCaixa(){
         <td>${t.description}</td>
         <td class="mono fw-bold" style="color:${t.type==="entrada"?"var(--green)":"var(--red)"}">${t.type==="entrada"?"+":"−"}${fmt(t.amount)}</td>
         <td><button class="btn-sm btn-red" onclick="deleteTx(${t.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button></td>
-      </tr>`).join('')||emptyState('trending-up','Nenhuma transacao encontrada','As movimentacoes do fluxo de caixa aparecerao aqui.','','');}
+      </tr>`).join('')||emptyState('trending-up','Nenhuma transacao encontrada','As movimentacoes do fluxo de caixa aparecerao aqui.','','')}
     </tbody></table></div>
 
     <!-- Despesas Fixas / Recorrentes -->

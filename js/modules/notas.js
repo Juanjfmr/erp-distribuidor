@@ -620,13 +620,13 @@ function checkClienteNF(clientId){
     alert.style.background='rgba(245,158,11,.08)';
     alert.style.border='1px solid rgba(245,158,11,.2)';
     alert.style.color='var(--amber)';
-    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto — limite de crédito: ${fmt(cc.creditLimit)} (${fmt(Math.max(0, cc.creditLimit - cc.openAmt))} disponível);
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto — limite de crédito: ${fmt(cc.creditLimit)} (${fmt(Math.max(0, cc.creditLimit - cc.openAmt))} disponível)`;
   } else if(cc.openAmt > 0){
     alert.style.display='block';
     alert.style.background='rgba(245,158,11,.08)';
     alert.style.border='1px solid rgba(245,158,11,.2)';
     alert.style.color='var(--amber)';
-    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto (sem limite de crédito configurado);
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto (sem limite de crédito configurado)`;
   } else {
     alert.style.display='none';
   }
