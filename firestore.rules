@@ -99,12 +99,6 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── Afiliados (coleção raiz — lida e editada pelo painel admin) ───────
-    match /afiliados/{docId} {
-      allow read, write: if request.auth != null
-        && request.auth.token.email == 'juanjfmr1@gmail.com';
-    }
-
     // ── Bloqueia tudo que não foi explicitamente permitido ─────────────────
     match /{document=**} {
       allow read, write: if false;

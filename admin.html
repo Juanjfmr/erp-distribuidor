@@ -162,7 +162,6 @@ tr:hover td{background:var(--surface2);}
     <nav class="nav">
       <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard',this)"><span class="icon">◈</span>Dashboard</div>
       <div class="nav-item" data-page="tenants" onclick="navigate('tenants',this)"><span class="icon">◉</span>Tenants</div>
-      <div class="nav-item" data-page="afiliados" onclick="navigate('afiliados',this)"><span class="icon">◎</span>Afiliados</div>
       <div class="nav-item" data-page="pagamentos" onclick="navigate('pagamentos',this)"><span class="icon">◇</span>Pagamentos</div>
     </nav>
     <div class="sidebar-footer" id="adm-user-info">—</div>
@@ -176,7 +175,6 @@ tr:hover td{background:var(--surface2);}
     <div class="content">
       <div class="page active" id="page-dashboard"><div class="loading">Carregando...</div></div>
       <div class="page" id="page-tenants"><div class="loading">Carregando...</div></div>
-      <div class="page" id="page-afiliados"><div class="loading">Carregando...</div></div>
       <div class="page" id="page-pagamentos"><div class="loading">Carregando...</div></div>
     </div>
   </div>
@@ -193,21 +191,6 @@ tr:hover td{background:var(--surface2);}
     <div class="modal-footer">
       <button class="btn btn-danger" id="mt-btn-bloquear">Bloquear</button>
       <button class="btn btn-primary" id="mt-btn-salvar">Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL COMISSÃO -->
-<div class="modal-overlay" id="modal-comissao">
-  <div class="modal">
-    <div class="modal-head">
-      <h3>Aprovar pagamento de comissão</h3>
-      <button class="modal-close" onclick="closeModal('modal-comissao')">×</button>
-    </div>
-    <div class="modal-body" id="mc-body"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-comissao')">Cancelar</button>
-      <button class="btn btn-success" id="mc-btn-aprovar">Aprovar e transferir</button>
     </div>
   </div>
 </div>
@@ -314,8 +297,8 @@ onAuthStateChanged(auth, user => {
 });
 
 // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────────
-const PAGE_TITLES = { dashboard:'Dashboard', tenants:'Tenants', afiliados:'Afiliados', pagamentos:'Pagamentos' };
-const PAGE_LOADERS = { dashboard:loadDashboard, tenants:loadTenants, afiliados:loadAfiliados, pagamentos:loadPagamentos };
+const PAGE_TITLES = { dashboard:'Dashboard', tenants:'Tenants', pagamentos:'Pagamentos' };
+const PAGE_LOADERS = { dashboard:loadDashboard, tenants:loadTenants, pagamentos:loadPagamentos };
 
 window.navigate = function(page, navEl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -330,7 +313,6 @@ window.closeModal = function(id) { el(id).classList.remove('open'); };
 
 // ── LOAD TENANTS (compartilhado) ──────────────────────────────────────────────
 let _tenants = [];
-let _afiliados = [];
 
 async function fetchTenants() {
   const snap = await getDocs(collection(db, 'empresas'));
@@ -338,25 +320,16 @@ async function fetchTenants() {
   return _tenants;
 }
 
-async function fetchAfiliados() {
-  const snap = await getDocs(collection(db, 'afiliados'));
-  _afiliados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  return _afiliados;
-}
-
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
   el('page-dashboard').innerHTML = '<div class="loading">Carregando...</div>';
   await fetchTenants();
-  await fetchAfiliados();
 
   const ativos = _tenants.filter(t => t.status === 'ativo');
   const trials = _tenants.filter(t => t.status === 'trial');
   const inadimplentes = _tenants.filter(t => t.status === 'inadimplente');
   const mrr = ativos.reduce((s,t) => s + planMRR(t.plan), 0);
   const trialsExp7 = trials.filter(t => { const d = daysUntil(t.trialEndsAt); return d !== null && d <= 7; });
-  const comissaoDevida = _afiliados.reduce((s,a) => s + (a.comissaoDevida||0), 0);
-  const afiliadosPend = _afiliados.filter(a => (a.comissaoDevida||0) > 0).length;
 
   const alertasTenants = [
     ...inadimplentes.map(t => ({ dot:'red', name:t.name, meta:`Inadimplente · ${Math.abs(daysUntil(t.nextDue)||0)}d` })),
@@ -387,7 +360,6 @@ async function loadDashboard() {
       <div class="kpi"><div class="kpi-label">Tenants Ativos</div><div class="kpi-value">${ativos.length}</div><div class="kpi-sub">${_tenants.length} total</div></div>
       <div class="kpi purple"><div class="kpi-label">Em Trial</div><div class="kpi-value">${trials.length}</div><div class="kpi-sub">${trialsExp7.length} expiram em 7 dias</div></div>
       <div class="kpi ${inadimplentes.length>0?'red':'amber'}"><div class="kpi-label">Inadimplentes</div><div class="kpi-value">${inadimplentes.length}</div><div class="kpi-sub">${fmt(inadimplentes.reduce((s,t)=>s+planMRR(t.plan),0))} em risco</div></div>
-      <div class="kpi"><div class="kpi-label">Comissões Devidas</div><div class="kpi-value">${fmt(comissaoDevida)}</div><div class="kpi-sub">${afiliadosPend} afiliados</div></div>
     </div>
     <div class="alerts-row">
       <div class="alert-card">
@@ -495,88 +467,6 @@ window.saveTenantPlan = async function(id) {
   await updateDoc(doc(db, 'empresas', id), { plan, status });
   closeModal('modal-tenant');
   await loadTenants();
-};
-
-// ── AFILIADOS ─────────────────────────────────────────────────────────────────
-async function loadAfiliados() {
-  el('page-afiliados').innerHTML = '<div class="loading">Carregando...</div>';
-  await fetchAfiliados();
-  await fetchTenants();
-
-  const comissaoTotal = _afiliados.reduce((s,a) => s + (a.comissaoDevida||0), 0);
-  const mrrAfiliados = _afiliados.reduce((s,a) => s + (a.mrrGerado||0), 0);
-  const pagos = _afiliados.reduce((s,a) => s + (a.totalPago||0), 0);
-
-  el('page-afiliados').innerHTML = `
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="kpi green"><div class="kpi-label">Comissões Devidas</div><div class="kpi-value">${fmt(comissaoTotal)}</div><div class="kpi-sub">${_afiliados.filter(a=>(a.comissaoDevida||0)>0).length} pendentes</div></div>
-      <div class="kpi"><div class="kpi-label">MRR via Afiliados</div><div class="kpi-value">${fmt(mrrAfiliados)}</div><div class="kpi-sub">—</div></div>
-      <div class="kpi"><div class="kpi-label">Afiliados Ativos</div><div class="kpi-value">${_afiliados.length}</div><div class="kpi-sub">—</div></div>
-      <div class="kpi amber"><div class="kpi-label">Pago Total</div><div class="kpi-value">${fmt(pagos)}</div><div class="kpi-sub">—</div></div>
-    </div>
-    <div class="table-card">
-      <div class="table-header"><h2>Afiliados</h2></div>
-      <table>
-        <thead><tr><th>Afiliado</th><th>Clientes</th><th>MRR gerado</th><th>Comissão devida</th><th>Total pago</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody>
-          ${_afiliados.length === 0
-            ? '<tr><td colspan="7"><div class="empty">Nenhum afiliado cadastrado.</div></td></tr>'
-            : _afiliados.map(a => {
-                // CORREÇÃO: Filtrar pelo afiliado que indicou o tenant (referredBy == a.code)
-                const clientes = _tenants.filter(t => t.referredBy === a.code).length;
-                const mrr = _tenants.filter(t => t.referredBy === a.code && t.status==='ativo').reduce((s,t)=>s+planMRR(t.plan),0);
-                const devida = a.comissaoDevida || 0;
-                return `<tr>
-                  <td><div style="font-weight:600">${a.name}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${a.email}</div></td>
-                  <td><span style="font-family:var(--mono)">${clientes}</span></td>
-                  <td><span style="font-family:var(--mono)">${fmt(mrr)}</span></td>
-                  <td><span style="font-family:var(--mono);color:var(--green);font-weight:700">${fmt(devida)}</span></td>
-                  <td><span style="font-family:var(--mono);color:var(--text2)">${fmt(a.totalPago||0)}</span></td>
-                  <td>${devida>0?'<span class="status pendente">Pendente</span>':'<span class="status ativo">Em dia</span>'}</td>
-                  <td>${devida>0
-                    ? `<button class="btn btn-success" onclick="showComissaoModal('${a.id}')">Pagar ${fmt(devida)}</button>`
-                    : '<button class="btn btn-ghost">Histórico</button>'}</td>
-                </tr>`;
-              }).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-window.showComissaoModal = function(id) {
-  const a = _afiliados.find(x => x.id === id);
-  if (!a) return;
-  el('mc-body').innerHTML = `
-    <div class="detail-row"><span class="detail-label">Afiliado</span><span class="detail-value">${a.name}</span></div>
-    <div class="detail-row"><span class="detail-label">Conta MP</span><span class="detail-value" style="font-family:var(--mono)">${a.mpAccount||a.email}</span></div>
-    <div class="detail-row"><span class="detail-label">Comissão (20%)</span><span class="detail-value" style="color:var(--green);font-size:18px;font-family:var(--mono)">${fmt(a.comissaoDevida||0)}</span></div>
-    <br>
-    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;font-size:13px;color:var(--green)">
-      Ao aprovar, a Firebase Function chamará o MP e executará a transferência para a conta do afiliado.
-    </div>
-  `;
-  el('mc-btn-aprovar').textContent = `Aprovar e transferir ${fmt(a.comissaoDevida||0)}`;
-  el('mc-btn-aprovar').onclick = () => pagarComissao(id, a.comissaoDevida||0, a.name);
-  el('modal-comissao').classList.add('open');
-};
-
-window.pagarComissao = async function(afiliadoId, valor, nome) {
-  if (!confirm(`Confirma pagamento de ${fmt(valor)} para ${nome}?`)) return;
-  try {
-    const resp = await fetch(`${FUNCTIONS_BASE}/payAffiliate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await auth.currentUser.getIdToken()}` },
-      body: JSON.stringify({ afiliadoId, valor }),
-    });
-    const data = await resp.json();
-    if (!data.success) throw new Error(data.error||'Erro desconhecido');
-    closeModal('modal-comissao');
-    alert(`✓ Transferência de ${fmt(valor)} realizada com sucesso.`);
-    await loadAfiliados();
-  } catch(e) {
-    alert('Erro ao pagar comissão: ' + e.message);
-  }
 };
 
 // ── PAGAMENTOS ────────────────────────────────────────────────────────────────
