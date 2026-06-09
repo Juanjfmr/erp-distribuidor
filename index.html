@@ -1,123 +1,123 @@
-1|<!DOCTYPE html>
-2|<html lang="pt-BR">
-3|<head>
-4|<meta charset="UTF-8"/>
-5|<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-6|<meta name="theme-color" content="#4f46e5"/>
-7|<title>Stoqio — Gestão completa para o seu negócio</title>
-8|<style>
-9|*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-10|body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1e293b;line-height:1.6;overflow-x:hidden}
-11|.container{max-width:1200px;margin:0 auto;padding:0 24px}
-12|:root{--primary:#4f46e5;--primary-hover:#4338ca;--primary-dim:rgba(37,99,235,.08);--bg:#f8f9fa;--bg2:#fff;--border:#e2e8f0;--muted:#94a3b8;--text:#1e293b}
-13|/* Navbar */
-14|nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s}
-15|nav.scrolled{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-16|.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 24px}
-17|.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--primary);letter-spacing:.04em;text-decoration:none}
-18|.nav-logo svg{flex-shrink:0}
-19|.nav-links{display:flex;align-items:center;gap:32px}
-20|.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:color .15s}
-21|.nav-links a:hover{color:var(--text)}
-22|.nav-cta{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s}
-23|.nav-cta:hover{background:var(--primary-hover)}
-24|/* Hero */
-25|.hero{padding:160px 0 100px;text-align:center;position:relative}
-26|.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
-27|.hero h1{font-size:clamp(32px,6vw,56px);font-weight:800;line-height:1.12;margin-bottom:20px;position:relative}
-28|.hero h1 span{color:var(--primary)}
-29|.hero p{font-size:18px;color:var(--muted);max-width:600px;margin:0 auto 36px;line-height:1.7}
-30|.hero-ctas{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
-31|.btn-primary{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
-32|.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px)}
-33|.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s}
-34|.btn-ghost:hover{background:var(--primary-dim)}
-35|.trust-signals{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-36|.trust-signals span::before{content:'✓ ';color:var(--primary)}
-37|/* Section */
-38|section{padding:80px 0}
-39|.section-label{font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
-40|.section-title{font-size:clamp(24px,4vw,36px);font-weight:800;line-height:1.2;margin-bottom:16px}
-41|.section-sub{font-size:16px;color:var(--muted);max-width:600px;line-height:1.7}
-42|/* Segmentos */
-43|.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:40px}
-44|.seg-chip{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);transition:all .15s}
-45|.seg-chip:hover{border-color:var(--primary-dim);color:var(--text)}
-46|.seg-icon{font-size:28px;margin-bottom:6px;display:block}
-47|/* Pain cards */
-48|.cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:40px}
-49|.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px}
-50|.card-icon{font-size:32px;margin-bottom:14px}
-51|.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
-52|.card p{font-size:14px;color:var(--muted);line-height:1.6}
-53|/* IA section */
-54|.ia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:40px}
-55|.ia-tag{display:inline-block;background:var(--primary-dim);color:var(--primary);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-top:20px}
-56|/* Features grid */
-57|.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:40px}
-58|.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
-59|.feat-card .f-icon{font-size:24px;margin-bottom:10px}
-60|.feat-card h4{font-size:14px;font-weight:700;margin-bottom:4px}
-61|.feat-card p{font-size:13px;color:var(--muted);line-height:1.5}
-62|/* Diferenciais */
-63|.diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:14px;overflow:hidden;margin-top:40px}
-64|.diff-item{background:var(--bg2);padding:28px}
-65|.diff-item h4{font-size:15px;font-weight:700;margin-bottom:6px}
-66|.diff-item p{font-size:13px;color:var(--muted);line-height:1.5}
-67|/* Pricing */
-68|.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:40px}
-69|.pricing-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;transition:all .15s;position:relative}
-70|.pricing-card:hover{border-color:var(--primary-dim)}
-71|.pricing-card.featured{border-color:var(--primary);background:rgba(37,99,235,.06)}
-72|.pricing-card .badge-pop{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap}
-73|.pricing-card .plan-name{font-weight:700;font-size:16px;margin-bottom:4px}
-74|.pricing-card .plan-price{font-size:32px;font-weight:800;margin:8px 0 2px}
-75|.pricing-card .plan-period{font-size:12px;color:var(--muted);margin-bottom:16px}
-76|.pricing-card .plan-features{list-style:none;text-align:left;font-size:13px;color:var(--muted);margin-bottom:20px}
-77|.pricing-card .plan-features li{padding:4px 0}
-78|.pricing-card .plan-features li::before{content:'✓ ';color:var(--primary)}
-79|.pricing-card .btn{display:block;width:100%}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#4f46e5"/>
+<title>Stoqio — Gestão completa para o seu negócio</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1e293b;line-height:1.6;overflow-x:hidden}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+:root{--primary:#4f46e5;--primary-hover:#4338ca;--primary-dim:rgba(37,99,235,.08);--bg:#f8f9fa;--bg2:#fff;--border:#e2e8f0;--muted:#94a3b8;--text:#1e293b}
+/* Navbar */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s}
+nav.scrolled{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 24px}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--primary);letter-spacing:.04em;text-decoration:none}
+.nav-logo svg{flex-shrink:0}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:color .15s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s}
+.nav-cta:hover{background:var(--primary-hover)}
+/* Hero */
+.hero{padding:160px 0 100px;text-align:center;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:clamp(32px,6vw,56px);font-weight:800;line-height:1.12;margin-bottom:20px;position:relative}
+.hero h1 span{color:var(--primary)}
+.hero p{font-size:18px;color:var(--muted);max-width:600px;margin:0 auto 36px;line-height:1.7}
+.hero-ctas{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.btn-primary{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s}
+.btn-ghost:hover{background:var(--primary-dim)}
+.trust-signals{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.trust-signals span::before{content:'✓ ';color:var(--primary)}
+/* Section */
+section{padding:80px 0}
+.section-label{font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.section-title{font-size:clamp(24px,4vw,36px);font-weight:800;line-height:1.2;margin-bottom:16px}
+.section-sub{font-size:16px;color:var(--muted);max-width:600px;line-height:1.7}
+/* Segmentos */
+.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:40px}
+.seg-chip{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);transition:all .15s}
+.seg-chip:hover{border-color:var(--primary-dim);color:var(--text)}
+.seg-icon{font-size:28px;margin-bottom:6px;display:block}
+/* Pain cards */
+.cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:40px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px}
+.card-icon{font-size:32px;margin-bottom:14px}
+.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.card p{font-size:14px;color:var(--muted);line-height:1.6}
+/* IA section */
+.ia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:40px}
+.ia-tag{display:inline-block;background:var(--primary-dim);color:var(--primary);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-top:20px}
+/* Features grid */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:40px}
+.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+.feat-card .f-icon{font-size:24px;margin-bottom:10px}
+.feat-card h4{font-size:14px;font-weight:700;margin-bottom:4px}
+.feat-card p{font-size:13px;color:var(--muted);line-height:1.5}
+/* Diferenciais */
+.diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:14px;overflow:hidden;margin-top:40px}
+.diff-item{background:var(--bg2);padding:28px}
+.diff-item h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.diff-item p{font-size:13px;color:var(--muted);line-height:1.5}
+/* Pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:40px}
+.pricing-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;transition:all .15s;position:relative}
+.pricing-card:hover{border-color:var(--primary-dim)}
+.pricing-card.featured{border-color:var(--primary);background:rgba(37,99,235,.06)}
+.pricing-card .badge-pop{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap}
+.pricing-card .plan-name{font-weight:700;font-size:16px;margin-bottom:4px}
+.pricing-card .plan-price{font-size:32px;font-weight:800;margin:8px 0 2px}
+.pricing-card .plan-period{font-size:12px;color:var(--muted);margin-bottom:16px}
+.pricing-card .plan-features{list-style:none;text-align:left;font-size:13px;color:var(--muted);margin-bottom:20px}
+.pricing-card .plan-features li{padding:4px 0}
+.pricing-card .plan-features li::before{content:'✓ ';color:var(--primary)}
+.pricing-card .btn{display:block;width:100%}
 .reassurance{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
 /* FAQ */
-84|.faq-list{max-width:700px;margin:40px auto 0}
-85|.faq-item{border-bottom:1px solid var(--border);padding:20px 0}
-86|.faq-q{font-weight:700;font-size:15px;margin-bottom:6px}
-87|.faq-a{font-size:14px;color:var(--muted);line-height:1.6}
-88|/* CTA Final */
-89|.cta-final{text-align:center;padding:100px 0;position:relative}
-90|.cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
-91|.cta-final h2{font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:12px;position:relative}
-92|.cta-final p{font-size:16px;color:var(--muted);margin-bottom:28px}
-93|/* Footer */
-94|footer{border-top:1px solid var(--border);padding:48px 0 32px}
-95|.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:32px;margin-bottom:40px}
-96|.footer-grid h4{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:12px}
-97|.footer-grid a{display:block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:6px;transition:color .15s}
-98|.footer-grid a:hover{color:var(--text)}
-99|.footer-bottom{text-align:center;font-size:12px;color:var(--muted);padding-top:24px;border-top:1px solid var(--border)}
-100|/* Steps */
-101|.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:40px}
-102|.step{border-left:2px solid var(--primary-dim);padding-left:20px}
-103|.step-num{font-size:12px;font-weight:800;color:var(--primary);letter-spacing:.06em;margin-bottom:4px}
-104|.step h4{font-size:16px;font-weight:700;margin-bottom:4px}
-105|.step p{font-size:13px;color:var(--muted)}
-106|/* Mobile */
-107|@media(max-width:768px){
-108|  .nav-links{display:none}
-109|  .hero{padding:120px 0 60px}
-110|  .hero h1{font-size:30px}
-111|  .diff-grid{grid-template-columns:1fr}
-112|  .pricing-card.featured{order:-1}
-113|  .hero-ctas{flex-direction:column;align-items:center}
-114|  .trust-signals{flex-direction:column;align-items:center;gap:8px}
-115|  section{padding:60px 0}
-116|}
-117|
-118|.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
-119|</style>
-120|</head>
-121|<body>
-122|
+.faq-list{max-width:700px;margin:40px auto 0}
+.faq-item{border-bottom:1px solid var(--border);padding:20px 0}
+.faq-q{font-weight:700;font-size:15px;margin-bottom:6px}
+.faq-a{font-size:14px;color:var(--muted);line-height:1.6}
+/* CTA Final */
+.cta-final{text-align:center;padding:100px 0;position:relative}
+.cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
+.cta-final h2{font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:12px;position:relative}
+.cta-final p{font-size:16px;color:var(--muted);margin-bottom:28px}
+/* Footer */
+footer{border-top:1px solid var(--border);padding:48px 0 32px}
+.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:32px;margin-bottom:40px}
+.footer-grid h4{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:12px}
+.footer-grid a{display:block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:6px;transition:color .15s}
+.footer-grid a:hover{color:var(--text)}
+.footer-bottom{text-align:center;font-size:12px;color:var(--muted);padding-top:24px;border-top:1px solid var(--border)}
+/* Steps */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:40px}
+.step{border-left:2px solid var(--primary-dim);padding-left:20px}
+.step-num{font-size:12px;font-weight:800;color:var(--primary);letter-spacing:.06em;margin-bottom:4px}
+.step h4{font-size:16px;font-weight:700;margin-bottom:4px}
+.step p{font-size:13px;color:var(--muted)}
+/* Mobile */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hero{padding:120px 0 60px}
+  .hero h1{font-size:30px}
+  .diff-grid{grid-template-columns:1fr}
+  .pricing-card.featured{order:-1}
+  .hero-ctas{flex-direction:column;align-items:center}
+  .trust-signals{flex-direction:column;align-items:center;gap:8px}
+  section{padding:60px 0}
+}
+
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+</style>
+</head>
+<body>
+
 <nav id="nav">
   <div class="nav-inner">
     <a href="#" class="nav-logo">
@@ -129,244 +129,244 @@
       <a href="#precos">Preços</a>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-135|      <a href="/login" style="color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;padding:10px 16px;transition:color .15s">Entrar</a>
-136|      <a href="/login" class="nav-cta">Começar grátis</a>
-137|    </div>
-138|  </div>
-139|</nav>
-140|
-141|<!-- Hero -->
-142|<section class="hero" style="padding-bottom:60px">
-143|  <div class="container">
-144|    <h1>Gestão completa para o<br>seu negócio. <span>Sem planilha,<br>sem complicação.</span></h1>
-145|    <p>Pedidos, estoque, NF-e, caixa e IA assistente num só lugar. Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p>
-146|    <div class="hero-ctas">
-147|      <a href="/login" class="btn-primary">Testar grátis — 14 dias</a>
-148|      <a href="#precos" class="btn-ghost">Ver planos</a>
-149|    </div>
-150|    <div class="trust-signals">
-151|      <span>Sem cartão de crédito</span>
-152|      <span>Cancele quando quiser</span>
-153|      <span>Importa dados do Bling/Conta Azul</span>
-154|    </div>
-155|    <div style="text-align:center;margin-top:16px">
-156|      <a href="/login" style="color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px">Já tem conta? <strong style="color:var(--primary)">Entrar</strong></a>
-157|    </div>
-158|  </div>
-159|</section>
-160|
-161|<!-- Segmentos -->
-162|<section>
-163|  <div class="container">
-164|    <div class="section-label">Para o seu ramo</div>
-165|    <h2 class="section-title">Stoqio se adapta ao seu segmento</h2>
-166|    <p class="section-sub">Configure em minutos para o seu tipo de negócio. Categorias, unidades e fluxos pré-ajustados.</p>
-167|    <div class="seg-grid">
-168|      <div class="seg-chip"><span class="seg-icon">🚚</span>Distribuidora</div>
-169|      <div class="seg-chip"><span class="seg-icon">🏗️</span>Construção</div>
-170|      <div class="seg-chip"><span class="seg-icon">🍎</span>Alimentos</div>
-171|      <div class="seg-chip"><span class="seg-icon">🥤</span>Bebidas</div>
-172|      <div class="seg-chip"><span class="seg-icon">🐾</span>Pet Shop</div>
-173|      <div class="seg-chip"><span class="seg-icon">💊</span>Farmácia</div>
-174|      <div class="seg-chip"><span class="seg-icon">🔧</span>Auto Peças</div>
-175|      <div class="seg-chip"><span class="seg-icon">🌿</span>Hortifrúti</div>
-176|      <div class="seg-chip"><span class="seg-icon">🌾</span>Agrícola</div>
-177|      <div class="seg-chip"><span class="seg-icon">🥖</span>Padaria</div>
-178|      <div class="seg-chip"><span class="seg-icon">💻</span>Informática</div>
-179|      <div class="seg-chip"><span class="seg-icon">🏪</span>Varejo</div>
-180|    </div>
-181|  </div>
-182|</section>
-183|
-184|<!-- Dor -->
-185|<section style="background:var(--bg2)">
-186|  <div class="container">
-187|    <h2 class="section-title" style="text-align:center">Se você gerencia um negócio assim,<br>você se identifica:</h2>
-188|    <div class="cards-3">
-189|      <div class="card">
-190|        <div class="card-icon">📋</div>
-191|        <h3>Planilha travou no fechamento do mês e você perdeu dados.</h3>
-192|      </div>
-193|      <div class="card">
-194|        <div class="card-icon">🧾</div>
-195|        <h3>NF emitida errada. Sistema separado. Retrabalho toda semana.</h3>
-196|      </div>
-197|      <div class="card">
-198|        <div class="card-icon">📦</div>
-199|        <h3>Vendedor fechou pedido sem saber que o estoque tinha zerado.</h3>
-200|      </div>
-201|    </div>
-202|    <p style="text-align:center;margin-top:28px;font-size:16px;color:var(--primary);font-weight:600">O Stoqio resolve os três — e ainda avisa antes de virar problema.</p>
-203|  </div>
-204|</section>
-205|
-206|<!-- IA -->
-207|<section id="funcionalidades">
-208|  <div class="container">
-209|    <div class="section-label">Diferencial exclusivo</div>
-210|    <h2 class="section-title">Seu negócio com IA que entende<br>o contexto real</h2>
-211|    <div class="ia-grid">
-212|      <div class="card">
-213|        <div class="card-icon">💬</div>
-214|        <h3>Chat com IA</h3>
-215|        <p>Pergunte qualquer coisa sobre sua operação. "Quais clientes estão em atraso?", "Qual produto mais saiu esse mês?", "Tem estoque pra fechar esse pedido?" — resposta com seus dados reais, em segundos.</p>
-216|      </div>
-217|      <div class="card">
-218|        <div class="card-icon">🔔</div>
-219|        <h3>Playbook de Alertas</h3>
-220|        <p>Todo dia o Stoqio analisa sua operação e te avisa: inadimplência crescendo, estoque chegando no limite, faturamento abaixo da média. Sem você precisar lembrar de olhar.</p>
-221|      </div>
-222|    </div>
-223|    <div class="ia-tag" style="display:block;width:fit-content;margin:20px auto 0">Incluso em todos os planos pagos</div>
-224|  </div>
-225|</section>
-226|
-227|<!-- Como funciona -->
-228|<section style="background:var(--bg2)">
-229|  <div class="container">
-230|    <h2 class="section-title" style="text-align:center">Comece a operar em menos de 1 hora</h2>
-231|    <div class="steps-grid">
-232|      <div class="step">
-233|        <div class="step-num">01</div>
-234|        <h4>Crie sua conta</h4>
-235|        <p>2 minutos. Sem cartão.</p>
-236|      </div>
-237|      <div class="step">
-238|        <div class="step-num">02</div>
-239|        <h4>Importe seus dados</h4>
-240|        <p>CSV do Bling, Conta Azul ou Omie. Detectamos o formato automaticamente.</p>
-241|      </div>
-242|      <div class="step">
-243|        <div class="step-num">03</div>
-244|        <h4>Opere</h4>
-245|        <p>Pedidos, estoque e NF-e funcionando no mesmo dia.</p>
-246|      </div>
-247|    </div>
-248|  </div>
-249|</section>
-250|
-251|<!-- Funcionalidades -->
-252|<section>
-253|  <div class="container">
-254|    <h2 class="section-title" style="text-align:center">Tudo que você precisa.<br>Nada que você não vai usar.</h2>
-255|    <div class="feat-grid">
-256|      <div class="feat-card"><div class="f-icon">📦</div><h4>Estoque</h4><p>Controle em tempo real. Alerta de ruptura antes de acontecer. Scanner de código de barras incluso.</p></div>
-257|      <div class="feat-card"><div class="f-icon">🧾</div><h4>NF-e Nativa</h4><p>Emita nota fiscal em 3 cliques. Integrado Focus NFe, sem add-on.</p></div>
-258|      <div class="feat-card"><div class="f-icon">📋</div><h4>Pedidos</h4><p>Do rascunho à NF em um fluxo só. Sem retrabalho.</p></div>
-259|      <div class="feat-card"><div class="f-icon">💰</div><h4>Contas</h4><p>Recebíveis e pagáveis. Veja quem deve e quando vence.</p></div>
-260|      <div class="feat-card"><div class="f-icon">📊</div><h4>Caixa</h4><p>Fluxo de caixa do dia. Despesas fixas lançadas automaticamente.</p></div>
-261|      <div class="feat-card"><div class="f-icon">📈</div><h4>Relatórios</h4><p>Curva ABC de produtos e clientes. Veja onde está o lucro.</p></div>
-262|      <div class="feat-card"><div class="f-icon">🤖</div><h4>IA Assistente</h4><p>Chat e alertas com dados reais do seu negócio.</p></div>
-263|      <div class="feat-card"><div class="f-icon">👥</div><h4>Multi-usuário</h4><p>Admin, Vendedor, Visualizador e Contador externo. Cada um vê o que precisa.</p></div>
-264|    </div>
-265|  </div>
-266|</section>
-267|
-268|<!-- Diferenciais -->
-269|<section style="background:var(--bg2)">
-270|  <div class="container">
-271|    <h2 class="section-title" style="text-align:center">Por que trocar o que você usa hoje?</h2>
-272|    <div class="diff-grid" style="margin-top:40px">
-273|      <div class="diff-item"><h4>🌐 Multi-segmento</h4><p>Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p></div>
-274|      <div class="diff-item"><h4>🤖 IA com seus dados</h4><p>Não é chat genérico — responde com a realidade do seu negócio.</p></div>
-275|      <div class="diff-item"><h4>🧾 NF-e incluída</h4><p>Não é módulo extra. Está no plano.</p></div>
-276|      <div class="diff-item"><h4>💎 Preço transparente</h4><p>Sem surpresa no boleto. Concorrentes escondem — o Stoqio não.</p></div>
-277|      <div class="diff-item"><h4>📥 Migração fácil</h4><p>Importa CSV do Bling, Conta Azul e Omie. Detecta o formato sozinho.</p></div>
-278|      <div class="diff-item"><h4>🎁 Trial real</h4><p>14 dias com tudo liberado. Sem cartão.</p></div>
-279|    </div>
-280|  </div>
-281|</section>
-282|
-283|<!-- Pricing -->
-284|<section id="precos">
-285|  <div class="container">
-286|    <div class="section-label">Preços</div>
-287|    <h2 class="section-title" style="text-align:center">Preço justo. Sem letra miúda.</h2>
-288|    <div class="pricing-grid">
-289|      <div class="pricing-card">
-290|        <div class="plan-name">Trial</div>
-291|        <div class="plan-price">Grátis</div>
-292|        <div class="plan-period">14 dias</div>
-293|        <ul class="plan-features">
-294|          <li>Tudo liberado</li>
-295|          <li>Sem cartão de crédito</li>
-296|          <li>NF-e, IA, estoque</li>
-297|        </ul>
-298|        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Testar grátis</a>
-299|      </div>
-300|      <div class="pricing-card">
-301|        <div class="plan-name">Essencial</div>
-302|        <div class="plan-price">R$97<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-303|        <div class="plan-period">ou R$931/ano (-20%)</div>
-304|        <ul class="plan-features">
-305|          <li>1 usuário</li>
-306|          <li>500 produtos</li>
-307|          <li>150 NFs/mês</li>
-308|          <li>Pedidos + NF + Caixa</li>
-309|          <li>IA assistente</li>
-310|        </ul>
-311|        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
-312|      </div>
-313|      <div class="pricing-card featured">
-314|        <div class="badge-pop">Mais escolhido</div>
-315|        <div class="plan-name" style="color:var(--primary)">Profissional</div>
-316|        <div class="plan-price">R$197<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-317|        <div class="plan-period">ou R$1.891/ano (-20%)</div>
-318|        <ul class="plan-features">
-319|          <li>5 usuários</li>
-320|          <li>3.000 produtos</li>
-321|          <li>1.000 NFs/mês</li>
-322|          <li>Devoluções + Comissões</li>
-323|          <li>Curva ABC + DRE</li>
-324|          <li>Tabela de preços por cliente</li>
-325|        </ul>
-326|        <a href="/login" class="btn-primary" style="display:block;text-align:center">Começar agora</a>
-327|      </div>
-328|      <div class="pricing-card">
-329|        <div class="plan-name">Empresarial</div>
-330|        <div class="plan-price">R$397<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-331|        <div class="plan-period">ou R$3.811/ano (-20%)</div>
-332|        <ul class="plan-features">
-333|          <li>Usuários ilimitados</li>
-334|          <li>Produtos ilimitados</li>
-335|          <li>NFs ilimitadas</li>
-336|          <li>API + PDV (em breve)</li>
-337|          <li>Suporte prioritário</li>
-338|        </ul>
-339|        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
-340|      </div>
-341|    </div>
-342|    <p class="reassurance">Todos os planos pagos incluem NF-e, IA assistente e cancelamento a qualquer momento.</p>
-343|  </div>
-344|</section>
-345|
+      <a href="/login" style="color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;padding:10px 16px;transition:color .15s">Entrar</a>
+      <a href="/login" class="nav-cta">Começar grátis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" style="padding-bottom:60px">
+  <div class="container">
+    <h1>Gestão completa para o<br>seu negócio. <span>Sem planilha,<br>sem complicação.</span></h1>
+    <p>Pedidos, estoque, NF-e, caixa e IA assistente num só lugar. Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p>
+    <div class="hero-ctas">
+      <a href="/login" class="btn-primary">Testar grátis — 14 dias</a>
+      <a href="#precos" class="btn-ghost">Ver planos</a>
+    </div>
+    <div class="trust-signals">
+      <span>Sem cartão de crédito</span>
+      <span>Cancele quando quiser</span>
+      <span>Importa dados do Bling/Conta Azul</span>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <a href="/login" style="color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px">Já tem conta? <strong style="color:var(--primary)">Entrar</strong></a>
+    </div>
+  </div>
+</section>
+
+<!-- Segmentos -->
+<section>
+  <div class="container">
+    <div class="section-label">Para o seu ramo</div>
+    <h2 class="section-title">Stoqio se adapta ao seu segmento</h2>
+    <p class="section-sub">Configure em minutos para o seu tipo de negócio. Categorias, unidades e fluxos pré-ajustados.</p>
+    <div class="seg-grid">
+      <div class="seg-chip"><span class="seg-icon">🚚</span>Distribuidora</div>
+      <div class="seg-chip"><span class="seg-icon">🏗️</span>Construção</div>
+      <div class="seg-chip"><span class="seg-icon">🍎</span>Alimentos</div>
+      <div class="seg-chip"><span class="seg-icon">🥤</span>Bebidas</div>
+      <div class="seg-chip"><span class="seg-icon">🐾</span>Pet Shop</div>
+      <div class="seg-chip"><span class="seg-icon">💊</span>Farmácia</div>
+      <div class="seg-chip"><span class="seg-icon">🔧</span>Auto Peças</div>
+      <div class="seg-chip"><span class="seg-icon">🌿</span>Hortifrúti</div>
+      <div class="seg-chip"><span class="seg-icon">🌾</span>Agrícola</div>
+      <div class="seg-chip"><span class="seg-icon">🥖</span>Padaria</div>
+      <div class="seg-chip"><span class="seg-icon">💻</span>Informática</div>
+      <div class="seg-chip"><span class="seg-icon">🏪</span>Varejo</div>
+    </div>
+  </div>
+</section>
+
+<!-- Dor -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">Se você gerencia um negócio assim,<br>você se identifica:</h2>
+    <div class="cards-3">
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <h3>Planilha travou no fechamento do mês e você perdeu dados.</h3>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧾</div>
+        <h3>NF emitida errada. Sistema separado. Retrabalho toda semana.</h3>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h3>Vendedor fechou pedido sem saber que o estoque tinha zerado.</h3>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:28px;font-size:16px;color:var(--primary);font-weight:600">O Stoqio resolve os três — e ainda avisa antes de virar problema.</p>
+  </div>
+</section>
+
+<!-- IA -->
+<section id="funcionalidades">
+  <div class="container">
+    <div class="section-label">Diferencial exclusivo</div>
+    <h2 class="section-title">Seu negócio com IA que entende<br>o contexto real</h2>
+    <div class="ia-grid">
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <h3>Chat com IA</h3>
+        <p>Pergunte qualquer coisa sobre sua operação. "Quais clientes estão em atraso?", "Qual produto mais saiu esse mês?", "Tem estoque pra fechar esse pedido?" — resposta com seus dados reais, em segundos.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <h3>Playbook de Alertas</h3>
+        <p>Todo dia o Stoqio analisa sua operação e te avisa: inadimplência crescendo, estoque chegando no limite, faturamento abaixo da média. Sem você precisar lembrar de olhar.</p>
+      </div>
+    </div>
+    <div class="ia-tag" style="display:block;width:fit-content;margin:20px auto 0">Incluso em todos os planos pagos</div>
+  </div>
+</section>
+
+<!-- Como funciona -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">Comece a operar em menos de 1 hora</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h4>Crie sua conta</h4>
+        <p>2 minutos. Sem cartão.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h4>Importe seus dados</h4>
+        <p>CSV do Bling, Conta Azul ou Omie. Detectamos o formato automaticamente.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h4>Opere</h4>
+        <p>Pedidos, estoque e NF-e funcionando no mesmo dia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Funcionalidades -->
+<section>
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">Tudo que você precisa.<br>Nada que você não vai usar.</h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="f-icon">📦</div><h4>Estoque</h4><p>Controle em tempo real. Alerta de ruptura antes de acontecer. Scanner de código de barras incluso.</p></div>
+      <div class="feat-card"><div class="f-icon">🧾</div><h4>NF-e Nativa</h4><p>Emita nota fiscal em 3 cliques. Integrado Focus NFe, sem add-on.</p></div>
+      <div class="feat-card"><div class="f-icon">📋</div><h4>Pedidos</h4><p>Do rascunho à NF em um fluxo só. Sem retrabalho.</p></div>
+      <div class="feat-card"><div class="f-icon">💰</div><h4>Contas</h4><p>Recebíveis e pagáveis. Veja quem deve e quando vence.</p></div>
+      <div class="feat-card"><div class="f-icon">📊</div><h4>Caixa</h4><p>Fluxo de caixa do dia. Despesas fixas lançadas automaticamente.</p></div>
+      <div class="feat-card"><div class="f-icon">📈</div><h4>Relatórios</h4><p>Curva ABC de produtos e clientes. Veja onde está o lucro.</p></div>
+      <div class="feat-card"><div class="f-icon">🤖</div><h4>IA Assistente</h4><p>Chat e alertas com dados reais do seu negócio.</p></div>
+      <div class="feat-card"><div class="f-icon">👥</div><h4>Multi-usuário</h4><p>Admin, Vendedor, Visualizador e Contador externo. Cada um vê o que precisa.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Diferenciais -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">Por que trocar o que você usa hoje?</h2>
+    <div class="diff-grid" style="margin-top:40px">
+      <div class="diff-item"><h4>🌐 Multi-segmento</h4><p>Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p></div>
+      <div class="diff-item"><h4>🤖 IA com seus dados</h4><p>Não é chat genérico — responde com a realidade do seu negócio.</p></div>
+      <div class="diff-item"><h4>🧾 NF-e incluída</h4><p>Não é módulo extra. Está no plano.</p></div>
+      <div class="diff-item"><h4>💎 Preço transparente</h4><p>Sem surpresa no boleto. Concorrentes escondem — o Stoqio não.</p></div>
+      <div class="diff-item"><h4>📥 Migração fácil</h4><p>Importa CSV do Bling, Conta Azul e Omie. Detecta o formato sozinho.</p></div>
+      <div class="diff-item"><h4>🎁 Trial real</h4><p>14 dias com tudo liberado. Sem cartão.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="precos">
+  <div class="container">
+    <div class="section-label">Preços</div>
+    <h2 class="section-title" style="text-align:center">Preço justo. Sem letra miúda.</h2>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="plan-name">Trial</div>
+        <div class="plan-price">Grátis</div>
+        <div class="plan-period">14 dias</div>
+        <ul class="plan-features">
+          <li>Tudo liberado</li>
+          <li>Sem cartão de crédito</li>
+          <li>NF-e, IA, estoque</li>
+        </ul>
+        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Testar grátis</a>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Essencial</div>
+        <div class="plan-price">R$97<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
+        <div class="plan-period">ou R$931/ano (-20%)</div>
+        <ul class="plan-features">
+          <li>1 usuário</li>
+          <li>500 produtos</li>
+          <li>150 NFs/mês</li>
+          <li>Pedidos + NF + Caixa</li>
+          <li>IA assistente</li>
+        </ul>
+        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="badge-pop">Mais escolhido</div>
+        <div class="plan-name" style="color:var(--primary)">Profissional</div>
+        <div class="plan-price">R$197<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
+        <div class="plan-period">ou R$1.891/ano (-20%)</div>
+        <ul class="plan-features">
+          <li>5 usuários</li>
+          <li>3.000 produtos</li>
+          <li>1.000 NFs/mês</li>
+          <li>Devoluções + Comissões</li>
+          <li>Curva ABC + DRE</li>
+          <li>Tabela de preços por cliente</li>
+        </ul>
+        <a href="/login" class="btn-primary" style="display:block;text-align:center">Começar agora</a>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Empresarial</div>
+        <div class="plan-price">R$397<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
+        <div class="plan-period">ou R$3.811/ano (-20%)</div>
+        <ul class="plan-features">
+          <li>Usuários ilimitados</li>
+          <li>Produtos ilimitados</li>
+          <li>NFs ilimitadas</li>
+          <li>API + PDV (em breve)</li>
+          <li>Suporte prioritário</li>
+        </ul>
+        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
+      </div>
+    </div>
+    <p class="reassurance">Todos os planos pagos incluem NF-e, IA assistente e cancelamento a qualquer momento.</p>
+  </div>
+</section>
+
 <!-- FAQ -->
-358|<section>
-359|  <div class="container">
-360|    <h2 class="section-title" style="text-align:center">Perguntas frequentes</h2>
-361|    <div class="faq-list">
-362|      <div class="faq-item"><div class="faq-q">Preciso de cartão para o trial?</div><div class="faq-a">Não. Só email e senha.</div></div>
-363|      <div class="faq-item"><div class="faq-q">Como migro meus dados?</div><div class="faq-a">Importamos CSV do Bling, Conta Azul e Omie. Detectamos o formato automaticamente.</div></div>
-364|      <div class="faq-item"><div class="faq-q">Funciona para qual ramo?</div><div class="faq-a">Distribuidoras, varejo, construção, alimentos, pet, farmácias, agro e muito mais. Configurável por segmento.</div></div>
-365|      <div class="faq-item"><div class="faq-q">A IA usa meus dados reais?</div><div class="faq-a">Sim. Ela lê sua operação no Stoqio e responde com base no seu estoque, clientes e NFs reais.</div></div>
-366|      <div class="faq-item"><div class="faq-q">Tem suporte?</div><div class="faq-a">Sim. Chat e email. Profissional e Empresarial têm prioridade.</div></div>
-367|      <div class="faq-item"><div class="faq-q">Posso cancelar?</div><div class="faq-a">Sim, quando quiser. Sem multa, sem burocracia.</div></div>
-368|    </div>
-369|  </div>
-370|</section>
-371|
-372|<!-- CTA Final -->
-373|<section class="cta-final">
-374|  <div class="container">
-375|    <h2>Seu negócio merece um sistema<br>que entende ele.</h2>
-376|    <p>14 dias grátis. Sem cartão. Comece agora.</p>
-377|    <a href="/login" class="btn-primary" style="font-size:18px;padding:16px 40px">Testar o Stoqio grátis →</a>
-378|  </div>
-379|</section>
-380|
-381|<footer>
-382|  <div class="container">
-383|    <div class="footer-grid">
+<section>
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">Perguntas frequentes</h2>
+    <div class="faq-list">
+      <div class="faq-item"><div class="faq-q">Preciso de cartão para o trial?</div><div class="faq-a">Não. Só email e senha.</div></div>
+      <div class="faq-item"><div class="faq-q">Como migro meus dados?</div><div class="faq-a">Importamos CSV do Bling, Conta Azul e Omie. Detectamos o formato automaticamente.</div></div>
+      <div class="faq-item"><div class="faq-q">Funciona para qual ramo?</div><div class="faq-a">Distribuidoras, varejo, construção, alimentos, pet, farmácias, agro e muito mais. Configurável por segmento.</div></div>
+      <div class="faq-item"><div class="faq-q">A IA usa meus dados reais?</div><div class="faq-a">Sim. Ela lê sua operação no Stoqio e responde com base no seu estoque, clientes e NFs reais.</div></div>
+      <div class="faq-item"><div class="faq-q">Tem suporte?</div><div class="faq-a">Sim. Chat e email. Profissional e Empresarial têm prioridade.</div></div>
+      <div class="faq-item"><div class="faq-q">Posso cancelar?</div><div class="faq-a">Sim, quando quiser. Sem multa, sem burocracia.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Final -->
+<section class="cta-final">
+  <div class="container">
+    <h2>Seu negócio merece um sistema<br>que entende ele.</h2>
+    <p>14 dias grátis. Sem cartão. Comece agora.</p>
+    <a href="/login" class="btn-primary" style="font-size:18px;padding:16px 40px">Testar o Stoqio grátis →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
       <div>
         <h4>Produto</h4>
         <a href="#funcionalidades">Funcionalidades</a>
@@ -376,30 +376,29 @@
         <h4>Empresa</h4>
         <a href="mailto:contato@stoqio.com.br">Contato</a>
       </div>
-394|      <div>
-395|        <h4>Legal</h4>
+      <div>
+        <h4>Legal</h4>
         <a href="/termos">Termos de Uso</a>
         <a href="/privacidade">Privacidade</a>
-398|      </div>
-399|    </div>
-400|    <div class="footer-bottom">© 2026 Stoqio. Todos os direitos reservados.</div>
-401|  </div>
-402|</footer>
-403|
-404|<script>
-405|// Navbar scroll effect
-406|window.addEventListener('scroll',()=>{
-407|  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>50);
-408|});
-409|// Smooth scroll
-410|document.querySelectorAll('a[href^="#"]').forEach(a=>{
-411|  a.addEventListener('click',e=>{
-412|    if(a.getAttribute('href')==='#') return;
-413|    e.preventDefault();
-414|    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
-415|  });
-416|});
-417|</script>
-418|</body>
-419|</html>
-420|
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 Stoqio. Todos os direitos reservados.</div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>50);
+});
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    if(a.getAttribute('href')==='#') return;
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
