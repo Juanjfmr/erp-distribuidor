@@ -53,6 +53,9 @@ function _onboardingStep0() {
     { key:'outros',        label:'Outro segmento',          icon:'📦' },
   ];
 
+  // current segments array (backward compat com single 'segment')
+  var currentSegs = co.segments || (co.segment ? [co.segment] : ['distribuidor']);
+
   return `
     <div class="card" style="padding:24px">
       <div style="font-size:16px;font-weight:700;margin-bottom:16px">Etapa 1 — Sua empresa</div>
@@ -72,18 +75,20 @@ function _onboardingStep0() {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Segmento de negócio</label>
+        <label class="form-label">Segmentos de negócio</label>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Selecione um ou mais — as categorias serão combinadas</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
-          ${segments.map(s => `
-            <div onclick="document.querySelectorAll('.seg-btn').forEach(b=>{b.style.borderColor='var(--border)';b.style.background='';b.style.color=''});this.style.borderColor='var(--blue)';this.style.background='rgba(59,130,246,0.1)';document.getElementById('ob-segment').value='${s.key}'"
-              class="seg-btn" data-seg="${s.key}"
-              style="border:2px solid ${(co.segment===s.key)?'var(--blue)':'var(--border)'};background:${(co.segment===s.key)?'rgba(59,130,246,0.1)':''};border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">
+          ${segments.map(s => {
+            const isActive = currentSegs.includes(s.key);
+            return `
+            <div onclick="_obToggleSeg('${s.key}', this)"
+              class="seg-btn ob-seg-${s.key}"
+              style="border:2px solid ${isActive?'var(--blue)':'var(--border)'};background:${isActive?'rgba(59,130,246,0.1)':''};border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">
               <div style="font-size:20px">${s.icon}</div>
               <div style="font-size:11px;margin-top:4px">${s.label}</div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
-        <input type="hidden" id="ob-segment" value="${co.segment||'distribuidor'}">
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="_onboardingSave0()">
         Continuar →
@@ -92,19 +97,42 @@ function _onboardingStep0() {
   `;
 }
 
+// ─── Toggle segment selection (onboarding multi-select) ────────────
+var _obSelectedSegs = null; // will be initialized in _onboardingSave0
+function _obToggleSeg(key, el) {
+  if (!_obSelectedSegs) {
+    // Init from current state
+    const co = state.company || {};
+    _obSelectedSegs = (co.segments || (co.segment ? [co.segment] : ['distribuidor'])).slice();
+  }
+  const idx = _obSelectedSegs.indexOf(key);
+  if (idx >= 0) {
+    _obSelectedSegs.splice(idx, 1);
+    el.style.borderColor = 'var(--border)';
+    el.style.background = '';
+  } else {
+    _obSelectedSegs.push(key);
+    el.style.borderColor = 'var(--blue)';
+    el.style.background = 'rgba(59,130,246,0.1)';
+  }
+  // Garantir que ao menos um fique selecionado
+  if (!_obSelectedSegs.length) {
+    _obSelectedSegs.push(key);
+    el.style.borderColor = 'var(--blue)';
+    el.style.background = 'rgba(59,130,246,0.1)';
+  }
+}
+
 function _onboardingSave0() {
   try {
   if (!state.onboarding) { alert('Erro: state.onboarding indefinido'); return; }
   const name = el('ob-name').value.trim();
   if (!name) { alert('Informe o nome da empresa.'); return; }
-  state.company = {
-    ...state.company,
-    name,
-    cnpj: el('ob-cnpj').value,
-    city: el('ob-city').value,
-    uf: el('ob-uf').value,
-    segment: el('ob-segment').value,
-  };
+  // Resolve segmentos selecionados
+  var segKeys = _obSelectedSegs;
+  if (!segKeys || !segKeys.length) {
+    segKeys = state.company?.segments || (state.company?.segment ? [state.company.segment] : ['distribuidor']);
+  }
   const catMap = {
     distribuidor: ['Bebidas','Alimentos','Limpeza','Higiene','Outros'],
     farmacias:    ['Medicamentos','Cosméticos','Higiene','Suplementos','Outros'],
@@ -113,7 +141,24 @@ function _onboardingSave0() {
     construcao:   ['Materiais','Ferramentas','Elétrico','Hidráulico','Outros'],
     outros:       ['Produtos','Serviços','Outros'],
   };
-  state.company.categories = catMap[el('ob-segment').value] || catMap.outros;
+  // Merge categories from all selected segments (no duplicates)
+  const mergedCats = [];
+  const seen = {};
+  segKeys.forEach(k => {
+    (catMap[k] || catMap.outros).forEach(c => {
+      if (!seen[c]) { mergedCats.push(c); seen[c] = true; }
+    });
+  });
+  state.company = {
+    ...state.company,
+    name,
+    cnpj: el('ob-cnpj').value,
+    city: el('ob-city').value,
+    uf: el('ob-uf').value,
+    segments: segKeys,
+    segment: segKeys[0], // mantém backward compat
+    categories: mergedCats,
+  };
   state.onboarding.step = 1;
   completeOnboardingStep('empresa');
   renderOnboarding();

@@ -234,6 +234,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ─── Segment multi-select (cadastro) ────────────────────────────────
+function selectSegment(el) {
+  const label = el.closest('label');
+  if (!label) return;
+  var input = label.querySelector('input');
+  if (!input) return;
+  input.checked = !input.checked; // toggle
+  if (input.checked) {
+    el.classList.add('seg-active');
+  } else {
+    el.classList.remove('seg-active');
+  }
+}
+
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -628,13 +642,14 @@ tr:hover td{background:var(--bg-hover)}
   <symbol id="icon-loader" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 </svg>
 <div id="sidebar">
-  <div class="logo">
-    <div class="logo-title" style="display:flex;align-items:center;gap:8px">
-      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="9" fill="url(#sb-grad)"/><path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/><defs><linearGradient id="sb-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs></svg>
-            Stoqio
+  <div id="sidebar-logo" class="logo">
+      <div id="sidebar-logo-inner" class="logo-title" style="display:flex;align-items:center;gap:8px">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none" id="sidebar-logo-svg"><rect width="32" height="32" rx="9" fill="url(#sb-grad)"/><path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/><defs><linearGradient id="sb-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs></svg>
+        <span id="sidebar-logo-text">Stoqio</span>
+        <img id="sidebar-logo-img" style="display:none;height:28px;max-width:140px;object-fit:contain"/>
+      </div>
+      <div class="logo-sub">GESTÃO EMPRESARIAL</div>
     </div>
-    <div class="logo-sub">GESTÃO EMPRESARIAL</div>
-  </div>
   <nav id="nav">
     <div class="nav-item active" onclick="navigate('dashboard')" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</div>
 
@@ -692,9 +707,9 @@ tr:hover td{background:var(--bg-hover)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/core/state.js?v=4"></script>
-<script src="js/core/firebase.js?v=4"></script>
+<script src="js/core/firebase.js?v=5"></script>
 <script src="js/core/fiscalStatus.js?v=4"></script>
-<script src="js/core/nav.js?v=6"></script>
+<script src="js/core/nav.js?v=7"></script>
 <script src="js/core/print.js?v=4"></script>
 <script src="js/modules/dashboard.js?v=5"></script>
 <script src="js/modules/aiChat.js?v=1"></script>
@@ -708,13 +723,13 @@ tr:hover td{background:var(--bg-hover)}
 <script src="js/modules/contas.js?v=1"></script>
 <script src="js/modules/caixa.js?v=1"></script>
 <script src="js/modules/relatorios.js?v=1"></script>
-<script src="js/modules/config.js?v=1"></script>
+<script src="js/modules/config.js?v=2"></script>
 <script src="js/modules/usuarios.js?v=1"></script>
 <script src="js/modules/pedidos.js?v=1"></script>
 <script src="js/modules/devolucoes.js?v=1"></script>
 <script src="js/services/csvImport.js?v=1"></script>
 <script src="js/services/asaasService.js?v=1"></script>
-<script src="js/modules/onboarding.js?v=1"></script>
+<script src="js/modules/onboarding.js?v=2"></script>
 <script src="js/app.js?v=2"></script>
 </div><!-- #app -->
 <div id="login-screen">
@@ -818,54 +833,55 @@ tr:hover td{background:var(--bg-hover)}
           <input id="signup-pass" type="password" class="ls-input" placeholder="Mínimo 6 caracteres">
         </div>
         <div class="ls-field">
-          <label class="ls-label">SEU SEGMENTO</label>
+          <label class="ls-label">SEGMENTOS DE NEGÓCIO</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Selecione um ou mais segmentos — as categorias serão combinadas automaticamente</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:4px;max-height:260px;overflow-y:auto;padding-right:2px">
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="distribuidor" checked style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="distribuidor" checked style="display:none">
               <div class="seg-card seg-active" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Distribuidora</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="construcao" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="construcao" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 12 2 21 9 21 20 3 20"/><rect x="9" y="14" width="6" height="6"/></svg><span>Construção</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="alimentos" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="alimentos" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg><span>Alimentos</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="bebidas" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="bebidas" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="8" y2="8"/><line x1="16" y1="2" x2="16" y2="8"/><path d="M5 8h14l-1.5 9A2 2 0 0 1 15.5 19h-7a2 2 0 0 1-2-1.8L5 8z"/></svg><span>Bebidas</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="laticinios" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="laticinios" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3 13h12l3-13"/><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/></svg><span>Laticínios</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="hortifruti" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="hortifruti" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12"/><path d="M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10"/><path d="M12 2C9.5 4.5 8 8 8 12s1.5 7.5 4 10"/><line x1="2" y1="12" x2="22" y2="12"/></svg><span>Hortifruti</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="padaria" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="padaria" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Padaria</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="autopecas" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="autopecas" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M14.83 9.17a4 4 0 0 1 0 5.66M9.17 9.17a4 4 0 0 0 0 5.66"/></svg><span>Auto Peças</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="ferragens" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="ferragens" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Ferragens</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="agricola" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="agricola" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M17.47 3.64a4 4 0 0 1 5 5C21.55 10.63 15.1 11.2 12 12c-.8-3.1-.23-9.55 5.47-8.36z"/></svg><span>Agrícola</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="descartaveis" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="descartaveis" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>Embalagens</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="pet" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="pet" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.172C10 3.782 8.423 2.679 6.5 3c-2.823.47-4.113 6.006-4 7 .08.703 1.725 1.722 3.656 1 1.261-.472 1.96-1.45 2.344-2.5"/><path d="M14.267 5.172c0-1.39 1.577-2.493 3.5-2.172 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.96-1.45-2.344-2.5"/><path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75z"/><path d="M4.42 20A2 2 0 0 0 6 22h12a2 2 0 0 0 1.58-.8l3.37-4.49c.33-.44-.06-1.23-.63-.99a4.93 4.93 0 0 1-3.11.18c-1.38-.35-2.64-1.23-3.63-2.62a4.96 4.96 0 0 0-7.97 0C6.63 14.55 5.37 15.43 4 15.78a4.93 4.93 0 0 1-3.1-.18c-.57-.24-.96.55-.63.99L4.42 20z"/></svg><span>Pet Shop</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="informatica" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="informatica" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Informática</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="tecidos" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="tecidos" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg><span>Moda/Tecidos</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="papelaria" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="papelaria" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>Papelaria</span></div>
             </label>
-            <label style="cursor:pointer"><input type="radio" name="signup-segment" value="outro" style="display:none">
+            <label style="cursor:pointer"><input type="checkbox" name="signup-segment" value="outro" style="display:none">
               <div class="seg-card" onclick="selectSegment(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Outro</span></div>
             </label>
           </div>

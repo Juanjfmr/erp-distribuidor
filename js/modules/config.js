@@ -272,6 +272,25 @@ function renderConfig(activeTab){
       <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${co.email||""}"></div>
       <div class="form-group"><label class="form-label">Saldo de Abertura do Caixa (R$)</label><input id="cfg-opening" class="form-input" type="number" step="0.01" value="${co.openingBalance||0}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Saldo bancário/caixa no momento em que começou a usar o sistema.</div></div>
       <div class="divider"></div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">LOGO DA EMPRESA</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div id="cfg-logo-preview" style="width:80px;height:80px;border-radius:var(--radius-md);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--bg);flex-shrink:0">
+          ${co.logo ? `<img src="${co.logo}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<span style="font-size:28px;color:var(--muted)">🏢</span>'}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Logomarca</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Usada em notas fiscais e relatórios. Formatos: PNG, JPG. Máx 500KB.</div>
+          <div style="display:flex;gap:8px">
+            <label class="btn btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload
+              <input type="file" id="cfg-logo-input" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadCompanyLogo(event)">
+            </label>
+            ${co.logo ? `<button class="btn btn-sm btn-ghost" onclick="removeCompanyLogo()" style="color:var(--red)">Remover</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">DADOS FISCAIS E NF-e</div>
       <div class="form-grid-2">
         <div class="form-group"><label class="form-label">Inscrição Estadual (IE)</label><input id="cfg-ie" class="form-input" placeholder="Somente números ou ISENTO" value="${co.ie||''}"></div>
@@ -368,6 +387,36 @@ function saveCatUnits(){
   saveState();
   showSyncStatus("✓ Categorias e unidades salvas");
   renderConfig();
+}
+// ─── Logo da empresa ──────────────────────────────────────────────────
+function uploadCompanyLogo(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 512 * 1024) { // 500KB max
+    showSyncStatus('✗ Logo muito grande. Máximo 500KB.');
+    return;
+  }
+  if (!['image/png','image/jpeg','image/webp'].includes(file.type)) {
+    showSyncStatus('✗ Formato não suportado. Use PNG, JPG ou WebP.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    state.company = {...(state.company||{}), logo: dataUrl};
+    saveState();
+    renderConfig();
+    showSyncStatus('✓ Logo salva. Recarregue a página para ver na barra lateral.');
+  };
+  reader.readAsDataURL(file);
+}
+function removeCompanyLogo() {
+  if (!confirm('Remover a logomarca da empresa?')) return;
+  state.company = {...(state.company||{}), logo: undefined};
+  delete state.company.logo;
+  saveState();
+  renderConfig();
+  showSyncStatus('✓ Logo removida.');
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});

@@ -341,15 +341,25 @@ async function doSignup() {
       name, email, role: 'admin', active: true,
       createdAt: new Date().toISOString(), companyId: uid
     });
-    const segKey = document.querySelector('input[name="signup-segment"]:checked')?.value || 'distribuidor';
-    const preset = SEGMENT_PRESETS[segKey] || SEGMENT_PRESETS.distribuidor;
+    const segKeys = Array.from(document.querySelectorAll('input[name="signup-segment"]:checked')).map(i => i.value);
+    const segKeysNorm = segKeys.length ? segKeys : ['distribuidor'];
+    const allCats = [];
+    const allUnits = [];
+    const seenCats = {}, seenUnits = {};
+    segKeysNorm.forEach(k => {
+      const preset = SEGMENT_PRESETS[k];
+      if (preset) {
+        preset.categories.forEach(c => { if (!seenCats[c]) { allCats.push(c); seenCats[c] = true; } });
+        preset.units.forEach(u => { if (!seenUnits[u]) { allUnits.push(u); seenUnits[u] = true; } });
+      }
+    });
     const refCode = new URLSearchParams(window.location.search).get('ref') || localStorage.getItem('_ref') || null;
     if(refCode) localStorage.removeItem('_ref');
     const affiliateCode = uid.slice(0,8).toUpperCase();
     await setDoc(window._fbFns.doc(window._db, 'empresas', uid), {
       name: company, plan: 'trial', trialEndsAt, active: true,
       createdAt: new Date().toISOString(), affiliateCode, referredBy: refCode,
-      company: { name: company, segment: segKey, categories: preset.categories, units: preset.units }
+      company: { name: company, segments: segKeysNorm, categories: allCats, units: allUnits }
     });
   } catch(e) {
     errEl.style.display = 'block';
