@@ -71,7 +71,7 @@ function filterProdutos(){
             <button class="btn-sm" onclick="viewPriceHistory('+p.id+')" title="Histórico de preço"><svg width="14" height="14"><use href="#icon-trending-up"/></svg></button>\
             <button class="btn-sm btn-red" onclick="deleteProd('+p.id+')" title="Inativar produto"><svg width="14" height="14"><use href="#icon-x"/></svg></button>'}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="10" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-package"/></svg><br><b>Nenhum produto cadastrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro produto ou importe via CSV</span></div></td></tr>`;
+    </tr>`;}).join(''):emptyState('package','Nenhum produto cadastrado','Adicione seu primeiro produto para começar a vender.','+ Novo produto','openProdModal()');
 }
 function openProdModal(id){
   const p=id?state.products.find(x=>x.id===id):null;

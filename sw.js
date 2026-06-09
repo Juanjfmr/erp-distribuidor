@@ -1,6 +1,6 @@
 // Service Worker — Stoqio PWA
 // Cache de assets estáticos (HTML/CSS/JS). Dados sempre do Firestore (online-first).
-const CACHE = 'stoqio-v1';
+const CACHE = 'stoqio-v4';
 const ASSETS = [
   '/',
   '/index.html',

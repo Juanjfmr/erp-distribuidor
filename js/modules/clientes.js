@@ -47,7 +47,7 @@ function filterClientes(){
         <button class="btn-sm btn-amber" onclick="openClientModal(${c.id})">Editar</button>
         <button class="btn-sm" onclick="deleteClient(${c.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">👥<br><b>Nenhum cliente encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre seu primeiro cliente ou busque por CNPJ</span></div></td></tr>`;
+    </tr>`;}).join(''):emptyState('users','Nenhum cliente cadastrado','Adicione seu primeiro cliente para começar a registrar pedidos.','+ Novo cliente','openClientModal()');
 }
 function openClientModal(id){
   const c=id?state.clients.find(x=>x.id===id):null;

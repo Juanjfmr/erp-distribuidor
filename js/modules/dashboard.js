@@ -4,8 +4,10 @@ window._feedTab = window._feedTab || 'nfs';
 
 function fmtDateRel(dateStr){
   if(!dateStr) return '—';
-  const d=new Date(dateStr), now=new Date();
+  const d=new Date(dateStr+'T00:00:00'); // força parse local, não UTC
+  const now=new Date();
   const diffDays=Math.round((now-d)/(1000*60*60*24));
+  if(diffDays<0) return d.toLocaleDateString('pt-BR'); // data futura → mostrar data
   if(diffDays===0) return 'hoje';
   if(diffDays===1) return 'ontem';
   if(diffDays<7) return diffDays+'d';
@@ -116,21 +118,21 @@ function renderDashboard(){
   if (feedTab==='nfs') {
     feedContent = recentNF.length
       ? recentNF.map(n=>feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-file-text\"/></svg>', (state.clients.find(c=>c.id==n.clientId)?.name||'—'), fmt(n.total), fmtDateRel(n.date), n.status==='autorizada'?'✅':n.status==='cancelada'?'❌':'⏳')).join('')
-      : '<div class="empty" style="padding:24px">Nenhuma NF emitida no período</div>';
+      : emptyState('bar-chart','Nenhum dado ainda','Comece cadastrando produtos e clientes para ver o dashboard.','Ir para Produtos',"navigate('produtos')");
   } else if (feedTab==='pedidos') {
     feedContent = recentOrders.length
       ? recentOrders.map(o=>{
           const c=state.clients.find(cl=>cl.id==o.clientId);
           return feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-clipboard\"/></svg>', (c?.name||'—'), fmt(o.total||0), fmtDateRel(o.date), o.status==='confirmado'?'✅':o.status==='rascunho'?'⏳':'❌');
         }).join('')
-      : '<div class="empty" style="padding:24px">Nenhum pedido ainda</div>';
+      : emptyState('bar-chart','Nenhum dado ainda','Comece cadastrando produtos e clientes para ver o dashboard.','Ir para Produtos',"navigate('produtos')");
   } else {
     feedContent = recentRec.length
       ? recentRec.map(r=>{
           const c=state.clients.find(cl=>cl.id==r.clientId);
           return feedRow('<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-credit-card\"/></svg>', (c?.name||'—'), fmt(r.amount), fmtDateRel(r.dueDate), isOverdue(r.dueDate)?'⚠️':'✅');
         }).join('')
-      : '<div class="empty" style="padding:24px">Nenhum recebível pendente</div>';
+      : emptyState('bar-chart','Nenhum dado ainda','Comece cadastrando produtos e clientes para ver o dashboard.','Ir para Produtos',"navigate('produtos')");
   }
 
   el("content").innerHTML = `

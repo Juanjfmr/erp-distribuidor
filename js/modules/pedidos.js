@@ -75,7 +75,7 @@ function filterPedidos(){
         <span style="flex:1"></span>
         ${o.status==='rascunho'||o.status==='confirmado'?`<button class="btn-sm btn-red" onclick="cancelarPedido('${o.id}')" title="Cancelar pedido"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>`:''}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-clipboard"/></svg><br><b>Nenhum pedido encontrado</b><br><span style="font-size:12px;color:var(--muted)">Crie seu primeiro pedido de venda para começar</span></div></td></tr>`;
+    </tr>`;}).join(''):emptyState('shopping-cart','Nenhum pedido encontrado','Os pedidos aparecerao aqui apos serem criados.','+ Novo pedido','openPedidoModal()');
 }
 
 function openPedidoModal(prefill){

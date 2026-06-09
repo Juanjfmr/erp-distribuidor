@@ -117,6 +117,8 @@ jobs:
 
       - name: Push para main
         run: |
+          git config user.email "ci@stoqio.com.br"
+          git config user.name "Stoqio CI"
           git fetch origin main
           git checkout main
           git merge v2 --no-edit

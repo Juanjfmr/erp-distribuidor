@@ -420,4 +420,7 @@ async function doResetPassword() {
 async function doLogout() {
   const { signOut } = window._fbFns;
   await signOut(window._auth);
+  localStorage.removeItem('stoqio_uid');
+  localStorage.removeItem('stoqio_v1');
+  localStorage.removeItem('stoqio_cache_v');
 }

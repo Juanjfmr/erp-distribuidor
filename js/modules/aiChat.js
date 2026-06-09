@@ -15,7 +15,7 @@ function aiChatInit() {
     <!-- Botão flutuante -->
     <div id="ai-chat-btn" onclick="aiChatToggle()" title="Stoqio AI — Assistente"
       style="position:fixed;bottom:24px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;
-        background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;cursor:pointer;display:flex;
+        background:linear-gradient(135deg,#6366f1,#4338ca);border:none;cursor:pointer;display:flex;
         align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(29,78,216,.4);
         transition:transform .2s,box-shadow .2s"
       onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 6px 24px rgba(29,78,216,.55)'"
@@ -36,7 +36,7 @@ function aiChatInit() {
       <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;
         background:linear-gradient(135deg,rgba(37,99,235,.15),rgba(29,78,216,.1));
         border-bottom:1px solid var(--border,#333)">
-        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);
           display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
             <path d="M12 2a10 10 0 0 1 7.07 17.07L21 21l-1.93-1.93A10 10 0 1 1 12 2z"/>
@@ -61,7 +61,7 @@ function aiChatInit() {
       <div id="ai-chat-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;
         min-height:200px;max-height:340px">
         <div style="display:flex;gap:8px">
-          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+          <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);
             display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-start">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
               <path d="M12 2a10 10 0 0 1 7.07 17.07L21 21l-1.93-1.93A10 10 0 1 1 12 2z"/>
@@ -83,7 +83,7 @@ function aiChatInit() {
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiChatSend()}"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
         <button id="ai-chat-send" onclick="aiChatSend()"
-          style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+          style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);
             border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
             transition:opacity .2s"
           onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
@@ -156,7 +156,7 @@ function aiChatAddMsg(role, text) {
 
   if (isAI) {
     div.innerHTML = `
-      <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+      <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);
         display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-start">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2a10 10 0 0 1 7.07 17.07L21 21l-1.93-1.93A10 10 0 1 1 12 2z"/></svg>
       </div>
@@ -181,7 +181,7 @@ function aiChatShowTyping() {
   div.id = 'ai-chat-typing';
   div.style.cssText = 'display:flex;gap:8px';
   div.innerHTML = `
-    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);
       display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-start">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2a10 10 0 0 1 7.07 17.07L21 21l-1.93-1.93A10 10 0 1 1 12 2z"/></svg>
     </div>

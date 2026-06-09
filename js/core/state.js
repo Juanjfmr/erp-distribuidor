@@ -1,9 +1,10 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "stoqio_v1";
+window.STORAGE_KEY = STORAGE_KEY;
 // Bump CACHE_VERSION toda vez que deployar mudanças no frontend.
 // Isso força o navegador a descartar localStorage obsoleto e buscar dados frescos do Firestore.
 // SEMPRE incrementar ao finalizar uma sessão de desenvolvimento antes do deploy.
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLAN_LIMITS = {

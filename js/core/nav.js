@@ -87,6 +87,23 @@ function render(){
   applyRoleUI();
 }
 
+function copyFromDataAttr(btn){
+  const val = btn.getAttribute('data-copy') || '';
+  navigator.clipboard.writeText(val).then(()=>showSyncStatus('✓ Copiado!'));
+}
+// ─── Empty state com personalidade ────────────────────────────────────────────
+function emptyState(iconId, title, subtitle, actionLabel, actionOnclick) {
+  return `<tr><td colspan="99">
+    <div style="padding:48px 24px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:var(--radius-lg);background:var(--primary-subtle);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--primary)">
+        <svg width="24" height="24"><use href="#icon-${iconId}"/></svg>
+      </div>
+      <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">${title}</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:${actionLabel?'20px':'0'}">${subtitle}</div>
+      ${actionLabel ? `<button class="btn btn-primary" style="font-size:13px" onclick="${actionOnclick}">${actionLabel}</button>` : ''}
+    </div>
+  </td></tr>`;
+}
 // ─── ROLES & NAV CONTROL ─────────────────────────────────────────────────────
 var ROLE_NAV = {
   admin:        ['dashboard','produtos','clientes','fornecedores','pedidos','notas','devolucoes','compras','contas','caixa','relatorios','config','usuarios','minha-conta','onboarding'],

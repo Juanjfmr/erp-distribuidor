@@ -59,7 +59,7 @@ function renderContas(){
           <td class="mono fw-bold">${fmt(r.amount)}</td>
           <td><span class="badge ${r.status==="paga"?"bg-green":r.status==="cancelada"?"bg-gray":overdue?"bg-red":"bg-amber"}">${r.status==="aberta"&&overdue?"vencida":r.status}</span></td>
           <td>${r.status==="aberta"?`<button class="btn-sm btn-green" onclick="payReceivable(${r.id})">Receber</button>${state?.company?.asaasKey?`<button class="btn-sm" style="background:#6366f1;color:#fff;margin-left:3px" onclick="cobrar(${r.id},'PIX')"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-smartphone"/></svg></button><button class="btn-sm" style="background:#0ea5e9;color:#fff;margin-left:2px" onclick="cobrar(${r.id},'BOLETO')"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-file-text"/></svg></button>`:''}`:`<span class="text-muted mono" style="font-size:11px">${r.paidAt?fmtDate(r.paidAt):""}</span>`}</td>
-        </tr>`}).join("")||`<tr><td colspan="8" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-credit-card"/></svg><br><b>Nenhum lançamento a receber</b><br><span style="font-size:12px;color:var(--muted)">Os recebimentos aparecem aqui após faturar pedidos</span></div></td></tr>`}
+        </tr>`}).join('')||emptyState('credit-card','Nenhuma conta encontrada','Todas as contas a receber e a pagar aparecerao aqui.','','');}
       </tbody></table>`;
   } else {
     var sortedPag=[...state.payables];
@@ -82,7 +82,7 @@ function renderContas(){
           <td class="mono fw-bold">${fmt(p.amount)}</td>
           <td><span class="badge ${p.status==="paga"?"bg-green":overdue?"bg-red":"bg-amber"}">${p.status==="aberta"&&overdue?"vencida":p.status}</span></td>
           <td>${p.status==="aberta"?`<button class="btn-sm btn-red" onclick="payPayable(${p.id})">Pagar</button>`:`<span class="text-muted mono" style="font-size:11px">${p.paidAt?fmtDate(p.paidAt):""}</span>`}</td>
-        </tr>`}).join("")||`<tr><td colspan="7" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-credit-card"/></svg><br><b>Nenhum lançamento a pagar</b><br><span style="font-size:12px;color:var(--muted)">Os pagamentos aparecem aqui após registrar compras</span></div></td></tr>`}
+        </tr>`}).join('')||emptyState('credit-card','Nenhuma conta encontrada','Todas as contas a receber e a pagar aparecerao aqui.','','');}
       </tbody></table>`;
   }
 
@@ -222,14 +222,14 @@ async function cobrar(id, tipo) {
         <label class="form-label">Pix Copia e Cola</label>
         <textarea class="form-input" rows="3" readonly onclick="this.select()" style="font-size:11px;font-family:monospace">${result.pixCopiaCola}</textarea>
       </div>
-      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(result.pixCopiaCola)}).then(()=>showSyncStatus('✓ Copiado!'))"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-clipboard"/></svg> Copiar chave Pix</button>`;
+      <button class="btn btn-secondary" data-copy="${(result.pixCopiaCola||'').replace(/"/g,'&quot;')}" onclick="copyFromDataAttr(this)"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-clipboard"/></svg> Copiar chave Pix</button>`;
 
     const boletoHtml = `
       <div class="form-group">
         <label class="form-label">Linha Digitável</label>
         <textarea class="form-input" rows="2" readonly onclick="this.select()" style="font-size:11px;font-family:monospace">${result.linhaDigitavel||''}</textarea>
       </div>
-      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(result.linhaDigitavel||'')}).then(()=>showSyncStatus('✓ Copiado!'))"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-clipboard"/></svg> Copiar código</button>
+      <button class="btn btn-secondary" data-copy="${(result.linhaDigitavel||'').replace(/"/g,'&quot;')}" onclick="copyFromDataAttr(this)"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-clipboard"/></svg> Copiar código</button>
       ${result.boletoUrl ? `<a href="${result.boletoUrl}" target="_blank" class="btn btn-secondary" style="margin-left:6px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-printer"/></svg> Imprimir boleto</a>` : ''}`;
 
     showModal(`

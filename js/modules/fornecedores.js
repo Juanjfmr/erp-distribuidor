@@ -42,7 +42,7 @@ function filterFornecedores(){
         <button class="btn-sm btn-amber" onclick="openSupplierModal(${s.id})">Editar</button>
         <button class="btn-sm btn-red" onclick="deleteSupplier(${s.id})"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-x"/></svg></button>
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px">🏭<br><b>Nenhum fornecedor encontrado</b><br><span style="font-size:12px;color:var(--muted)">Cadastre fornecedores para criar ordens de compra</span></div></td></tr>`;
+    </tr>`;}).join(''):emptyState('truck','Nenhum fornecedor cadastrado','Cadastre fornecedores para registrar compras.','+ Novo fornecedor','openSupplierModal()');
 }
 function openSupplierModal(id){
   const s=id?state.suppliers.find(x=>x.id===id):null;

@@ -65,7 +65,7 @@ function filterNotas(){
         ${(n.status==="emitida"||n.status==="parcial")?`<button class="btn-sm btn-green" onclick="darBaixaNF(${n.id})">↓ Receber</button>`:""}
         ${n.status!=="cancelada"&&n.status!=="paga"?`<button class="btn-sm btn-red" onclick="cancelNF(${n.id})">Cancelar</button>`:""}
       </div></td>
-    </tr>`;}).join(""):`<tr><td colspan="7" class="empty"><div style="padding:12px"><svg width="32" height="32" style="display:block;margin:0 auto 8px;color:var(--text-muted)"><use href="#icon-file-text"/></svg><br><b>Nenhuma nota fiscal encontrada</b><br><span style="font-size:12px;color:var(--muted)">Emita sua primeira NF-e para começar a faturar</span></div></td></tr>`;
+    </tr>`;}).join(''):emptyState('file-text','Nenhuma nota fiscal encontrada','As notas fiscais emitidas aparecerao aqui.','','');
 }
 
 async function openNFModal(){
@@ -620,13 +620,13 @@ function checkClienteNF(clientId){
     alert.style.background='rgba(245,158,11,.08)';
     alert.style.border='1px solid rgba(245,158,11,.2)';
     alert.style.color='var(--amber)';
-    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto — limite de crédito: ${fmt(cc.creditLimit)} (${fmt(Math.max(0, cc.creditLimit - cc.openAmt))} disponível)`;
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto — limite de crédito: ${fmt(cc.creditLimit)} (${fmt(Math.max(0, cc.creditLimit - cc.openAmt))} disponível);
   } else if(cc.openAmt > 0){
     alert.style.display='block';
     alert.style.background='rgba(245,158,11,.08)';
     alert.style.border='1px solid rgba(245,158,11,.2)';
     alert.style.color='var(--amber)';
-    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto (sem limite de crédito configurado)`;
+    alert.innerHTML=`ℹ ${fmt(cc.openAmt)} em aberto (sem limite de crédito configurado);
   } else {
     alert.style.display='none';
   }

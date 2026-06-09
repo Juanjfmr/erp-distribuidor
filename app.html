@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
-<meta name="theme-color" content="#2563eb"/>
+<meta name="theme-color" content="#4f46e5"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Stoqio"/>
@@ -15,6 +15,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Stoqio — Gestão Empresarial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script>(function(){var s=localStorage.getItem('stoqio_theme');if(s!=='light'){document.documentElement.classList.add('dark');}})();</script>
 <script
   src="https://js.sentry-cdn.com/c5f7da09755c0bb83a69d0f3464bceae.min.js"
   crossorigin="anonymous"
@@ -196,11 +197,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme toggle — verifica localStorage ou OS preference
-  const saved = localStorage.getItem('stoqio_theme');
-  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  }
   const passInput = document.getElementById('login-pass');
   if(passInput) passInput.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   const emailInput = document.getElementById('login-email');
@@ -219,7 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // sem esperar a resposta async do onAuthStateChanged + Firestore
   const cachedUid = localStorage.getItem('stoqio_uid');
   if (cachedUid && loadState && typeof loadState === 'function') {
-    const raw = localStorage.getItem('stoqio_v1');
+    const storageKey = window.STORAGE_KEY || 'stoqio_v1';
+    const raw = localStorage.getItem(storageKey);
     if (raw) {
       try {
         const st = JSON.parse(raw);
@@ -228,6 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const appEl = document.getElementById('app');
           if (loginEl) loginEl.style.setProperty('display','none','important');
           if (appEl) { appEl.style.setProperty('display','flex','important'); appEl.classList.add('visible'); }
+          // Carregar estado e renderizar imediatamente
+          if (typeof loadState === 'function') loadState();
+          if (typeof render === 'function') render();
         }
       } catch(_) {}
     }
@@ -249,7 +249,7 @@ function selectSegment(el) {
 }
 
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -260,14 +260,14 @@ function selectSegment(el) {
   --bg-raised:    #ffffff;
   --border:       #e2e8f0;
   --border-strong:#cbd5e1;
-  --border-focus: #2563eb;
+  --border-focus: #4f46e5;
   --text:         #1e293b;
   --text-secondary:#64748b;
   --text-muted:   #94a3b8;
-  --primary:      #2563eb;
-  --primary-hover:#1d4ed8;
-  --primary-subtle: rgba(37,99,235,0.08);
-  --primary-border: rgba(37,99,235,0.2);
+  --primary:      #4f46e5;
+  --primary-hover:#4338ca;
+  --primary-subtle: rgba(79,70,229,0.08);
+  --primary-border: rgba(79,70,229,0.2);
   --success:      #10b981;
   --success-bg:   rgba(16,185,129,0.08);
   --warning:      #f59e0b;
@@ -276,7 +276,7 @@ function selectSegment(el) {
   --danger-bg:    rgba(239,68,68,0.08);
   --info:         #3b82f6;
   --info-bg:      rgba(59,130,246,0.08);
-  --font-d:       'Plus Jakarta Sans',sans-serif;
+  --font-d:       'Syne','Plus Jakarta Sans',sans-serif;
   --font-b:       'Plus Jakarta Sans',sans-serif;
   --font-m:       'JetBrains Mono',monospace;
   /* ─── Back-compat aliases ──────────────────────────── */
@@ -307,6 +307,15 @@ function selectSegment(el) {
   --space-md:  16px;
   --space-lg:  24px;
   --space-xl:  32px;
+  /* ─── Tipografia ──────────────────────────────────── */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  20px;
+  --text-3xl:  24px;
   /* ─── Transições ──────────────────────────────────── */
   --ease-out:    cubic-bezier(0.16,1,0.3,1);
   --transition-fast:  0.15s var(--ease-out);
@@ -328,18 +337,22 @@ html.dark{
   --bg-raised:    #262626;
   --border:       #2a2a2a;
   --border-strong:#333333;
-  --border-focus: #3b82f6;
+  --border-focus: #6366f1;
   --text:         #d4d4d4;
   --text-secondary:#a3a3a3;
   --text-muted:   #737373;
-  --primary:      #3b82f6;
-  --primary-hover:#2563eb;
+  --primary:      #6366f1;
+  --primary-hover:#4f46e5;
   --shadow-sm:  0px 1px 2px rgba(0,0,0,0.5);
   --shadow-md:  0px 4px 12px rgba(0,0,0,0.5);
   --shadow-lg:  0px 8px 24px rgba(0,0,0,0.55);
   --shadow-xl:  0px 12px 40px rgba(0,0,0,0.6);
   --warning:      #fbbf24;
   --info:         #60a5fa;
+  --success-bg:   rgba(16,185,129,0.15);
+  --warning-bg:   rgba(245,158,11,0.15);
+  --danger-bg:    rgba(239,68,68,0.15);
+  --info-bg:      rgba(59,130,246,0.15);
 }
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px}
 body{display:flex}
@@ -359,7 +372,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--border-focus);ou
 .logo-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.1em}
 nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
 .nav-section{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;padding:8px 20px 4px;margin-top:4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all .15s}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all var(--transition-fast)}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor}
 .nav-item:hover{color:var(--text-secondary);background:var(--bg-hover)}
 .nav-item.active{color:var(--primary);background:var(--primary-subtle);font-weight:600}
@@ -368,7 +381,8 @@ nav{flex:1;padding:14px 0;display:flex;flex-direction:column;gap:1px;overflow-y:
 .sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--font-m)}
 .page-title{font-family:var(--font-d);font-weight:700;font-size:20px}
 .topbar-date{font-size:12px;color:var(--muted);font-family:var(--font-m)}
-.card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;overflow-x:auto;box-shadow:var(--shadow-sm)}
+.card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:16px;overflow-x:auto;box-shadow:var(--shadow-sm);transition:box-shadow var(--transition-fast),transform var(--transition-fast)}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap}
 .sort-th:hover{color:var(--primary);background:var(--bg-hover)}
@@ -376,11 +390,11 @@ th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--
 td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--bg-hover)}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
-.kpi-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:20px}
+.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-md);margin-bottom:20px}
+.kpi-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-md);margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-md)}
 .kpi{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 20px}
 .kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .kpi-value{font-family:var(--font-m);font-size:21px;font-weight:500;margin-top:6px;letter-spacing:-.02em}
@@ -391,11 +405,11 @@ tr:hover td{background:var(--bg-hover)}
 .bg-red{background:rgba(248,81,73,.15);color:var(--red)}
 .bg-blue{background:rgba(88,166,255,.15);color:var(--blue)}
 .bg-gray{background:rgba(139,148,158,.15);color:var(--muted)}
-.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all var(--transition-fast)}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-hover)}
 .btn-ghost{background:var(--border);color:var(--text2)}.btn-ghost:hover{background:var(--border2)}
 .btn-danger{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
-.btn-sm{padding:4px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;background:transparent;color:var(--muted);transition:all .15s}
+.btn-sm{padding:4px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;background:transparent;color:var(--muted);transition:all var(--transition-fast)}
 .btn-sm:hover{border-color:var(--primary);color:var(--primary-light)}
 .btn-amber{background:rgba(240,192,64,.1);color:var(--amber);border-color:rgba(240,192,64,.3)}
 .btn-red{background:rgba(248,81,73,.1);color:var(--red);border-color:rgba(248,81,73,.3)}
@@ -447,7 +461,7 @@ tr:hover td{background:var(--bg-hover)}
 .bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
 .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
-.tab{padding:10px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;font-weight:500}
+.tab{padding:10px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--transition-fast);font-weight:500}
 .tab:hover{color:var(--text2)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 .items-box{background:var(--bg);border-radius:6px;padding:12px;margin-top:8px}
 .item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
@@ -541,7 +555,7 @@ tr:hover td{background:var(--bg-hover)}
 .toast-success{background:#10b981}
 .toast-error{background:#ef4444}
 .toast-warning{background:#f59e0b;color:#1e293b}
-.toast-info{background:#2563eb}
+.toast-info{background:#4f46e5}
 .toast-leaving{animation:toastOut .25s var(--ease-out) forwards}
 @keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}
@@ -549,7 +563,7 @@ tr:hover td{background:var(--bg-hover)}
 /* ── Login Screen Redesign (ls-*) ─────────────────────────────────────────── */
 #login-screen{flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;overflow:hidden}
 .ls-brand{flex:0 0 60%;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;position:relative;background:linear-gradient(135deg,#0a0a0a 0%,#111111 60%,#141414 100%);overflow:hidden}
-.ls-brand::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 40%,rgba(37,99,235,.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 85% 70%,rgba(37,99,235,.04) 0%,transparent 70%);pointer-events:none}
+.ls-brand::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 40%,rgba(79,70,229,.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 85% 70%,rgba(79,70,229,.04) 0%,transparent 70%);pointer-events:none}
 .ls-brand::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;opacity:.6}
 .ls-brand-inner{position:relative;z-index:1;max-width:480px}
 .ls-logo{display:flex;align-items:center;gap:14px;margin-bottom:40px}
@@ -565,9 +579,9 @@ tr:hover td{background:var(--bg-hover)}
 .ls-cta-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:opacity .15s}
 .ls-cta-link:hover{opacity:.8}
 .ls-trial-badge{margin-top:24px;font-size:12px;color:var(--muted);padding-top:20px;border-top:1px solid var(--border)}
-.nf-ft-btn{background:transparent;border:none;padding:6px 14px;font-size:12px;font-family:var(--font-b);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nf-ft-btn{background:transparent;border:none;padding:6px 14px;font-size:12px;font-family:var(--font-b);color:var(--muted);cursor:pointer;transition:all var(--transition-fast);white-space:nowrap}
 .nf-ft-btn.nf-ft-active{background:var(--primary);color:#fff;font-weight:700}
-.seg-card{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:11.5px;color:var(--text2);transition:all .15s;background:var(--bg);white-space:nowrap;overflow:hidden}
+.seg-card{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:11.5px;color:var(--text2);transition:all var(--transition-fast);background:var(--bg);white-space:nowrap;overflow:hidden}
 .seg-card:hover{border-color:var(--primary);color:var(--text)}
 .seg-card.seg-active{border-color:var(--primary);background:var(--primary-subtle);color:var(--primary)}
 .ls-form-side{flex:0 0 40%;display:flex;align-items:center;justify-content:center;background:var(--bg2);padding:40px 48px;overflow-y:auto}
@@ -644,7 +658,7 @@ tr:hover td{background:var(--bg-hover)}
 <div id="sidebar">
   <div id="sidebar-logo" class="logo">
       <div id="sidebar-logo-inner" class="logo-title" style="display:flex;align-items:center;gap:8px">
-        <svg width="22" height="22" viewBox="0 0 32 32" fill="none" id="sidebar-logo-svg"><rect width="32" height="32" rx="9" fill="url(#sb-grad)"/><path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/><defs><linearGradient id="sb-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs></svg>
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none" id="sidebar-logo-svg"><rect width="32" height="32" rx="9" fill="url(#sb-grad)"/><path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/><defs><linearGradient id="sb-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4338ca"/></linearGradient></defs></svg>
         <span id="sidebar-logo-text">Stoqio</span>
         <img id="sidebar-logo-img" style="display:none;height:28px;max-width:140px;object-fit:contain"/>
       </div>
@@ -706,30 +720,30 @@ tr:hover td{background:var(--bg-hover)}
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core/state.js?v=4"></script>
-<script src="js/core/firebase.js?v=5"></script>
+<script src="js/core/state.js?v=5"></script>
+<script src="js/core/firebase.js?v=6"></script>
 <script src="js/core/fiscalStatus.js?v=4"></script>
-<script src="js/core/nav.js?v=7"></script>
+<script src="js/core/nav.js?v=8"></script>
 <script src="js/core/print.js?v=4"></script>
-<script src="js/modules/dashboard.js?v=5"></script>
-<script src="js/modules/aiChat.js?v=1"></script>
-<script src="js/modules/produtos.js?v=2"></script>
-<script src="js/modules/clientes.js?v=1"></script>
-<script src="js/modules/fornecedores.js?v=1"></script>
+<script src="js/modules/dashboard.js?v=6"></script>
+<script src="js/modules/aiChat.js?v=2"></script>
+<script src="js/modules/produtos.js?v=3"></script>
+<script src="js/modules/clientes.js?v=2"></script>
+<script src="js/modules/fornecedores.js?v=2"></script>
 <script src="js/services/invoiceService.js?v=1"></script>
 <script src="js/modules/fiscal.js?v=1"></script>
-<script src="js/modules/notas.js?v=1"></script>
-<script src="js/modules/compras.js?v=1"></script>
-<script src="js/modules/contas.js?v=1"></script>
-<script src="js/modules/caixa.js?v=1"></script>
+<script src="js/modules/notas.js?v=2"></script>
+<script src="js/modules/compras.js?v=2"></script>
+<script src="js/modules/contas.js?v=2"></script>
+<script src="js/modules/caixa.js?v=2"></script>
 <script src="js/modules/relatorios.js?v=1"></script>
-<script src="js/modules/config.js?v=2"></script>
+<script src="js/modules/config.js?v=3"></script>
 <script src="js/modules/usuarios.js?v=1"></script>
-<script src="js/modules/pedidos.js?v=1"></script>
+<script src="js/modules/pedidos.js?v=2"></script>
 <script src="js/modules/devolucoes.js?v=1"></script>
 <script src="js/services/csvImport.js?v=1"></script>
 <script src="js/services/asaasService.js?v=1"></script>
-<script src="js/modules/onboarding.js?v=2"></script>
+<script src="js/modules/onboarding.js?v=3"></script>
 <script src="js/app.js?v=2"></script>
 </div><!-- #app -->
 <div id="login-screen">
@@ -743,8 +757,8 @@ tr:hover td{background:var(--bg-hover)}
             <path d="M10.5 13.5C10.5 11.567 12.067 10 14 10H18.5C20.433 10 22 11.567 22 13.5C22 15.433 20.433 17 18.5 17H13.5C11.567 17 10 18.567 10 20.5C10 22.433 11.567 24 13.5 24H18C19.933 24 21.5 22.433 21.5 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
             <defs>
               <linearGradient id="stoqio-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#2563eb"/>
-                <stop offset="100%" stop-color="#1d4ed8"/>
+                <stop offset="0%" stop-color="#6366f1"/>
+                <stop offset="100%" stop-color="#4338ca"/>
               </linearGradient>
             </defs>
           </svg>
@@ -900,12 +914,12 @@ tr:hover td{background:var(--bg-hover)}
   <div class="ls-trial-card">
     <div class="ls-trial-icon">
       <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="26" cy="26" r="25" stroke="rgba(37,99,235,.3)" stroke-width="1.5"/>
-        <circle cx="26" cy="26" r="18" fill="rgba(37,99,235,.1)"/>
-        <rect x="19" y="22" width="14" height="12" rx="2" fill="none" stroke="#2563eb" stroke-width="1.8"/>
-        <path d="M22 22v-3a4 4 0 0 1 8 0v3" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
-        <circle cx="26" cy="28" r="1.5" fill="#2563eb"/>
-        <path d="M26 29.5v2.5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="26" cy="26" r="25" stroke="rgba(79,70,229,.3)" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="18" fill="rgba(79,70,229,.1)"/>
+        <rect x="19" y="22" width="14" height="12" rx="2" fill="none" stroke="#6366f1" stroke-width="1.8"/>
+        <path d="M22 22v-3a4 4 0 0 1 8 0v3" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="26" cy="28" r="1.5" fill="#6366f1"/>
+        <path d="M26 29.5v2.5" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
     <div class="ls-trial-title">Seu período de teste encerrou</div>
@@ -915,6 +929,6 @@ tr:hover td{background:var(--bg-hover)}
   </div>
 </div>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
-<div id="toast-container" style="position:fixed;bottom:24px;right:24px;z-index:var(--layer-toast,2000);display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+<div id="toast-container" style="position:fixed;bottom:88px;right:24px;z-index:var(--layer-toast,2000);display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
 </body>
 </html>
