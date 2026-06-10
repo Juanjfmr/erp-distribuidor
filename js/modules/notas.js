@@ -71,9 +71,8 @@ function filterNotas(){
 async function openNFModal(){
   state.nfItems=[];
   state.nfCosts=[];
-  const nextNum=await getNextNFNumber();
   showModal(`
-    <div class="modal-title">Emitir Nota Fiscal — <span class="text-amber mono">${nextNum}</span></div>
+    <div class="modal-title">Nova Nota Fiscal</div>
     <div class="form-grid-2">
       <div class="form-group" style="position:relative">
         <label class="form-label">Cliente</label>
@@ -155,7 +154,7 @@ async function openNFModal(){
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       ${canEmitNFe(state.company)?`<button class="btn btn-ghost" onclick="previewDANFeModal()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-eye"/></svg> Pré-visualizar DANFe</button>`:''}
-      <button class="btn btn-primary" onclick="emitirNF('${nextNum}')">Emitir Nota</button>
+      <button class="btn btn-primary" onclick="emitirNF()">Emitir Nota</button>
     </div>`,true);
   nfRenderItems();
   nfRenderProdList("");
@@ -313,8 +312,9 @@ function nfRenderItems(){
       </div>
     </div>`:"";
 }
-async function emitirNF(num){
+async function emitirNF(){
   if(!_guardSave()) return;
+  const num=await getNextNFNumber();
   if(!el("nf-client").value){
     _doneSave();
     const typed = (el("nf-client-search")?.value||'').trim();
