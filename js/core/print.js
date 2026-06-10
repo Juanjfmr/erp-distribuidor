@@ -86,7 +86,7 @@ function printNF(id){
     ${recs.map(r=>`<tr><td>${r.installment}/${r.total}</td><td>${fmtDate(r.dueDate)}</td><td class="mono">R$ ${fmtNum(r.amount)}</td><td>${r.status.toUpperCase()}</td></tr>`).join("")}
     </tbody></table>`:recs.length===1?`<div style="font-size:11px;margin-top:4px">Vencimento: ${fmtDate(recs[0].dueDate)} — R$ ${fmtNum(recs[0].amount)}</div>`:""}
   </div>
-  <div class="footer">Documento gerado pelo ${co.name||"Stoqio"} em ${fmtDate(today())}</div>
+  <div class="footer">Documento gerado pela Stoqio em ${fmtDate(today())}</div>
 </body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),500);
