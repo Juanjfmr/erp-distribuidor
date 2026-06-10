@@ -13,7 +13,7 @@ function printNF(id){
     .box{border:1.5px solid #333;border-radius:3px;padding:10px 12px;margin-bottom:14px}
     .header{display:flex;gap:16px;align-items:flex-start}
     .header-left{flex:1;display:flex;align-items:flex-start;gap:14px;min-width:0}
-    .header-left img.logo{max-height:75px;max-width:200px;width:auto;height:auto;object-fit:contain;flex-shrink:0}
+    .header-left img.logo{height:80px;width:auto;max-width:200px;object-fit:contain;flex-shrink:0}
     .co-name{font-size:18px;font-weight:700;margin:0 0 4px}
     .co-info{font-size:10px;color:#444;line-height:1.55}
     .nf-info{text-align:right;flex-shrink:0;white-space:nowrap}
