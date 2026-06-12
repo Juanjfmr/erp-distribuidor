@@ -134,7 +134,7 @@ function openCompraModal(draft){
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Fornecedor</label>
         <select id="cp-sup" class="form-input"><option value="">Selecione...</option>
-        ${state.suppliers.map(s=>`<option value="${s.id}"${s.id==supId?" selected":""}>${s.name}</option>`).join("")}</select>
+        ${state.suppliers.map(s=>`<option value="${s.id}"${s.id==supId?" selected":""}>${escapeHtml(s.name)}</option>`).join("")}</select>
       </div>
       <div class="form-group"><label class="form-label">Data da Compra</label>
         <input id="cp-date" type="date" class="form-input" value="${date}">
@@ -162,7 +162,7 @@ function openCompraModal(draft){
     <div class="row" style="margin-bottom:10px;flex-wrap:wrap">
       <select id="cp-prod" class="form-input" style="flex:2;min-width:160px">
         <option value="">Selecione produto...</option>
-        ${state.products.filter(p=>p.active!==false).map(p=>`<option value="${p.id}"${p.id===returnProdId?" selected":""}>${p.name} (${p.unit})</option>`).join("")}
+        ${state.products.filter(p=>p.active!==false).map(p=>`<option value="${p.id}"${p.id===returnProdId?" selected":""}>${escapeHtml(p.name)} (${escapeHtml(p.unit||'')})</option>`).join("")}
       </select>
       <input id="cp-qty" type="number" min="1" class="form-input" style="width:80px" placeholder="Qtd" value="1">
       <input id="cp-cost" type="number" min="0" step="0.01" class="form-input" style="width:110px" placeholder="Custo unit.">
@@ -256,10 +256,10 @@ function compraRenderItems(){
         if(it._fromXml && it.productId===null){
           return`<div class="item-row">
             <div style="flex:1">
-              <span style="font-size:12px;color:var(--amber);font-weight:600">⚠ ${it._xProd} <span style="font-weight:400;opacity:.8">(vincular produto)</span></span>
+              <span style="font-size:12px;color:var(--amber);font-weight:600">⚠ ${escapeHtml(it._xProd||'')} <span style="font-weight:400;opacity:.8">(vincular produto)</span></span>
               <select class="form-input" style="margin-top:4px;font-size:12px" onchange="compraVincularItem(${i},this.value)">
                 <option value="">— vincular produto cadastrado —</option>
-                ${state.products.filter(p=>p.active!==false).map(pp=>`<option value="${pp.id}">${pp.name} (${pp.unit})</option>`).join("")}
+                ${state.products.filter(p=>p.active!==false).map(pp=>`<option value="${pp.id}">${escapeHtml(pp.name)} (${escapeHtml(pp.unit||'')})</option>`).join("")}
               </select>
             </div>
             <div class="row">
@@ -270,7 +270,7 @@ function compraRenderItems(){
           </div>`;
         }
         return`<div class="item-row">
-          <span style="font-size:13px;color:var(--text2)">${p?p.name:"?"}</span>
+          <span style="font-size:13px;color:var(--text2)">${p?escapeHtml(p.name):"?"}</span>
           <div class="row">
             <span class="mono text-muted">${it.qty} × ${fmt(it.unitCost)}</span>
             <span class="mono text-white" style="min-width:90px;text-align:right">${fmt(it.qty*it.unitCost)}</span>
@@ -361,14 +361,14 @@ function viewCompra(id){
       <span class="badge ${statusColor}">${c.status||"a pagar"}</span>
     </div>
     <div class="form-grid-2" style="margin-bottom:14px">
-      <div><div class="kpi-label">Fornecedor</div><div style="font-size:14px;margin-top:4px;font-weight:600">${sup?sup.name:"—"}</div></div>
+      <div><div class="kpi-label">Fornecedor</div><div style="font-size:14px;margin-top:4px;font-weight:600">${sup?escapeHtml(sup.name):"—"}</div></div>
       <div><div class="kpi-label">Data da Compra</div><div style="font-size:14px;margin-top:4px">${fmtDate(c.date)}</div></div>
       <div><div class="kpi-label">Forma de Pagamento</div><div style="font-size:14px;margin-top:4px">${c.paymentMethod||c.paymentTerms||"—"}</div></div>
       <div><div class="kpi-label">Parcelas</div><div style="font-size:14px;margin-top:4px">${c.installments||1}x</div></div>
     </div>
     <table><thead><tr><th>Produto</th><th>Qtd</th><th>Custo Unit.</th><th>Total</th></tr></thead><tbody>
       ${c.items.map(it=>{const p=getProd(it.productId);return`<tr>
-        <td>${p?p.name:"—"}</td><td class="mono">${it.qty}</td>
+        <td>${p?escapeHtml(p.name):"—"}</td><td class="mono">${it.qty}</td>
         <td class="mono">${fmt(it.unitCost)}</td><td class="mono">${fmt(it.qty*it.unitCost)}</td>
       </tr>`}).join("")}
     </tbody></table>
@@ -396,7 +396,7 @@ function pagarCompra(compraId){
   if(!pays.length){ alert("Não há parcelas em aberto para esta compra."); return; }
   const sup=getSupplier(c.supplierId);
   showModal(`<div class="modal-title">Registrar Pagamento — ${c.number}</div>
-    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Fornecedor: <b style="color:var(--text)">${sup?sup.name:"—"}</b> &nbsp;|&nbsp; Total: <b style="color:var(--amber)">${fmt(c.total)}</b></div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Fornecedor: <b style="color:var(--text)">${sup?escapeHtml(sup.name):"—"}</b> &nbsp;|&nbsp; Total: <b style="color:var(--amber)">${fmt(c.total)}</b></div>
     <div class="form-group"><label class="form-label">Data do Pagamento</label>
       <input id="pg-date" type="date" class="form-input" value="${today()}">
     </div>
@@ -462,7 +462,7 @@ function editCompraModal(id){
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Fornecedor</label>
         <select id="cp-sup" class="form-input"><option value="">Selecione...</option>
-        ${state.suppliers.map(s=>`<option value="${s.id}"${s.id==c.supplierId?" selected":""}>${s.name}</option>`).join("")}</select>
+        ${state.suppliers.map(s=>`<option value="${s.id}"${s.id==c.supplierId?" selected":""}>${escapeHtml(s.name)}</option>`).join("")}</select>
       </div>
       <div class="form-group"><label class="form-label">Data da Compra</label>
         <input id="cp-date" type="date" class="form-input" value="${c.date}">
@@ -487,7 +487,7 @@ function editCompraModal(id){
     <div class="row" style="margin-bottom:10px;flex-wrap:wrap">
       <select id="cp-prod" class="form-input" style="flex:2;min-width:160px">
         <option value="">Selecione produto...</option>
-        ${state.products.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${p.name} (${p.unit})</option>`).join("")}
+        ${state.products.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.unit||'')})</option>`).join("")}
       </select>
       <input id="cp-qty" type="number" min="1" class="form-input" style="width:80px" placeholder="Qtd" value="1">
       <input id="cp-cost" type="number" min="0" step="0.01" class="form-input" style="width:110px" placeholder="Custo unit.">

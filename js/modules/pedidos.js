@@ -95,7 +95,7 @@ function openPedidoModal(prefill){
     <select id="ped-client" class="form-input" onchange="pedidoPreencheCliente(this.value)">
       <option value="">Selecione cliente...</option>
       <option value="avulso">Consumidor Final (sem cadastro)</option>
-      ${clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}
+      ${clients.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("")}
     </select>
     </div>
     <div class="form-grid-2">
@@ -157,8 +157,8 @@ function pedidoRenderProdList(search){
   listEl.innerHTML=prods.map(p=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--bg2);transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-        <div style="font-size:11px;color:var(--muted)">${p.unit} &nbsp;·&nbsp; Estoque: <span style="color:${p.stock>0?'var(--green)':'var(--red)'}">${p.stock}</span></div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escapeHtml(p.unit||'')} &nbsp;·&nbsp; Estoque: <span style="color:${p.stock>0?'var(--green)':'var(--red)'}">${p.stock}</span></div>
       </div>
       <div style="min-width:72px;text-align:right;color:var(--amber);font-size:13px;font-weight:600;flex-shrink:0">${fmt(p.salePrice)}</div>
       <input type="number" id="ped-row-qty-${p.id}" class="form-input" value="1" min="1" style="width:58px;padding:4px 6px;flex-shrink:0" title="Quantidade">
@@ -308,7 +308,7 @@ function editarPedidoModal(id){
     <div class="form-group"><label class="form-label">Cliente</label>
       <select id="ped-client" class="form-input">
         <option value="">Selecione cliente...</option>
-        ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${c.name}</option>`).join("")}
+        ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
       </select>
     </div>
     <div class="form-grid-2">
@@ -430,7 +430,7 @@ async function faturarPedido(id){
     <div class="form-group"><label class="form-label">Cliente</label>
       <select id="nf-client" class="form-input">
         <option value="">Selecione cliente...</option>
-        ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${c.name}</option>`).join("")}
+        ${clients.map(c=>`<option value="${c.id}" ${c.id==o.clientId?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
       </select>
     </div>
     <div class="form-grid-2">
@@ -580,13 +580,13 @@ function viewPedido(id){
     <div class="form-grid-2" style="margin-bottom:12px">
       <div><span class="text-muted">Data:</span> ${fmtDate(o.date)}</div>
       <div><span class="text-muted">Status:</span> ${statusLabel[o.status]||o.status}</div>
-      <div><span class="text-muted">Cliente:</span> ${c?c.name:"—"}</div>
+      <div><span class="text-muted">Cliente:</span> ${c?escapeHtml(c.name):"—"}</div>
       <div><span class="text-muted">Pagamento:</span> ${o.paymentTerms||"—"}</div>
       ${o.deliveryDate?`<div><span class="text-muted">Prazo de Entrega:</span> ${fmtDate(o.deliveryDate)}</div>`:''}
     </div>
     <table class="table" style="margin-bottom:12px">
       <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desc%</th><th>Total</th></tr></thead>
-      <tbody>${o.items.map(it=>`<tr><td>${it.name||it.productId}</td><td>${it.qty} ${it.unit||""}</td><td>${fmt(it.price)}</td><td>${it.itemDiscount||0}%</td><td>${fmt(it.qty*it.price*(1-(it.itemDiscount||0)/100))}</td></tr>`).join("")}</tbody>
+      <tbody>${o.items.map(it=>`<tr><td>${escapeHtml(it.name||String(it.productId))}</td><td>${it.qty} ${escapeHtml(it.unit||"")}</td><td>${fmt(it.price)}</td><td>${it.itemDiscount||0}%</td><td>${fmt(it.qty*it.price*(1-(it.itemDiscount||0)/100))}</td></tr>`).join("")}</tbody>
     </table>
     <div style="text-align:right;font-size:13px">
       Subtotal: <b>${fmt(o.subtotal)}</b> &nbsp;

@@ -216,18 +216,18 @@ function renderConfig(activeTab){
     </div>
     <div id="config-tab-geral" style="display:${activeTab==='geral'?'block':'none'}">
     <div class="card" style="max-width:580px">
-      <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="cfg-name" class="form-input" value="${co.name||""}"></div>
+      <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="cfg-name" class="form-input" value="${escapeHtml(co.name||"")}"></div>
       <div class="form-grid-2">
-        <div class="form-group"><label class="form-label">CNPJ</label><input id="cfg-cnpj" class="form-input" value="${co.cnpj||""}"></div>
-        <div class="form-group"><label class="form-label">Telefone</label><input id="cfg-phone" class="form-input" value="${co.phone||""}"></div>
+        <div class="form-group"><label class="form-label">CNPJ</label><input id="cfg-cnpj" class="form-input" value="${escapeHtml(co.cnpj||"")}"></div>
+        <div class="form-group"><label class="form-label">Telefone</label><input id="cfg-phone" class="form-input" value="${escapeHtml(co.phone||"")}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Endereço</label><input id="cfg-addr" class="form-input" value="${co.address||""}"></div>
+      <div class="form-group"><label class="form-label">Endereço</label><input id="cfg-addr" class="form-input" value="${escapeHtml(co.address||"")}"></div>
       <div class="form-grid-2">
-        <div class="form-group"><label class="form-label">CEP</label><input id="cfg-cep" class="form-input" placeholder="00000-000" maxlength="9" value="${co.cep||""}" oninput="applyMask(this,'cep')" onblur="buscarCep('cfg')"></div>
-        <div class="form-group"><label class="form-label">UF</label><input id="cfg-uf" class="form-input" value="${co.uf||"MS"}"></div>
+        <div class="form-group"><label class="form-label">CEP</label><input id="cfg-cep" class="form-input" placeholder="00000-000" maxlength="9" value="${escapeHtml(co.cep||"")}" oninput="applyMask(this,'cep')" onblur="buscarCep('cfg')"></div>
+        <div class="form-group"><label class="form-label">UF</label><input id="cfg-uf" class="form-input" value="${escapeHtml(co.uf||"MS")}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Cidade</label><input id="cfg-city" class="form-input" value="${co.city||""}"></div>
-      <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${co.email||""}"></div>
+      <div class="form-group"><label class="form-label">Cidade</label><input id="cfg-city" class="form-input" value="${escapeHtml(co.city||"")}"></div>
+      <div class="form-group"><label class="form-label">E-mail</label><input id="cfg-email" class="form-input" value="${escapeHtml(co.email||"")}"></div>
       <div class="form-group"><label class="form-label">Saldo de Abertura do Caixa (R$)</label><input id="cfg-opening" class="form-input" type="number" step="0.01" value="${co.openingBalance||0}"><div style="font-size:11px;color:var(--muted);margin-top:4px">Saldo bancário/caixa no momento em que começou a usar o sistema.</div></div>
       <div class="divider"></div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">LOGO DA EMPRESA</div>
@@ -251,7 +251,7 @@ function renderConfig(activeTab){
       <div class="divider"></div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.06em">DADOS FISCAIS E NF-e</div>
       <div class="form-grid-2">
-        <div class="form-group"><label class="form-label">Inscrição Estadual (IE)</label><input id="cfg-ie" class="form-input" placeholder="Somente números ou ISENTO" value="${co.ie||''}"></div>
+        <div class="form-group"><label class="form-label">Inscrição Estadual (IE)</label><input id="cfg-ie" class="form-input" placeholder="Somente números ou ISENTO" value="${escapeHtml(co.ie||'')}"></div>
         <div class="form-group"><label class="form-label">Regime Tributário</label><select id="cfg-regime" class="form-input">
           <option value="1" ${(!co.regime||co.regime==='1')?'selected':''}>1 — Simples Nacional</option>
           <option value="2" ${co.regime==='2'?'selected':''}>2 — Simples Nacional (excesso sublimite)</option>
@@ -265,12 +265,12 @@ function renderConfig(activeTab){
       <div class="section-title" style="margin-bottom:4px">Categorias de Produtos</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Usado nos formulários de produto. Ex: Bebidas, Alimentos, Higiene</div>
       <div class="form-group">
-        <textarea id="cfg-categories" class="form-input" rows="3" style="resize:vertical">${(co.categories||DEFAULT_CAT_PROD).join(", ")}</textarea>
+        <textarea id="cfg-categories" class="form-input" rows="3" style="resize:vertical">${escapeHtml((co.categories||DEFAULT_CAT_PROD).join(", "))}</textarea>
       </div>
       <div class="section-title" style="margin-bottom:4px;margin-top:4px">Unidades de Medida</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Ex: UN, CX, KG, M², SC, GL, MT, L</div>
       <div class="form-group">
-        <textarea id="cfg-units" class="form-input" rows="2" style="resize:vertical">${(co.units||DEFAULT_UNITS).join(", ")}</textarea>
+        <textarea id="cfg-units" class="form-input" rows="2" style="resize:vertical">${escapeHtml((co.units||DEFAULT_UNITS).join(", "))}</textarea>
       </div>
       <button class="btn btn-primary" onclick="saveCatUnits()">Salvar Categorias e Unidades</button>
     </div>

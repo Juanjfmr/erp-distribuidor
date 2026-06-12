@@ -151,13 +151,13 @@ function renderWizardStep2() {
     <div class="form-grid">
       <label>CNPJ *
         <input id="wiz-cnpj" class="form-input" placeholder="00.000.000/0000-00"
-          value="${d.cnpj || ''}" oninput="maskCNPJ(this)">
+          value="${escapeHtml(d.cnpj || '')}" oninput="maskCNPJ(this)">
       </label>
       <label>Razão Social *
-        <input id="wiz-razao" class="form-input" placeholder="Nome da empresa" value="${d.razaoSocial || ''}">
+        <input id="wiz-razao" class="form-input" placeholder="Nome da empresa" value="${escapeHtml(d.razaoSocial || '')}">
       </label>
       <label>Nome Fantasia
-        <input id="wiz-fantasia" class="form-input" placeholder="Nome comercial" value="${d.nomeFantasia || ''}">
+        <input id="wiz-fantasia" class="form-input" placeholder="Nome comercial" value="${escapeHtml(d.nomeFantasia || '')}">
       </label>
       <label>Regime Tributário *
         <select id="wiz-regime" class="form-input">
@@ -167,20 +167,20 @@ function renderWizardStep2() {
         </select>
       </label>
       <label>Inscrição Estadual
-        <input id="wiz-ie" class="form-input" placeholder="Número ou ISENTO" value="${d.ie || 'ISENTO'}">
+        <input id="wiz-ie" class="form-input" placeholder="Número ou ISENTO" value="${escapeHtml(d.ie || 'ISENTO')}">
       </label>
       <label>CEP *
         <input id="wiz-cep" class="form-input" placeholder="00000-000"
-          value="${d.cep || ''}" oninput="wizardCepLookup(this.value)">
+          value="${escapeHtml(d.cep || '')}" oninput="wizardCepLookup(this.value)">
       </label>
       <label>Logradouro *
-        <input id="wiz-logradouro" class="form-input" placeholder="Rua, número" value="${d.logradouro || ''}">
+        <input id="wiz-logradouro" class="form-input" placeholder="Rua, número" value="${escapeHtml(d.logradouro || '')}">
       </label>
       <label>Cidade *
-        <input id="wiz-cidade" class="form-input" placeholder="Cidade" value="${d.cidade || ''}">
+        <input id="wiz-cidade" class="form-input" placeholder="Cidade" value="${escapeHtml(d.cidade || '')}">
       </label>
       <label>UF *
-        <input id="wiz-uf" class="form-input" style="width:80px" placeholder="UF" value="${d.uf || ''}">
+        <input id="wiz-uf" class="form-input" style="width:80px" placeholder="UF" value="${escapeHtml(d.uf || '')}">
       </label>
     </div>
     <div class="row" style="gap:8px;margin-top:16px">

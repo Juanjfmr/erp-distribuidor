@@ -54,7 +54,7 @@ function filterNotas(){
     return`<tr class="${n.status==="cancelada"?"cancelled-row":""}">
       <td class="mono text-amber">${n.number}</td>
       <td>${fmtDate(n.date)}</td>
-      <td class="text-white fw-bold">${getNFClientName(n)}</td>
+      <td class="text-white fw-bold">${escapeHtml(getNFClientName(n))}</td>
       <td class="mono fw-bold">${fmt(n.total)}${n.discount>0?`<span class="text-muted" style="font-size:11px;margin-left:4px" title="Desconto de ${n.discount}% = ${fmt(n.subtotal*n.discount/100)}">-${n.discount}%</span>`:""}</td>
       <td><span class="badge bg-blue" style="font-size:10px">${n.paymentTerms}</span></td>
       <td><span class="badge ${statusColor}">${n.status==="emitida"?"pendente":n.status}</span></td>
@@ -239,8 +239,8 @@ function nfRenderProdList(search){
   listEl.innerHTML=prods.map(p=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--bg2);transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-        <div style="font-size:11px;color:var(--muted)">${p.unit} &nbsp;·&nbsp; Estoque: <span style="color:${p.stock>0?'var(--green)':'var(--red)'}">${p.stock}</span></div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escapeHtml(p.unit||'')} &nbsp;·&nbsp; Estoque: <span style="color:${p.stock>0?'var(--green)':'var(--red)'}">${p.stock}</span></div>
       </div>
       <div style="min-width:72px;text-align:right;color:var(--amber);font-size:13px;font-weight:600;flex-shrink:0">${fmt(p.salePrice)}</div>
       <input type="number" id="nf-row-qty-${p.id}" class="form-input" value="1" min="1" style="width:58px;padding:4px 6px;flex-shrink:0" title="Quantidade">
@@ -288,7 +288,7 @@ function nfRenderItems(){
       ${state.nfItems.map((it,i)=>{const p=getProd(it.productId);const lineTotal=it.qty*it.price*(1-(it.itemDiscount||0)/100);return`
         <div class="item-row" style="align-items:center">
           <div style="flex:1;min-width:0">
-            <span style="font-size:13px;color:var(--text2)">${it.name||p?.name||"?"}</span>
+            <span style="font-size:13px;color:var(--text2)">${escapeHtml(it.name||p?.name||"?")}</span>
           </div>
           <div class="row" style="gap:6px;align-items:center">
             <input type="number" min="1" step="1" value="${it.qty}" style="width:60px;padding:3px 6px" class="form-input"
@@ -423,12 +423,12 @@ function viewNF(id){
       </div>
     </div>
     <div class="form-grid-2" style="margin-bottom:16px">
-      <div><div class="kpi-label">Cliente</div><div style="font-size:14px;margin-top:4px;font-weight:600">${getNFClientName(n)}</div></div>
+      <div><div class="kpi-label">Cliente</div><div style="font-size:14px;margin-top:4px;font-weight:600">${escapeHtml(getNFClientName(n))}</div></div>
       <div><div class="kpi-label">Data / Pagamento</div><div style="font-size:14px;margin-top:4px">${fmtDate(n.date)} · ${n.paymentTerms}${n.paymentMethod?` · ${n.paymentMethod}`:''}</div></div>
     </div>
     <table><thead><tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Desc.</th><th>Total</th></tr></thead><tbody>
       ${n.items.map(it=>{const p=getProd(it.productId);const d=it.itemDiscount||0;const t=it.qty*it.price*(1-d/100);return`<tr>
-        <td>${it.name||p?.name||"—"} <span class="text-muted mono" style="font-size:11px">${it.unit||p?.unit||""}</span></td>
+        <td>${escapeHtml(it.name||p?.name||"—")} <span class="text-muted mono" style="font-size:11px">${escapeHtml(it.unit||p?.unit||"")}</span></td>
         <td class="mono">${it.qty}</td><td class="mono">${fmt(it.price)}</td>
         <td class="mono">${d>0?d+"%":"—"}</td>
         <td class="mono">${fmt(t)}</td>
@@ -438,16 +438,16 @@ function viewNF(id){
       <div class="row-between" style="margin-bottom:4px"><span class="text-muted">Subtotal</span><span class="mono">${fmt(n.subtotal)}</span></div>
       ${n.discount>0?`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">Desconto (${n.discount}%)</span><span class="mono text-red">− ${fmt(n.subtotal*n.discount/100)} <span style="font-size:11px;opacity:.6">(${n.discount}%)</span></span></div>`:""}
       ${n.freight>0?`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">Frete PDF</span><span class="mono">+ ${fmt(n.freight)}</span></div>`:""}
-      ${(n.costs||[]).filter(c=>c.clientPays).map(c=>`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">${c.description||"Custo"} <span style="font-size:10px">(cliente)</span></span><span class="mono">+ ${fmt(c.value||0)}</span></div>`).join("")}
+      ${(n.costs||[]).filter(c=>c.clientPays).map(c=>`<div class="row-between" style="margin-bottom:4px"><span class="text-muted">${escapeHtml(c.description||"Custo")} <span style="font-size:10px">(cliente)</span></span><span class="mono">+ ${fmt(c.value||0)}</span></div>`).join("")}
       <div class="row-between" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
         <span style="font-family:var(--font-d);font-weight:700">TOTAL</span>
         <span class="mono fw-bold text-amber" style="font-size:16px">${fmt(n.total)}</span>
       </div>
       ${n.returnedTotal>0?`<div class="row-between" style="margin-top:4px"><span class="text-muted">Devolvido</span><span class="mono text-red">− ${fmt(n.returnedTotal)}</span></div><div class="row-between" style="padding-top:4px;border-top:1px dashed var(--border);margin-top:4px"><span style="font-size:12px;font-weight:600">Líquido recebível</span><span class="mono fw-bold" style="font-size:13px">${fmt(Math.max(0,n.total-n.returnedTotal))}</span></div>`:""}
       ${n.internalFreight>0?`<div class="row-between" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)"><span class="text-muted" style="font-size:12px">Frete Interno (caixa)</span><span class="mono text-red" style="font-size:12px">− ${fmt(n.internalFreight)}</span></div>`:""}
-      ${(n.costs||[]).filter(c=>!c.clientPays&&c.value>0).map(c=>`<div class="row-between" style="margin-top:4px"><span class="text-muted" style="font-size:12px">${c.description||"Custo"} (caixa)</span><span class="mono text-red" style="font-size:12px">− ${fmt(c.value||0)}</span></div>`).join("")}
+      ${(n.costs||[]).filter(c=>!c.clientPays&&c.value>0).map(c=>`<div class="row-between" style="margin-top:4px"><span class="text-muted" style="font-size:12px">${escapeHtml(c.description||"Custo")} (caixa)</span><span class="mono text-red" style="font-size:12px">− ${fmt(c.value||0)}</span></div>`).join("")}
     </div>
-    ${n.notes?`<div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:6px;border:1px solid var(--border)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Observações</span><div style="margin-top:6px;font-size:13px;color:var(--text2)">${n.notes}</div></div>`:""}
+    ${n.notes?`<div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:6px;border:1px solid var(--border)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Observações</span><div style="margin-top:6px;font-size:13px;color:var(--text2)">${escapeHtml(n.notes)}</div></div>`:""}
     ${recs.length?`<div style="margin-top:16px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.06em">PARCELAS</div>
     <table><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr></thead><tbody>
       ${recs.map(r=>`<tr>
@@ -507,7 +507,7 @@ function nfClientSearch(q){
   } else {
     dd.innerHTML=matches.map(c=>{
       const overdue=state.receivables.filter(r=>r.clientId==c.id&&r.status==='aberta'&&isOverdue(r.dueDate));
-      return`<div style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="nfClientSelect(${c.id},'${c.name.replace(/'/g,"\\'")}')">
+      return`<div style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="nfClientSelect(${c.id},'${escapeHtml(c.name.replace(/'/g,"\\'"))}')">
         <div>
           <div style="font-size:13px;color:var(--text);font-weight:600">${escapeHtml(c.name)}</div>
           <div style="font-size:11px;color:var(--muted)">${escapeHtml(c.cnpj||'')} ${c.city?'· '+escapeHtml(c.city):''}</div>
@@ -640,7 +640,7 @@ function darBaixaNF(nfId){
   if(!recs.length){ alert("Não há parcelas em aberto para esta nota."); return; }
   const c=getClient(nf.clientId);
   showModal(`<div class="modal-title">Registrar Recebimento — ${nf.number}</div>
-    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Cliente: <b style="color:var(--text)">${c?c.name:"—"}</b> &nbsp;|&nbsp; Total da NF: <b style="color:var(--amber)">${fmt(nf.total)}</b></div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Cliente: <b style="color:var(--text)">${c?escapeHtml(c.name):"—"}</b> &nbsp;|&nbsp; Total da NF: <b style="color:var(--amber)">${fmt(nf.total)}</b></div>
     <div class="form-group"><label class="form-label">Data de Recebimento</label>
       <input id="bx-date" type="date" class="form-input" value="${today()}">
     </div>

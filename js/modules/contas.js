@@ -53,7 +53,7 @@ function renderContas(){
         ${sortedRec.map(r=>{const c=getClient(r.clientId);const overdue=isOverdue(r.dueDate)&&r.status==="aberta";const daysLate=(overdue&&r.status==="aberta")?Math.floor((new Date()-new Date(r.dueDate+'T00:00:00'))/86400000):0;return`<tr>
           <td class="mono text-amber">${r.invoiceNumber}</td>
           <td class="mono">${r.installment}/${r.total}${r.isSaldo?` <span class="badge bg-amber" style="font-size:10px">saldo</span>`:""}</td>
-          <td class="text-white">${c?c.name:"—"}</td>
+          <td class="text-white">${c?escapeHtml(c.name):"—"}</td>
           <td class="mono ${overdue?"text-red":""}">${fmtDate(r.dueDate)}${overdue?" ⚠":""}</td>
           <td class="mono ${overdue&&r.status==='aberta'?'text-red':'text-muted'}">${overdue&&r.status==='aberta'?daysLate+'d':'—'}</td>
           <td class="mono fw-bold">${fmt(r.amount)}</td>
@@ -77,7 +77,7 @@ function renderContas(){
         ${sortedPag.map(p=>{const s=getSupplier(p.supplierId);const overdue=isOverdue(p.dueDate)&&p.status==="aberta";return`<tr>
           <td class="mono text-amber">${p.purchaseNumber||p.description}</td>
           <td class="mono">${p.installment}/${p.total}${p.isSaldo?` <span class="badge bg-amber" style="font-size:10px">saldo</span>`:""}</td>
-          <td class="text-white">${s?s.name:"—"}</td>
+          <td class="text-white">${s?escapeHtml(s.name):"—"}</td>
           <td class="mono ${overdue?"text-red":""}">${fmtDate(p.dueDate)}${overdue?" ⚠":""}</td>
           <td class="mono fw-bold">${fmt(p.amount)}</td>
           <td><span class="badge ${p.status==="paga"?"bg-green":overdue?"bg-red":"bg-amber"}">${p.status==="aberta"&&overdue?"vencida":p.status}</span></td>
