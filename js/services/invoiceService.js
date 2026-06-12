@@ -3,6 +3,49 @@
 // O proxy lê o token do Firestore — nunca exposto ao frontend.
 // Numeração atômica é feita por getNextNFNumber() em firebase.js.
 
+// ─── Reforma Tributária do Consumo (IBS/CBS/IS) ────────────────────────────────
+// Fase-teste 2026 (Art. 343 LC 214/2025): CBS 0,9% + IBS estadual 0,1%, caráter
+// informativo. Ligar ATIVO só para testar em homologação.
+const RTC_CONFIG = {
+  ATIVO: false,            // flag mestra — com false, o payload da NF-e não muda
+  CBS_ALIQUOTA: 0.9,       // % fase-teste 2026 — Art. 343 LC 214/2025
+  IBS_UF_ALIQUOTA: 0.1,    // % fase-teste 2026 — Art. 343: IBS é integralmente estadual em 2026
+  IBS_MUN_ALIQUOTA: 0,     // % município só entra em 2027-2028 (0,05%/0,05%)
+  CST_PADRAO: '000',       // situação tributária IBS/CBS — tributação integral
+  CCLASSTRIB_PADRAO: '000001', // classificação tributária padrão — tributação integral
+};
+
+// Calcula os campos IBS/CBS de um item a partir da sua base (valor_bruto).
+// Retorna {} quando RTC_CONFIG.ATIVO é false (não altera o payload atual).
+function _rtcCamposItem(prod, valorBruto) {
+  if (!RTC_CONFIG.ATIVO) return {};
+  const r2 = n => parseFloat((n || 0).toFixed(2));
+  const cbsValor = r2(valorBruto * RTC_CONFIG.CBS_ALIQUOTA / 100);
+  const ibsUfValor = r2(valorBruto * RTC_CONFIG.IBS_UF_ALIQUOTA / 100);
+  const ibsMunValor = r2(valorBruto * RTC_CONFIG.IBS_MUN_ALIQUOTA / 100);
+  return {
+    ibs_cbs_situacao_tributaria: RTC_CONFIG.CST_PADRAO,
+    ibs_cbs_classificacao_tributaria: (prod && prod.cClassTrib) || RTC_CONFIG.CCLASSTRIB_PADRAO,
+    ibs_cbs_base_calculo: r2(valorBruto),
+    cbs_aliquota: RTC_CONFIG.CBS_ALIQUOTA,
+    cbs_valor: cbsValor,
+    ibs_uf_aliquota: RTC_CONFIG.IBS_UF_ALIQUOTA,
+    ibs_uf_valor: ibsUfValor,
+    ibs_mun_aliquota: RTC_CONFIG.IBS_MUN_ALIQUOTA,
+    ibs_mun_valor: ibsMunValor,
+  };
+}
+
+// Soma os totalizadores RTC a partir dos itens já montados. Retorna {} se inativo.
+function _rtcTotais(itens) {
+  if (!RTC_CONFIG.ATIVO) return {};
+  const r2 = n => parseFloat((n || 0).toFixed(2));
+  const cbsTot = r2(itens.reduce((s, it) => s + (it.cbs_valor || 0), 0));
+  const ibsTot = r2(itens.reduce((s, it) => s + (it.ibs_uf_valor || 0) + (it.ibs_mun_valor || 0), 0));
+  // Totalizadores conforme doc canônica Focus (campos.focusnfe.com.br): separados, sem campo combinado.
+  return { cbs_valor_total: cbsTot, ibs_valor_total: ibsTot, is_valor_total: 0 };
+}
+
 const FOCUS_PROXY = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net/focusProxy';
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
@@ -47,6 +90,7 @@ async function emitirNFe(invoice, company, products, clients) {
       valor_bruto: parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)),
       origem_mercadoria: prod.origem || '0', icms_situacao_tributaria: cst,
       pis_situacao_tributaria: '07', cofins_situacao_tributaria: '07',
+      ..._rtcCamposItem(prod, parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2))),
     };
   }).filter(Boolean);
 
@@ -68,6 +112,7 @@ async function emitirNFe(invoice, company, products, clients) {
     valor_desconto: invoice.discount > 0 ? parseFloat(((invoice.subtotal || invoice.total) * invoice.discount / 100).toFixed(2)) : 0,
     valor_frete: invoice.freight || 0, valor_total: invoice.total,
     forma_de_pagamento: [{ forma_pagamento: '01', valor: invoice.total }], items: itens,
+    ..._rtcTotais(itens),
   };
 
   const ref = `nfe_${invoice.id}`;
@@ -134,7 +179,9 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     let cfop, cst;
     if (prod.st) { cst = '60'; cfop = interestadual ? '6401' : '5405'; }
     else { cst = (regime === 1 || regime === 2) ? '102' : '000'; const cfopBase = prod.cfop || '5102'; cfop = interestadual && cfopBase.startsWith('5') ? '6' + cfopBase.slice(1) : cfopBase; }
-    return { numero_item: idx + 1, codigo_produto: prod.code || String(prod.id), descricao: prod.name, codigo_ncm: (prod.ncm || '').replace(/\D/g, ''), cfop, unidade_comercial: prod.unit || 'UN', quantidade_comercial: item.qty, valor_unitario_comercial: item.price, valor_bruto: parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)), origem_mercadoria: prod.origem || '0', icms_situacao_tributaria: cst, pis_situacao_tributaria: '07', cofins_situacao_tributaria: '07' };
+    return { numero_item: idx + 1, codigo_produto: prod.code || String(prod.id), descricao: prod.name, codigo_ncm: (prod.ncm || '').replace(/\D/g, ''), cfop, unidade_comercial: prod.unit || 'UN', quantidade_comercial: item.qty, valor_unitario_comercial: item.price, valor_bruto: parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)), origem_mercadoria: prod.origem || '0', icms_situacao_tributaria: cst, pis_situacao_tributaria: '07', cofins_situacao_tributaria: '07',
+      ..._rtcCamposItem(prod, parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2))),
+    };
   }).filter(Boolean);
 
   const payload = {
@@ -155,6 +202,7 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     valor_desconto: invoice.discount > 0 ? parseFloat(((invoice.subtotal || invoice.total) * invoice.discount / 100).toFixed(2)) : 0,
     valor_frete: invoice.freight || 0, valor_total: invoice.total,
     forma_de_pagamento: [{ forma_pagamento: '01', valor: invoice.total }], items: itens,
+    ..._rtcTotais(itens),
   };
 
   const result = await _focusCall('previsualizar', payload);
