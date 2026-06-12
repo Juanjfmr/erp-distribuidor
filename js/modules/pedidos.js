@@ -211,8 +211,9 @@ function pedidoPreencheCliente(clientId){
   const c=getClient(parseInt(clientId));
   if(!c) return;
   if(c.payterm){
+    const want=normalizePayterm(c.payterm);
     const sel=el("ped-terms");
-    if(sel){ [...sel.options].forEach(opt=>{ opt.selected=opt.value===c.payterm||opt.text===c.payterm; }); }
+    if(sel){ [...sel.options].forEach(opt=>{ opt.selected=opt.value===want||opt.text===want; }); }
   }
   const cc = checkClientCredit(parseInt(clientId), 0);
   if(cc.blocked){
