@@ -25,6 +25,7 @@ function renderProdutos(){
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="prod-show-inactive" onchange="filterProdutos()"> Inativos
         </label>
+        <button class="btn btn-secondary" onclick="abrirAssistenteNCM()" title="Sugerir NCM para produtos sem classificação">🔎 Completar NCM</button>
         <button class="btn btn-secondary" onclick="abrirCopilotoReforma()" title="Classificação tributária da Reforma (IBS/CBS)">⚖️ Copiloto da Reforma</button>
         <button class="btn btn-primary" onclick="openProdModal()">+ Novo Produto</button>
       </div>
@@ -386,8 +387,94 @@ function aplicarCopilotoLote() {
   renderProdutos();
 }
 
+// ─── Assistente "Completar NCM" (lote com aceite individual) ──────────────────
+// Para cada produto sem NCM, busca candidatos reais na BrasilAPI pelo nome e
+// pré-seleciona o melhor — mas o usuário confirma/ajusta produto a produto antes
+// de gravar. NCM por nome é fuzzy: nunca preenche sem revisão (risco fiscal).
+const _NCM_ASSIST_MAX = 25;
+
+async function abrirAssistenteNCM() {
+  const semNcm = state.products.filter(p => p.active !== false && !String(p.ncm || '').trim());
+  if (!semNcm.length) {
+    showModal(`<div class="modal-title">Completar NCM</div>
+      <div style="padding:20px 4px;color:var(--text2)">✅ Todos os produtos ativos já têm NCM cadastrado.</div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>`);
+    return;
+  }
+  const alvo = semNcm.slice(0, _NCM_ASSIST_MAX);
+  showModal(`<div class="modal-title">Completar NCM</div>
+    <div style="text-align:center;padding:32px 16px;color:var(--muted)">
+      <svg width="28" height="28" style="animation:spin 1s linear infinite"><use href="#icon-loader"/></svg>
+      <div style="margin-top:10px">Buscando NCM para ${alvo.length} produto${alvo.length !== 1 ? 's' : ''}…</div>
+    </div>`);
+  const resultados = await Promise.all(alvo.map(async p => {
+    try {
+      const r = await fetch(`https://brasilapi.com.br/api/ncm/v1?search=${encodeURIComponent(p.name)}`);
+      const lista = await r.json();
+      return { id: p.id, name: p.name, candidatos: Array.isArray(lista) ? lista.slice(0, 5) : [] };
+    } catch (e) {
+      return { id: p.id, name: p.name, candidatos: [], erro: true };
+    }
+  }));
+  renderAssistenteNCM(resultados, semNcm.length, alvo.length);
+}
+
+function renderAssistenteNCM(resultados, totalSemNcm, analisados) {
+  const linhas = resultados.map(r => {
+    const opts = r.candidatos.length
+      ? '<option value="">— pular —</option>' + r.candidatos.map((c, idx) =>
+          `<option value="${escapeHtml(c.codigo)}"${idx === 0 ? ' selected' : ''}>${escapeHtml(c.codigo)} — ${escapeHtml(c.descricao)}</option>`).join('')
+      : '';
+    const sel = r.candidatos.length
+      ? `<select class="form-input ncm-assist-sel" data-pid="${String(r.id)}" style="width:100%">${opts}</select>`
+      : `<span style="font-size:12px;color:var(--muted)">${r.erro ? 'erro na busca' : 'nenhum candidato encontrado'}</span>`;
+    return `<tr>
+      <td class="text-white fw-bold" style="vertical-align:middle">${escapeHtml(r.name)}</td>
+      <td>${sel}</td>
+    </tr>`;
+  }).join('');
+
+  const restante = totalSemNcm - analisados;
+  const aviso = restante > 0
+    ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Mostrando ${analisados} de ${totalSemNcm} produtos sem NCM. Rode novamente para os ${restante} restantes.</div>`
+    : '';
+
+  showModal(`<div class="modal-title">Completar NCM</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Revise o NCM sugerido de cada produto. A sugestão é por nome (BrasilAPI) — <b>confira antes de salvar</b>, NCM errado gera tributação errada.</div>
+    ${aviso}
+    <div style="max-height:50vh;overflow-y:auto;padding-right:4px">
+      <table><thead><tr><th style="width:38%">Produto</th><th>NCM sugerido (escolha ou pule)</th></tr></thead>
+      <tbody>${linhas}</tbody></table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAssistenteNCM()">Salvar NCMs selecionados</button>
+    </div>`);
+}
+
+function salvarAssistenteNCM() {
+  const sels = [...document.querySelectorAll('.ncm-assist-sel')];
+  let n = 0;
+  sels.forEach(s => {
+    const code = s.value;
+    if (!code) return; // pulado
+    const pid = s.dataset.pid;
+    state.products = state.products.map(p => String(p.id) === pid
+      ? { ...p, ncm: code, ncmFonte: 'assistente', ncmData: today() }
+      : p);
+    n++;
+  });
+  if (!n) return alert('Nenhum NCM selecionado. Escolha ao menos um ou cancele.');
+  saveState();
+  showSyncStatus(`✓ NCM preenchido em ${n} produto${n !== 1 ? 's' : ''}`);
+  closeModal();
+  renderProdutos();
+}
+
 window.abrirBuscaNCM = abrirBuscaNCM;
 window.selecionarNCM = selecionarNCM;
 window.fecharPainelNCM = fecharPainelNCM;
 window.abrirCopilotoReforma = abrirCopilotoReforma;
 window.aplicarCopilotoLote = aplicarCopilotoLote;
+window.abrirAssistenteNCM = abrirAssistenteNCM;
+window.salvarAssistenteNCM = salvarAssistenteNCM;
