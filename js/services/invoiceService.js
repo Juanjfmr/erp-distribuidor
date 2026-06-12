@@ -7,7 +7,8 @@
 // Fase-teste 2026 (Art. 343 LC 214/2025): CBS 0,9% + IBS estadual 0,1%, caráter
 // informativo. Ligar ATIVO só para testar em homologação.
 const RTC_CONFIG = {
-  ATIVO: false,            // flag mestra — com false, o payload da NF-e não muda
+  ATIVO: false,            // flag mestra — com false, a EMISSÃO real não muda
+  TESTE_PREVIEW: false,    // só pré-visualização: inclui campos RTC no DANFE de preview sem afetar a emissão real (validar sem certificado)
   CBS_ALIQUOTA: 0.9,       // % fase-teste 2026 — Art. 343 LC 214/2025
   IBS_UF_ALIQUOTA: 0.1,    // % fase-teste 2026 — Art. 343: IBS é integralmente estadual em 2026
   IBS_MUN_ALIQUOTA: 0,     // % município só entra em 2027-2028 (0,05%/0,05%)
@@ -17,8 +18,8 @@ const RTC_CONFIG = {
 
 // Calcula os campos IBS/CBS de um item a partir da sua base (valor_bruto).
 // Retorna {} quando RTC_CONFIG.ATIVO é false (não altera o payload atual).
-function _rtcCamposItem(prod, valorBruto) {
-  if (!RTC_CONFIG.ATIVO) return {};
+function _rtcCamposItem(prod, valorBruto, forcar) {
+  if (!RTC_CONFIG.ATIVO && !forcar) return {};
   const r2 = n => parseFloat((n || 0).toFixed(2));
   const cbsValor = r2(valorBruto * RTC_CONFIG.CBS_ALIQUOTA / 100);
   const ibsUfValor = r2(valorBruto * RTC_CONFIG.IBS_UF_ALIQUOTA / 100);
@@ -37,8 +38,8 @@ function _rtcCamposItem(prod, valorBruto) {
 }
 
 // Soma os totalizadores RTC a partir dos itens já montados. Retorna {} se inativo.
-function _rtcTotais(itens) {
-  if (!RTC_CONFIG.ATIVO) return {};
+function _rtcTotais(itens, forcar) {
+  if (!RTC_CONFIG.ATIVO && !forcar) return {};
   const r2 = n => parseFloat((n || 0).toFixed(2));
   const cbsTot = r2(itens.reduce((s, it) => s + (it.cbs_valor || 0), 0));
   const ibsTot = r2(itens.reduce((s, it) => s + (it.ibs_uf_valor || 0) + (it.ibs_mun_valor || 0), 0));
@@ -180,7 +181,7 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     if (prod.st) { cst = '60'; cfop = interestadual ? '6401' : '5405'; }
     else { cst = (regime === 1 || regime === 2) ? '102' : '000'; const cfopBase = prod.cfop || '5102'; cfop = interestadual && cfopBase.startsWith('5') ? '6' + cfopBase.slice(1) : cfopBase; }
     return { numero_item: idx + 1, codigo_produto: prod.code || String(prod.id), descricao: prod.name, codigo_ncm: (prod.ncm || '').replace(/\D/g, ''), cfop, unidade_comercial: prod.unit || 'UN', quantidade_comercial: item.qty, valor_unitario_comercial: item.price, valor_bruto: parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)), origem_mercadoria: prod.origem || '0', icms_situacao_tributaria: cst, pis_situacao_tributaria: '07', cofins_situacao_tributaria: '07',
-      ..._rtcCamposItem(prod, parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2))),
+      ..._rtcCamposItem(prod, parseFloat((item.qty * item.price * (1 - (item.itemDiscount || 0) / 100)).toFixed(2)), RTC_CONFIG.TESTE_PREVIEW),
     };
   }).filter(Boolean);
 
@@ -202,7 +203,7 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     valor_desconto: invoice.discount > 0 ? parseFloat(((invoice.subtotal || invoice.total) * invoice.discount / 100).toFixed(2)) : 0,
     valor_frete: invoice.freight || 0, valor_total: invoice.total,
     forma_de_pagamento: [{ forma_pagamento: '01', valor: invoice.total }], items: itens,
-    ..._rtcTotais(itens),
+    ..._rtcTotais(itens, RTC_CONFIG.TESTE_PREVIEW),
   };
 
   const result = await _focusCall('previsualizar', payload);
