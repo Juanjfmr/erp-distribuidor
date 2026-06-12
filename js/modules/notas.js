@@ -528,8 +528,9 @@ function nfClientSelect(id, name){
   checkClienteNF(id);
   const c=getClient(id);
   if(c?.payterm){
+    const want=normalizePayterm(c.payterm);
     const sel2=el("nf-terms");
-    if(sel2) [...sel2.options].forEach(o=>{ o.selected=o.value===c.payterm||o.text===c.payterm; });
+    if(sel2) [...sel2.options].forEach(o=>{ o.selected=o.value===want||o.text===want; });
   }
 }
 
