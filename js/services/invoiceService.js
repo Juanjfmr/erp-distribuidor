@@ -69,6 +69,32 @@ async function _focusCall(action, payload) {
   }
 }
 
+// ─── Forma de pagamento (tpPag SEFAZ) ─────────────────────────────────────────
+// Mapeia a forma de pagamento escolhida na tela (PAY_METHODS) para o código tpPag
+// oficial e deriva o indicador à vista/a prazo (indPag) a partir da condição.
+const _TP_PAG = {
+  'PIX': '17',
+  'Boleto': '15',
+  'Cheque': '02',
+  'Dinheiro': '01',
+  'Cartão de Débito': '04',
+  'Cartão de Crédito': '03',
+  'Duplicata': '99',
+  'TED/DOC': '18',
+  'Outro': '99',
+};
+
+// Retorna { indPag, formas } a partir do invoice. indPag: 0=à vista, 1=a prazo.
+function _formaPagamento(invoice) {
+  const metodo = invoice.paymentMethod || '';
+  const tpPag = _TP_PAG[metodo] || '99';
+  const aVista = (invoice.paymentTerms || '') === 'À Vista';
+  return {
+    indPag: aVista ? 0 : 1,
+    formas: [{ forma_pagamento: tpPag, valor: invoice.total }],
+  };
+}
+
 // ─── NF-e ─────────────────────────────────────────────────────────────────────
 
 async function emitirNFe(invoice, company, products, clients) {
@@ -95,8 +121,9 @@ async function emitirNFe(invoice, company, products, clients) {
     };
   }).filter(Boolean);
 
+  const _pag = _formaPagamento(invoice);
   const payload = {
-    natureza_operacao: 'Venda de mercadoria', forma_pagamento: 0, tipo_documento: 1, local_destino: 1,
+    natureza_operacao: 'Venda de mercadoria', forma_pagamento: _pag.indPag, tipo_documento: 1, local_destino: 1,
     cnpj_emitente: (company.cnpj || '').replace(/\D/g, ''), nome_emitente: company.name,
     logradouro_emitente: company.address || '', municipio_emitente: company.city || '',
     uf_emitente: company.uf || '', cep_emitente: (company.cep || '').replace(/\D/g, '') || '00000000',
@@ -112,7 +139,7 @@ async function emitirNFe(invoice, company, products, clients) {
     valor_produtos: invoice.subtotal || invoice.total,
     valor_desconto: invoice.discount > 0 ? parseFloat(((invoice.subtotal || invoice.total) * invoice.discount / 100).toFixed(2)) : 0,
     valor_frete: invoice.freight || 0, valor_total: invoice.total,
-    forma_de_pagamento: [{ forma_pagamento: '01', valor: invoice.total }], items: itens,
+    forma_de_pagamento: _pag.formas, items: itens,
     ..._rtcTotais(itens),
   };
 
@@ -185,8 +212,9 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     };
   }).filter(Boolean);
 
+  const _pag = _formaPagamento(invoice);
   const payload = {
-    natureza_operacao: 'Venda de mercadoria', forma_pagamento: 0, tipo_documento: 1, local_destino: 1,
+    natureza_operacao: 'Venda de mercadoria', forma_pagamento: _pag.indPag, tipo_documento: 1, local_destino: 1,
     cnpj_emitente: (company.cnpj || '').replace(/\D/g, ''), nome_emitente: company.name,
     logradouro_emitente: company.address || '', municipio_emitente: company.city || '',
     uf_emitente: company.uf || '', cep_emitente: (company.cep || '').replace(/\D/g, '') || '00000000',
@@ -202,7 +230,7 @@ async function previsualizarDANFe(invoice, company, products, clients) {
     valor_produtos: invoice.subtotal || invoice.total,
     valor_desconto: invoice.discount > 0 ? parseFloat(((invoice.subtotal || invoice.total) * invoice.discount / 100).toFixed(2)) : 0,
     valor_frete: invoice.freight || 0, valor_total: invoice.total,
-    forma_de_pagamento: [{ forma_pagamento: '01', valor: invoice.total }], items: itens,
+    forma_de_pagamento: _pag.formas, items: itens,
     ..._rtcTotais(itens, RTC_CONFIG.TESTE_PREVIEW),
   };
 

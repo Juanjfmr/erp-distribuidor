@@ -548,7 +548,7 @@ async function emitirNFdePedido(nfNum, pedidoId){
   }
   const sub=nfGetSubtotal();
   const total=parseFloat((sub*(1-disc/100)+freight+clientCosts).toFixed(2));
-  const inv={id:Date.now(),number:nfNum,date,clientId,paymentTerms:terms,discount:disc,freight,items:[...state.nfItems],subtotal:sub,total,status:"emitida"};
+  const inv={id:Date.now(),number:nfNum,date,clientId,paymentTerms:terms,paymentMethod:el("nf-method")?.value||'',discount:disc,freight,items:[...state.nfItems],subtotal:sub,total,status:"emitida"};
   if(obs) inv.notes=obs;
   if(freightInt>0) inv.internalFreight=freightInt;
   if(costs.length) inv.costs=costs;
