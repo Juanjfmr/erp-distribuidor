@@ -39,8 +39,8 @@ function filterClientes(){
     const daysLate=oldest?Math.floor((new Date()-new Date(oldest.dueDate+'T00:00:00'))/86400000):0;
     return`<tr>
       <td class="text-white fw-bold">${escapeHtml(c.name)}</td>
-      <td class="mono">${c.cnpj||"—"}</td>
-      <td>${c.city||"—"}</td><td>${c.phone||"—"}</td>
+      <td class="mono">${escapeHtml(c.cnpj||"—")}</td>
+      <td>${escapeHtml(c.city||"—")}</td><td>${escapeHtml(c.phone||"—")}</td>
       <td class="mono">${fmt(c.creditLimit||0)}</td>
       <td><span class="badge ${overdue?"bg-red":openAmt>0?"bg-amber":"bg-green"}">${overdue?"Inadimplente · "+daysLate+"d":openAmt>0?"Em aberto: "+fmt(openAmt):"Em dia"}</span></td>
       <td><div class="row">
@@ -52,23 +52,23 @@ function filterClientes(){
 function openClientModal(id){
   const c=id?state.clients.find(x=>x.id===id):null;
   showModal(`<div class="modal-title">${c?"Editar Cliente":"Novo Cliente"}</div>
-    <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fc-name" class="form-input" value="${c?c.name:""}"></div>
+    <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fc-name" class="form-input" value="${c?escapeHtml(c.name):""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?c.cnpj||"":""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjCliente()"></div>
-      <div class="form-group"><label class="form-label">Cidade</label><input id="fc-city" class="form-input" value="${c?c.city||"":""}"></div>
+      <div class="form-group"><label class="form-label">CNPJ / CPF</label><input id="fc-cnpj" class="form-input" value="${c?escapeHtml(c.cnpj||""):""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjCliente()"></div>
+      <div class="form-group"><label class="form-label">Cidade</label><input id="fc-city" class="form-input" value="${c?escapeHtml(c.city||""):""}"></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Telefone</label><input id="fc-phone" class="form-input" value="${c?c.phone||"":""}" oninput="applyMask(this,'phone')"></div>
-      <div class="form-group"><label class="form-label">E-mail</label><input id="fc-email" class="form-input" value="${c?c.email||"":""}"></div>
+      <div class="form-group"><label class="form-label">Telefone</label><input id="fc-phone" class="form-input" value="${c?escapeHtml(c.phone||""):""}" oninput="applyMask(this,'phone')"></div>
+      <div class="form-group"><label class="form-label">E-mail</label><input id="fc-email" class="form-input" value="${c?escapeHtml(c.email||""):""}"></div>
     </div>
     <div class="form-grid-3">
-      <div class="form-group"><label class="form-label">Inscrição Estadual</label><input id="fc-ie" class="form-input" placeholder="Isento ou número" value="${c?c.ie||'':''}"></div>
-      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?c.cep||'':''}" oninput="applyMask(this,'cep')" onblur="buscarCep('cli')"></div>
+      <div class="form-group"><label class="form-label">Inscrição Estadual</label><input id="fc-ie" class="form-input" placeholder="Isento ou número" value="${c?escapeHtml(c.ie||''):''}"></div>
+      <div class="form-group"><label class="form-label">CEP</label><input id="fc-cep" class="form-input" placeholder="00000-000" value="${c?escapeHtml(c.cep||''):''}" oninput="applyMask(this,'cep')" onblur="buscarCep('cli')"></div>
       <div class="form-group"><label class="form-label">UF</label><select id="fc-uf" class="form-input">${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(u=>`<option${c&&c.uf===u?' selected':''}>${u}</option>`).join('')}</select></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Logradouro</label><input id="fc-street" class="form-input" placeholder="Rua, Av..." value="${c?c.street||'':''}"></div>
-      <div class="form-group"><label class="form-label">Bairro</label><input id="fc-district" class="form-input" value="${c?c.district||'':''}"></div>
+      <div class="form-group"><label class="form-label">Logradouro</label><input id="fc-street" class="form-input" placeholder="Rua, Av..." value="${c?escapeHtml(c.street||''):''}"></div>
+      <div class="form-group"><label class="form-label">Bairro</label><input id="fc-district" class="form-input" value="${c?escapeHtml(c.district||''):''}"></div>
     </div>
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Forma de Pagamento Padrão</label><select id="fc-payterm" class="form-input"><option value="">Selecione...</option><option${c&&c.payterm==='avista'?' selected':''} value="avista">À Vista</option><option${c&&c.payterm==='30'?' selected':''} value="30">30 dias</option><option${c&&c.payterm==='30-60'?' selected':''} value="30-60">30/60 dias</option><option${c&&c.payterm==='30-60-90'?' selected':''} value="30-60-90">30/60/90 dias</option><option${c&&c.payterm==='28ddl'?' selected':''} value="28ddl">28 DDL</option></select></div>

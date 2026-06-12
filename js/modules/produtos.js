@@ -54,14 +54,14 @@ function filterProdutos(){
     const st=inactive?"bg-gray":p.stock<=p.minStock?"bg-red":p.stock<=p.minStock*1.5?"bg-amber":"bg-green";
     const stl=inactive?"Inativo":p.stock<=p.minStock?"Baixo":p.stock<=p.minStock*1.5?"Atenção":"OK";
     return`<tr style="${inactive?"opacity:.5":""}">
-      <td class="mono text-amber">${p.code}</td>
-      <td class="mono">${p.ean||'—'}</td>
+      <td class="mono text-amber">${escapeHtml(p.code||'')}</td>
+      <td class="mono">${escapeHtml(p.ean||'—')}</td>
       <td class="text-white fw-bold">${escapeHtml(p.name)}</td>
-      <td>${p.category}</td>
+      <td>${escapeHtml(p.category||'')}</td>
       <td class="mono">${fmt(p.costPrice||0)}</td>
       <td class="mono">${fmt(p.salePrice)}</td>
       <td class="mono" style="color:${margin>=30?"var(--green)":margin>=15?"var(--amber)":"var(--red)"}">${margin.toFixed(1)}%</td>
-      <td class="mono">${p.stock} ${p.unit}</td>
+      <td class="mono">${p.stock} ${escapeHtml(p.unit||'')}</td>
       <td><span class="badge ${st}">${stl}</span></td>
       <td><div class="row">
         ${inactive
@@ -77,24 +77,24 @@ function openProdModal(id){
   const p=id?state.products.find(x=>x.id===id):null;
   showModal(`<div class="modal-title">${p?"Editar Produto":"Novo Produto"}</div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Código</label><input id="f-code" class="form-input" value="${p?p.code:"PRD"+String(uid()).slice(-3)}"></div>
-      <div class="form-group"><label class="form-label">Categoria</label><select id="f-cat" class="form-input">${CAT_PROD.map(c=>`<option${p&&p.category===c?" selected":""}>${c}</option>`).join("")}</select></div>
+      <div class="form-group"><label class="form-label">Código</label><input id="f-code" class="form-input" value="${p?escapeHtml(p.code):"PRD"+String(uid()).slice(-3)}"></div>
+      <div class="form-group"><label class="form-label">Categoria</label><select id="f-cat" class="form-input">${CAT_PROD.map(c=>`<option${p&&p.category===c?" selected":""}>${escapeHtml(c)}</option>`).join("")}</select></div>
     </div>
-    <div class="form-group"><label class="form-label">Nome do Produto</label><input id="f-name" class="form-input" value="${p?p.name:""}"></div>
+    <div class="form-group"><label class="form-label">Nome do Produto</label><input id="f-name" class="form-input" value="${p?escapeHtml(p.name):""}"></div>
     <div class="form-grid-3">
-      <div class="form-group"><label class="form-label">Unidade</label><select id="f-unit" class="form-input">${UNITS.map(u=>`<option${p&&p.unit===u?" selected":""}>${u}</option>`).join("")}</select></div>
+      <div class="form-group"><label class="form-label">Unidade</label><select id="f-unit" class="form-input">${UNITS.map(u=>`<option${p&&p.unit===u?" selected":""}>${escapeHtml(u)}</option>`).join("")}</select></div>
       <div class="form-group"><label class="form-label">Preço de Custo (R$)</label><input id="f-cost" class="form-input" type="number" step="0.01" value="${p?p.costPrice||"":""}"></div>
       <div class="form-group"><label class="form-label">Preço de Venda (R$)</label><input id="f-price" class="form-input" type="number" step="0.01" value="${p?p.salePrice:""}"></div>
     </div>
     <div class="form-grid-3">
-      <div class="form-group"><label class="form-label">EAN / Código de Barras</label><input id="f-ean" class="form-input" value="${p?p.ean||'':''}"></div>
+      <div class="form-group"><label class="form-label">EAN / Código de Barras</label><input id="f-ean" class="form-input" value="${p?escapeHtml(p.ean||''):''}"></div>
       <div class="form-group"><label class="form-label">NCM</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?p.ncm||'':''}" oninput="updateSTTip()" style="flex:1">
+          <input id="f-ncm" class="form-input" placeholder="0000.00.00" maxlength="10" value="${p?escapeHtml(p.ncm||''):''}" oninput="updateSTTip()" style="flex:1">
           <button type="button" class="btn btn-secondary" style="white-space:nowrap" onclick="abrirBuscaNCM()"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-search"/></svg> Buscar</button>
         </div>
       </div>
-      <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?p.cfop||'':''}"></div>
+      <div class="form-group"><label class="form-label">CFOP Padrão</label><input id="f-cfop" class="form-input" placeholder="5102" maxlength="5" value="${p?escapeHtml(p.cfop||''):''}"></div>
     </div>
     <div class="form-group"><label class="form-label">Origem da Mercadoria</label><select id="f-origem" class="form-input">
       <option value="0" ${(!p||!p.origem||p.origem==='0')?'selected':''}>0 — Nacional</option>

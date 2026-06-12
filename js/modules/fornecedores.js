@@ -33,9 +33,9 @@ function filterFornecedores(){
     const vol=comps.reduce((a,c)=>a+c.total,0);
     return`<tr>
       <td class="text-white fw-bold">${escapeHtml(s.name)}</td>
-      <td class="mono">${s.cnpj||"—"}</td>
-      <td>${s.city||"—"}</td>
-      <td>${s.contact||"—"}</td>
+      <td class="mono">${escapeHtml(s.cnpj||"—")}</td>
+      <td>${escapeHtml(s.city||"—")}</td>
+      <td>${escapeHtml(s.contact||"—")}</td>
       <td><span class="badge bg-blue">${s.paymentDays?(/^\d/.test(s.paymentDays)?s.paymentDays+" dias":s.paymentDays):"—"}</span></td>
       <td class="mono">${comps.length} · ${fmt(vol)}</td>
       <td><div class="row">
@@ -47,17 +47,17 @@ function filterFornecedores(){
 function openSupplierModal(id){
   const s=id?state.suppliers.find(x=>x.id===id):null;
   showModal(`<div class="modal-title">${s?"Editar Fornecedor":"Novo Fornecedor"}</div>
-    <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fs-name" class="form-input" value="${s?s.name:""}"></div>
+    <div class="form-group"><label class="form-label">Nome / Razão Social</label><input id="fs-name" class="form-input" value="${s?escapeHtml(s.name):""}"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?s.cnpj||"":""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjForn()"></div>
-      <div class="form-group"><label class="form-label">Cidade</label><input id="fs-city" class="form-input" value="${s?s.city||"":""}"></div>
+      <div class="form-group"><label class="form-label">CNPJ</label><input id="fs-cnpj" class="form-input" value="${s?escapeHtml(s.cnpj||""):""}" oninput="applyMask(this,'cnpj')" onblur="buscarCnpjForn()"></div>
+      <div class="form-group"><label class="form-label">Cidade</label><input id="fs-city" class="form-input" value="${s?escapeHtml(s.city||""):""}"></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Telefone</label><input id="fs-phone" class="form-input" value="${s?s.phone||"":""}" oninput="applyMask(this,'phone')"></div>
-      <div class="form-group"><label class="form-label">Contato</label><input id="fs-contact" class="form-input" value="${s?s.contact||"":""}"></div>
+      <div class="form-group"><label class="form-label">Telefone</label><input id="fs-phone" class="form-input" value="${s?escapeHtml(s.phone||""):""}" oninput="applyMask(this,'phone')"></div>
+      <div class="form-group"><label class="form-label">Contato</label><input id="fs-contact" class="form-input" value="${s?escapeHtml(s.contact||""):""}"></div>
     </div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">E-mail</label><input id="fs-email" class="form-input" value="${s?s.email||"":""}"></div>
+      <div class="form-group"><label class="form-label">E-mail</label><input id="fs-email" class="form-input" value="${s?escapeHtml(s.email||""):""}"></div>
       <div class="form-group"><label class="form-label">Prazo Pagamento (dias)</label>
         <select id="fs-pay" class="form-input">
           ${["30","30/60","30/60/90","À Vista"].map(v=>`<option${s&&s.paymentDays===v?" selected":""}>${v}</option>`).join("")}
