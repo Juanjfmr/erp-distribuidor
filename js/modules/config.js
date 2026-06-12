@@ -276,16 +276,13 @@ function renderConfig(activeTab){
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:4px">Condições de Pagamento</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Usado em pedidos e notas. Use <b>À Vista</b> para venda à vista, <b>N dias</b> para prazo único (ex: 45 dias) e <b>a/b/c</b> para parcelar (ex: 30/60/90).</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">As condições padrão de mercado já aparecem em pedidos e notas:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${DEFAULT_PAY_TERMS.map(t=>`<span class="badge bg-gray" style="font-size:11px">${escapeHtml(t)}</span>`).join("")}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Trabalha com alguma condição própria? Adicione aqui, separada por vírgula. Ex: <b>45 dias</b>, <b>15/30/45</b>.</div>
       <div class="form-group">
-        <textarea id="cfg-payterms" class="form-input" rows="2" style="resize:vertical">${escapeHtml((co.payTerms||DEFAULT_PAY_TERMS).join(", "))}</textarea>
+        <textarea id="cfg-payterms-extra" class="form-input" rows="2" style="resize:vertical" placeholder="Deixe em branco se as condições padrão já bastam">${escapeHtml((co.payTermsExtra||[]).join(", "))}</textarea>
       </div>
-      <div class="section-title" style="margin-bottom:4px;margin-top:4px">Formas de Pagamento</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Ex: PIX, Boleto, Dinheiro, Cartão de Crédito</div>
-      <div class="form-group">
-        <textarea id="cfg-paymethods" class="form-input" rows="2" style="resize:vertical">${escapeHtml((co.payMethods||DEFAULT_PAY_METHODS).join(", "))}</textarea>
-      </div>
-      <button class="btn btn-primary" onclick="savePayConfig()">Salvar Condições e Formas</button>
+      <button class="btn btn-primary" onclick="savePayConfig()">Salvar condições personalizadas</button>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:14px">Dados do Sistema</div>
@@ -360,13 +357,13 @@ function saveCatUnits(){
   renderConfig();
 }
 function savePayConfig(){
-  const terms = el("cfg-payterms").value.split(",").map(s=>s.trim()).filter(Boolean);
-  const methods = el("cfg-paymethods").value.split(",").map(s=>s.trim()).filter(Boolean);
-  if(!terms.length) return alert("Informe ao menos uma condição de pagamento.");
-  if(!methods.length) return alert("Informe ao menos uma forma de pagamento.");
-  state.company = {...(state.company||{}), payTerms: terms, payMethods: methods};
+  const extra = el("cfg-payterms-extra").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const prev = {...(state.company||{})};
+  prev.payTermsExtra = extra;
+  delete prev.payTerms; delete prev.payMethods; // limpa o formato antigo (lista completa)
+  state.company = prev;
   saveState();
-  showSyncStatus("✓ Condições e formas de pagamento salvas");
+  showSyncStatus(extra.length?`✓ ${extra.length} condição(ões) personalizada(s) salva(s)`:"✓ Condições atualizadas");
   renderConfig();
 }
 // ─── Logo da empresa ──────────────────────────────────────────────────

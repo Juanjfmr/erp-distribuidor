@@ -301,14 +301,17 @@ function getCatProd(){ return (state.company?.categories?.length ? state.company
 function getUnits(){ return (state.company?.units?.length ? state.company.units : DEFAULT_UNITS); }
 Object.defineProperty(window,'CAT_PROD',{get:()=>getCatProd(),configurable:true});
 Object.defineProperty(window,'UNITS',{get:()=>getUnits(),configurable:true});
-// Condições e formas de pagamento são configuráveis (Config → Geral), espelhando
-// o padrão de categorias/unidades: lê de state.company com fallback para os defaults.
-const DEFAULT_PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","35 dias","42 dias","30/60","30/60/90"];
-const DEFAULT_PAY_METHODS=["PIX","Boleto","Cheque","Dinheiro","Cartão de Débito","Cartão de Crédito","Duplicata","TED/DOC","Outro"];
-function getPayTerms(){ return (state.company?.payTerms?.length ? state.company.payTerms : DEFAULT_PAY_TERMS); }
-function getPayMethods(){ return (state.company?.payMethods?.length ? state.company.payMethods : DEFAULT_PAY_METHODS); }
+// Formas de pagamento: padrão de mercado FIXO (mapeadas para tpPag na NF-e).
+// "Outro" cobre as exceções — não há configuração para evitar excesso de flexibilidade.
+const PAY_METHODS=["PIX","Boleto","Cheque","Dinheiro","Cartão de Débito","Cartão de Crédito","Duplicata","TED/DOC","Outro"];
+// Condições de pagamento: padrão de mercado FIXO + condições próprias opcionais
+// ("Outros" em Config → Geral, gravadas em state.company.payTermsExtra).
+const DEFAULT_PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","30/60","30/60/90"];
+function getPayTerms(){
+  const extra=(state.company?.payTermsExtra||[]).filter(t=>t && !DEFAULT_PAY_TERMS.includes(t));
+  return extra.length ? [...DEFAULT_PAY_TERMS, ...extra] : DEFAULT_PAY_TERMS;
+}
 Object.defineProperty(window,'PAY_TERMS',{get:()=>getPayTerms(),configurable:true});
-Object.defineProperty(window,'PAY_METHODS',{get:()=>getPayMethods(),configurable:true});
 // Traduz valores legados do cadastro de cliente (avista, 30-60…) para o vocabulário
 // oficial de PAY_TERMS, usado nas telas de pedido/nota. Se já for um PAY_TERM, retorna igual.
 function normalizePayterm(v){
