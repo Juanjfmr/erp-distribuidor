@@ -101,6 +101,10 @@ function openProdModal(id){
       <option value="1" ${p&&p.origem==='1'?'selected':''}>1 — Estrangeira (importação direta)</option>
       <option value="2" ${p&&p.origem==='2'?'selected':''}>2 — Estrangeira (adquirida no mercado interno)</option>
     </select></div>
+    <div class="form-group"><label class="form-label">Classificação Tributária IBS/CBS (cClassTrib)</label>
+      <input id="f-cclasstrib" class="form-input" placeholder="000001" maxlength="6" value="${p?escapeHtml(p.cClassTrib||''):''}">
+      <span class="tip" data-tip="Código de classificação tributária da Reforma (IBS/CBS). Deixe em branco para usar o padrão de tributação integral (000001). Consulte seu contador para produtos com regime diferenciado." style="margin-top:2px">ⓘ O que é?</span>
+    </div>
     <div class="form-grid-2">
       <div class="form-group">
         <label class="form-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -162,10 +166,10 @@ function saveProd(id){
     if(newSale!==p.salePrice||newCost!==p.costPrice){
       ph.push({date:today(),salePrice:newSale,costPrice:newCost,note:el("f-note")?el("f-note").value||"Atualização":"Atualização"});
     }
-    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked}:x);
+    state.products=state.products.map(x=>x.id===id?{...x,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,priceHistory:ph,ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked,cClassTrib:el("f-cclasstrib").value.trim()}:x);
   }else{
     savedId=uid();
-    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked});
+    state.products.push({id:savedId,code:el("f-code").value,name,category:el("f-cat").value,unit:el("f-unit").value,salePrice:newSale,costPrice:newCost,stock:parseInt(el("f-stock").value)||0,minStock:parseInt(el("f-min").value)||0,active:true,priceHistory:[{date:today(),salePrice:newSale,costPrice:newCost,note:"Cadastro inicial"}],ean:el("f-ean").value.trim(),ncm:el("f-ncm").value.trim(),cfop:el("f-cfop").value.trim(),origem:el("f-origem").value,st:el("f-st").checked,cClassTrib:el("f-cclasstrib").value.trim()});
   }
   saveState();
   showSyncStatus(id?"✓ Produto atualizado":"✓ Produto cadastrado");
