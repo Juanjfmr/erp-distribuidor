@@ -25,6 +25,7 @@ function renderProdutos(){
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="prod-show-inactive" onchange="filterProdutos()"> Inativos
         </label>
+        <button class="btn btn-secondary" onclick="abrirCopilotoReforma()" title="Classificação tributária da Reforma (IBS/CBS)">⚖️ Copiloto da Reforma</button>
         <button class="btn btn-primary" onclick="openProdModal()">+ Novo Produto</button>
       </div>
     </div>
@@ -296,6 +297,97 @@ function selecionarNCM(codigo) {
 function fecharPainelNCM() {
   if (_ncmPanel) { _ncmPanel.remove(); _ncmPanel = null; }
 }
+// ─── Copiloto da Reforma Tributária (cClassTrib) ──────────────────────────────
+// Chama sugerirClassTrib (lookup determinístico no servidor) → revisão → grava
+// em lote só os casos padrão que o usuário confirmar. A IA nunca inventa código.
+let _copilotoItens = [];
+
+async function abrirCopilotoReforma() {
+  showModal(`<div class="modal-title">Copiloto da Reforma Tributária</div>
+    <div style="text-align:center;padding:32px 16px;color:var(--muted)">
+      <svg width="28" height="28" style="animation:spin 1s linear infinite"><use href="#icon-loader"/></svg>
+      <div style="margin-top:10px">Analisando seus produtos…</div>
+    </div>`);
+  try {
+    const callable = window._httpsCallable(window._functions, 'sugerirClassTrib');
+    const result = await callable({});
+    _copilotoItens = result.data.itens || [];
+    renderCopilotoReview(result.data);
+  } catch (e) {
+    console.error('sugerirClassTrib error:', e);
+    showModal(`<div class="modal-title">Copiloto da Reforma Tributária</div>
+      <div style="padding:20px 4px;color:var(--red)">❌ Não foi possível analisar agora. Tente novamente em instantes.</div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>`);
+  }
+}
+
+function renderCopilotoReview(data) {
+  const itens = data.itens || [];
+  const padrao = itens.filter(i => i.nivel === 'padrao');
+  const revisar = itens.filter(i => i.nivel === 'revisar');
+  const semNcm = itens.filter(i => i.nivel === 'sem_ncm');
+  const jaClass = itens.filter(i => i.nivel === 'ja_classificado');
+  const pName = pid => { const p = state.products.find(x => String(x.id) === String(pid)); return p ? escapeHtml(p.name) : '—'; };
+  const pNcm = pid => { const p = state.products.find(x => String(x.id) === String(pid)); return p ? escapeHtml(p.ncm || '—') : '—'; };
+
+  const resumo = `${padrao.length} caso${padrao.length !== 1 ? 's' : ''} padrão · ${revisar.length} a revisar · ${semNcm.length} sem NCM · ${jaClass.length} já classificado${jaClass.length !== 1 ? 's' : ''}`;
+
+  const padraoTable = padrao.length ? `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;margin:14px 0 6px">
+      <input type="checkbox" id="copiloto-all" checked onchange="document.querySelectorAll('.copiloto-check').forEach(c=>c.checked=this.checked)" style="width:auto;margin:0"> Caso padrão — tributação integral (posso preencher)
+    </label>
+    <table><thead><tr><th style="width:32px"></th><th>Produto</th><th>NCM</th><th>cClassTrib</th></tr></thead><tbody>
+    ${padrao.map(i => `<tr>
+      <td><input type="checkbox" class="copiloto-check" value="${String(i.produtoId)}" checked style="width:auto;margin:0"></td>
+      <td class="text-white fw-bold">${pName(i.produtoId)}</td>
+      <td class="mono">${pNcm(i.produtoId)}</td>
+      <td class="mono text-amber">${escapeHtml(i.cClassTribSugerido || '')}</td>
+    </tr>`).join('')}
+    </tbody></table>` : '<div style="padding:12px 0;color:var(--muted);font-size:13px">Nenhum produto no caso padrão para preencher.</div>';
+
+  const atencao = revisar.concat(semNcm);
+  const atencaoList = atencao.length ? `
+    <div style="font-weight:700;font-size:13px;margin:16px 0 6px">Precisam de atenção (não serão preenchidos)</div>
+    <div style="background:var(--warning-bg);border:1px solid var(--amber);border-radius:8px;padding:10px 12px;font-size:12px">
+      ${revisar.map(i => `<div style="padding:3px 0">⚠️ <b>${pName(i.produtoId)}</b> — ${escapeHtml(i.motivo)}</div>`).join('')}
+      ${semNcm.map(i => `<div style="padding:3px 0">○ <b>${pName(i.produtoId)}</b> — sem NCM cadastrado. Informe o NCM primeiro para classificar.</div>`).join('')}
+    </div>` : '';
+
+  showModal(`<div class="modal-title">Copiloto da Reforma Tributária</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">${resumo}.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Tabela oficial ${escapeHtml(data.versaoTabela || '')} · não substitui a orientação do seu contador.</div>
+    <div style="max-height:48vh;overflow-y:auto;padding-right:4px">
+      ${padraoTable}
+      ${atencaoList}
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="aplicarCopilotoLote()" ${padrao.length ? '' : 'disabled'}>Preencher selecionados</button>
+    </div>`);
+}
+
+function aplicarCopilotoLote() {
+  const checks = [...document.querySelectorAll('.copiloto-check:checked')];
+  if (!checks.length) return alert('Selecione ao menos um produto.');
+  const map = {};
+  _copilotoItens.forEach(i => { map[String(i.produtoId)] = i; });
+  let n = 0;
+  checks.forEach(c => {
+    const sug = map[c.value];
+    if (!sug || sug.nivel !== 'padrao' || !sug.cClassTribSugerido) return; // só grava caso padrão sugerido pelo servidor
+    state.products = state.products.map(p => String(p.id) === c.value
+      ? { ...p, cClassTrib: sug.cClassTribSugerido, cClassTribFonte: 'copiloto', cClassTribData: today() }
+      : p);
+    n++;
+  });
+  saveState();
+  showSyncStatus(`✓ ${n} produto${n !== 1 ? 's' : ''} classificado${n !== 1 ? 's' : ''}`);
+  closeModal();
+  renderProdutos();
+}
+
 window.abrirBuscaNCM = abrirBuscaNCM;
 window.selecionarNCM = selecionarNCM;
 window.fecharPainelNCM = fecharPainelNCM;
+window.abrirCopilotoReforma = abrirCopilotoReforma;
+window.aplicarCopilotoLote = aplicarCopilotoLote;
