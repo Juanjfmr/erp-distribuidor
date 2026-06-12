@@ -301,7 +301,14 @@ function getCatProd(){ return (state.company?.categories?.length ? state.company
 function getUnits(){ return (state.company?.units?.length ? state.company.units : DEFAULT_UNITS); }
 Object.defineProperty(window,'CAT_PROD',{get:()=>getCatProd(),configurable:true});
 Object.defineProperty(window,'UNITS',{get:()=>getUnits(),configurable:true});
-const PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","35 dias","42 dias","30/60","30/60/90"];
+// Condições e formas de pagamento são configuráveis (Config → Geral), espelhando
+// o padrão de categorias/unidades: lê de state.company com fallback para os defaults.
+const DEFAULT_PAY_TERMS=["À Vista","7 dias","14 dias","21 dias","28 dias","30 dias","35 dias","42 dias","30/60","30/60/90"];
+const DEFAULT_PAY_METHODS=["PIX","Boleto","Cheque","Dinheiro","Cartão de Débito","Cartão de Crédito","Duplicata","TED/DOC","Outro"];
+function getPayTerms(){ return (state.company?.payTerms?.length ? state.company.payTerms : DEFAULT_PAY_TERMS); }
+function getPayMethods(){ return (state.company?.payMethods?.length ? state.company.payMethods : DEFAULT_PAY_METHODS); }
+Object.defineProperty(window,'PAY_TERMS',{get:()=>getPayTerms(),configurable:true});
+Object.defineProperty(window,'PAY_METHODS',{get:()=>getPayMethods(),configurable:true});
 // Traduz valores legados do cadastro de cliente (avista, 30-60…) para o vocabulário
 // oficial de PAY_TERMS, usado nas telas de pedido/nota. Se já for um PAY_TERM, retorna igual.
 function normalizePayterm(v){
@@ -309,21 +316,25 @@ function normalizePayterm(v){
   const map={avista:'À Vista','30':'30 dias','30-60':'30/60','30-60-90':'30/60/90','28ddl':'28 dias'};
   return map[v]||v;
 }
-const PAY_METHODS=["PIX","Boleto","Cheque","Dinheiro","Cartão de Débito","Cartão de Crédito","Duplicata","TED/DOC","Outro"];
 const CAT_FIN={entrada:["Vendas","Outros","Financiamento","Juros"],saida:["Compras","Logística","Operacional","Salários","Impostos","Outros"]};
+
+// Interpreta uma condição de pagamento (configurável) em datas de vencimento + frações.
+// Aceita "À Vista" (qualquer texto com "vista"), "N dias"/"N", e "a/b/c…" (N parcelas em dias).
+function parsePayTerm(terms, date){
+  const t=(terms||'').trim();
+  if(!t || /vista/i.test(t)) return { dates:[date], shares:[1] };
+  if(t.includes('/')){
+    const days=t.split('/').map(p=>parseInt(p,10)).filter(n=>!isNaN(n));
+    if(days.length){ const share=1/days.length; return { dates:days.map(n=>addDays(date,n)), shares:days.map(()=>share) }; }
+  }
+  const m=t.match(/(\d+)/);
+  if(m) return { dates:[addDays(date,parseInt(m[1],10))], shares:[1] };
+  return { dates:[date], shares:[1] };
+}
 
 function generateReceivables(invoiceId,invoiceNumber,clientId,total,date,terms){
   const recs=[];
-  let dates=[], shares=[];
-  if(terms==="À Vista"){ dates=[date]; shares=[1]; }
-  else if(terms==="7 dias"){ dates=[addDays(date,7)]; shares=[1]; }
-  else if(terms==="14 dias"){ dates=[addDays(date,14)]; shares=[1]; }
-  else if(terms==="21 dias"){ dates=[addDays(date,21)]; shares=[1]; }
-  else if(terms==="28 dias"){ dates=[addDays(date,28)]; shares=[1]; }
-  else if(terms==="30 dias"){ dates=[addDays(date,30)]; shares=[1]; }
-  else if(terms==="30/60"){ dates=[addDays(date,30),addDays(date,60)]; shares=[0.5,0.5]; }
-  else if(terms==="30/60/90"){ dates=[addDays(date,30),addDays(date,60),addDays(date,90)]; shares=[1/3,1/3,1/3]; }
-  else{ const m=terms.match(/^(\d+)\s*dias?$/i); if(m){ dates=[addDays(date,parseInt(m[1]))]; shares=[1]; } else{ dates=[date]; shares=[1]; } }
+  const { dates, shares }=parsePayTerm(terms, date);
   dates.forEach((d,i)=>{
     recs.push({id:uid()+(i*7),invoiceId,invoiceNumber,clientId,dueDate:d,amount:parseFloat((total*shares[i]).toFixed(2)),installment:i+1,total:dates.length,status:"aberta",paidAt:null});
   });

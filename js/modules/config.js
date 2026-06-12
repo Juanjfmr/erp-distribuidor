@@ -275,6 +275,19 @@ function renderConfig(activeTab){
       <button class="btn btn-primary" onclick="saveCatUnits()">Salvar Categorias e Unidades</button>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
+      <div class="section-title" style="margin-bottom:4px">Condições de Pagamento</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Usado em pedidos e notas. Use <b>À Vista</b> para venda à vista, <b>N dias</b> para prazo único (ex: 45 dias) e <b>a/b/c</b> para parcelar (ex: 30/60/90).</div>
+      <div class="form-group">
+        <textarea id="cfg-payterms" class="form-input" rows="2" style="resize:vertical">${escapeHtml((co.payTerms||DEFAULT_PAY_TERMS).join(", "))}</textarea>
+      </div>
+      <div class="section-title" style="margin-bottom:4px;margin-top:4px">Formas de Pagamento</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Separe por vírgula. Ex: PIX, Boleto, Dinheiro, Cartão de Crédito</div>
+      <div class="form-group">
+        <textarea id="cfg-paymethods" class="form-input" rows="2" style="resize:vertical">${escapeHtml((co.payMethods||DEFAULT_PAY_METHODS).join(", "))}</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="savePayConfig()">Salvar Condições e Formas</button>
+    </div>
+    <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:14px">Dados do Sistema</div>
       <div style="font-size:13px;color:var(--text2);line-height:2">
         Produtos: <b>${state.products.length}</b> &nbsp;·&nbsp;
@@ -344,6 +357,16 @@ function saveCatUnits(){
   state.company = {...(state.company||{}), categories: cats, units};
   saveState();
   showSyncStatus("✓ Categorias e unidades salvas");
+  renderConfig();
+}
+function savePayConfig(){
+  const terms = el("cfg-payterms").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const methods = el("cfg-paymethods").value.split(",").map(s=>s.trim()).filter(Boolean);
+  if(!terms.length) return alert("Informe ao menos uma condição de pagamento.");
+  if(!methods.length) return alert("Informe ao menos uma forma de pagamento.");
+  state.company = {...(state.company||{}), payTerms: terms, payMethods: methods};
+  saveState();
+  showSyncStatus("✓ Condições e formas de pagamento salvas");
   renderConfig();
 }
 // ─── Logo da empresa ──────────────────────────────────────────────────
