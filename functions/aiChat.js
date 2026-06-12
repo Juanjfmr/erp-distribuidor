@@ -4,101 +4,12 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+const { loadCollections, buildBusinessContext } = require('./_businessContext');
+
 const db = admin.firestore();
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 const MODEL = 'deepseek-chat';
-
-// ─── Monta contexto do negócio ─────────────────────────────────────────────────
-const _COLS = ['products','clients','suppliers','invoices','purchases','receivables','payables','transactions','stockMovements','orders','returns'];
-
-async function loadCollections(companyId) {
-  const colSnaps = await Promise.all(
-    _COLS.map(c => db.collection('empresas').doc(companyId).collection(c).get())
-  );
-  const collections = {};
-  _COLS.forEach((colName, i) => {
-    const items = [];
-    colSnaps[i].forEach(d => items.push(d.data()));
-    collections[colName] = items;
-  });
-  return collections;
-}
-
-async function buildBusinessContext(companyId) {
-  const snap = await db.collection('empresas').doc(companyId).get();
-  if (!snap.exists) return '';
-
-  const data = snap.data();
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const mesStr = todayStr.slice(0, 7);
-  const anoStr = todayStr.slice(0, 4);
-
-  // Lê dados das subcoleções (formato atual do frontend)
-  const cols = await loadCollections(companyId);
-
-  const products = (cols.products || []).filter(p => p.active !== false);
-  const clients  = (cols.clients  || []);
-  const invoices = (cols.invoices || []);
-  const orders   = (cols.orders   || []);
-  const receivables = (cols.receivables || []);
-  const payables    = (cols.payables    || []);
-  const transactions = (cols.transactions || []);
-
-  // KPIs do mês
-  const mesInvoices = invoices.filter(n => n.date?.startsWith(mesStr) && n.status !== 'cancelada');
-  const faturamentoMes = mesInvoices.reduce((s, n) => s + (n.total || 0), 0);
-  const nfsMes = mesInvoices.length;
-
-  // A receber (em aberto)
-  const receivablesOpen = receivables.filter(r => r.status === 'aberta');
-  const totalReceber = receivablesOpen.reduce((s, r) => s + (r.amount || 0), 0);
-
-  // Vencidos
-  const overdue = receivablesOpen.filter(r => r.dueDate < todayStr);
-  const totalVencido = overdue.reduce((s, r) => s + (r.amount || 0), 0);
-
-  // Clientes inadimplentes
-  const overdueClientIds = [...new Set(overdue.map(r => r.clientId))];
-  const overdueClients = overdueClientIds.map(cid => {
-    const c = clients.find(cl => cl.id === cid);
-    const amt = overdue.filter(r => r.clientId === cid).reduce((s, r) => s + (r.amount || 0), 0);
-    return { nome: c?.name || 'Desconhecido', valorVencido: amt };
-  }).sort((a, b) => b.valorVencido - a.valorVencido).slice(0, 5);
-
-  // Produtos com estoque baixo (< 10)
-  const lowStock = products.filter(p => p.stock != null && p.stock < 10 && p.stock >= 0)
-    .sort((a, b) => a.stock - b.stock).slice(0, 10);
-
-  // Últimos pedidos
-  const recentOrders = [...orders].sort((a, b) => b.id - a.id).slice(0, 5);
-
-  // Fluxo de caixa do mês
-  const mesTx = transactions.filter(t => t.date?.startsWith(mesStr));
-  const entradas = mesTx.filter(t => t.type === 'entrada').reduce((s, t) => s + (t.amount || 0), 0);
-  const saidas   = mesTx.filter(t => t.type === 'saida').reduce((s, t) => s + (t.amount || 0), 0);
-
-  const ctx = {
-    empresa: data.company?.name || 'Empresa',
-    mes: mesStr,
-    faturamentoMes,
-    nfsMes,
-    totalReceber,
-    totalVencido,
-    clientesInadimplentes: overdueClients,
-    fluxoCaixa: { entradas, saidas, saldo: entradas - saidas },
-    produtosBaixoEstoque: lowStock.map(p => ({ nome: p.name, estoque: p.stock, unidade: p.unit || 'UN' })),
-    ultimosPedidos: recentOrders.map(o => {
-      const c = clients.find(cl => cl.id === o.clientId);
-      return { numero: o.number, cliente: c?.name || 'Avulso', total: o.total, status: o.status, data: o.date };
-    }),
-    totalProdutos: products.length,
-    totalClientes: clients.length,
-  };
-
-  return JSON.stringify(ctx, null, 2);
-}
 
 // ─── System prompt do assistente ─────────────────────────────────────────────
 const SYSTEM_PROMPT = `Você é o Stoqio Assistant, o assistente oficial do ERP Stoqio — um sistema de gestão empresarial completo para pequenas e médias empresas brasileiras.
