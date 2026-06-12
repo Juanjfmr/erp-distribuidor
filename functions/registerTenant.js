@@ -124,10 +124,12 @@ exports.registerTenant = functions.https.onCall(async (data, context) => {
   // Salva REGISTRANDO ANTES de qualquer chamada à Focus.
   // Se o processo morrer depois do sucesso na Focus, o GET do próximo retry
   // encontra a empresa e recupera os tokens.
+  // Seta o objeto fiscalData inteiro (sem lastError) — isso já limpa qualquer
+  // erro anterior. NÃO setar 'company.fiscalData.lastError' aqui: o Firestore
+  // rejeita update com o caminho-pai e o caminho-filho juntos (campo duplicado).
   await companyRef.update({
-    'company.fiscalStatus':           'REGISTRANDO',
-    'company.fiscalData':             fiscalData,
-    'company.fiscalData.lastError':   admin.firestore.FieldValue.delete(),
+    'company.fiscalStatus': 'REGISTRANDO',
+    'company.fiscalData':   fiscalData,
   });
 
   try {
