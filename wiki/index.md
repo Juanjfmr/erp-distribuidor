@@ -1,5 +1,8 @@
 # Índice do Wiki — Stoqio
 
+## Planejamento
+- [[pages/pendencias]] — pendências & backlog (revisão de módulos)
+
 ## Módulos
 - [[pages/modulos/dashboard]]
 - [[pages/modulos/produtos]]
