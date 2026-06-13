@@ -3,163 +3,488 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="theme-color" content="#4f46e5"/>
-<title>Stoqio — Gestão completa para o seu negócio</title>
+<meta name="theme-color" content="#a78bfa"/>
+<meta name="description" content="Sistema de gestão que já emite sua nota no novo modelo da Reforma Tributária — estoque, pedidos, caixa e IA num lugar só."/>
+<title>Stoqio — Gestão e NF-e pronta para a Reforma Tributária 2026</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1e293b;line-height:1.6;overflow-x:hidden}
+:root{
+  --bg:#0a0a0f;
+  --bg2:#0f0f1a;
+  --bg3:#13131f;
+  --card:rgba(255,255,255,.04);
+  --card-border:rgba(255,255,255,.08);
+  --card-hover:rgba(255,255,255,.07);
+  --primary:#a78bfa;
+  --primary-dark:#7c3aed;
+  --primary-mid:#8b5cf6;
+  --grad:linear-gradient(135deg,#a78bfa 0%,#818cf8 100%);
+  --grad-text:linear-gradient(135deg,#c4b5fd 0%,#a78bfa 50%,#818cf8 100%);
+  --glow:rgba(167,139,250,.25);
+  --glow-strong:rgba(167,139,250,.45);
+  --text:#f1f5f9;
+  --text2:#cbd5e1;
+  --muted:#64748b;
+  --border:rgba(255,255,255,.06)
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
 .container{max-width:1200px;margin:0 auto;padding:0 24px}
-:root{--primary:#4f46e5;--primary-hover:#4338ca;--primary-dim:rgba(37,99,235,.08);--bg:#f8f9fa;--bg2:#fff;--border:#e2e8f0;--muted:#94a3b8;--text:#1e293b}
+
+/* Orbs background */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(100px);opacity:.35}
+.orb-1{width:600px;height:600px;background:radial-gradient(circle,#7c3aed,transparent 70%);top:-200px;left:-100px}
+.orb-2{width:500px;height:500px;background:radial-gradient(circle,#4f46e5,transparent 70%);top:30%;right:-150px}
+.orb-3{width:400px;height:400px;background:radial-gradient(circle,#0ea5e9,transparent 70%);bottom:10%;left:20%}
+
 /* Navbar */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s}
-nav.scrolled{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0;transition:all .3s}
+nav.scrolled .nav-wrap{background:rgba(10,10,15,.85);border-bottom:1px solid var(--card-border);backdrop-filter:blur(20px)}
+.nav-wrap{padding:16px 0;transition:all .3s}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 24px}
-.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--primary);letter-spacing:.04em;text-decoration:none}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.04em;text-decoration:none;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-logo svg{flex-shrink:0}
 .nav-links{display:flex;align-items:center;gap:32px}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;transition:color .15s}
 .nav-links a:hover{color:var(--text)}
-.nav-cta{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s}
-.nav-cta:hover{background:var(--primary-hover)}
+.nav-actions{display:flex;align-items:center;gap:8px}
+.nav-login{color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;padding:10px 16px;transition:color .15s}
+.nav-login:hover{color:var(--text)}
+.nav-cta{background:var(--grad);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:0 0 20px var(--glow)}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 0 30px var(--glow-strong)}
+
 /* Hero */
-.hero{padding:160px 0 100px;text-align:center;position:relative}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
-.hero h1{font-size:clamp(32px,6vw,56px);font-weight:800;line-height:1.12;margin-bottom:20px;position:relative}
-.hero h1 span{color:var(--primary)}
-.hero p{font-size:18px;color:var(--muted);max-width:600px;margin:0 auto 36px;line-height:1.7}
+.hero{padding:160px 0 80px;text-align:center;position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:100px;padding:6px 16px;font-size:12px;color:var(--primary);font-weight:600;letter-spacing:.05em;margin-bottom:28px}
+.hero-badge-dot{width:6px;height:6px;background:var(--primary);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
+.hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.08;margin-bottom:24px;letter-spacing:-.02em}
+.hero h1 .grad-text{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:18px;color:var(--text2);max-width:580px;margin:0 auto 40px;line-height:1.7}
 .hero-ctas{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
-.btn-primary{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
-.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s}
-.btn-ghost:hover{background:var(--primary-dim)}
+.btn-primary{background:var(--grad);color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block;box-shadow:0 0 24px var(--glow)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 40px var(--glow-strong)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--card-border);border-radius:10px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block;backdrop-filter:blur(8px)}
+.btn-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(167,139,250,.3)}
 .trust-signals{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .trust-signals span::before{content:'✓ ';color:var(--primary)}
-/* Section */
-section{padding:80px 0}
-.section-label{font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
-.section-title{font-size:clamp(24px,4vw,36px);font-weight:800;line-height:1.2;margin-bottom:16px}
-.section-sub{font-size:16px;color:var(--muted);max-width:600px;line-height:1.7}
-/* Segmentos */
-.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:40px}
-.seg-chip{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);transition:all .15s}
-.seg-chip:hover{border-color:var(--primary-dim);color:var(--text)}
-.seg-icon{font-size:28px;margin-bottom:6px;display:block}
+
+/* Dashboard mockup — high-fidelity */
+.hero-mockup{margin-top:64px;position:relative;max-width:960px;margin-left:auto;margin-right:auto}
+.mockup-frame{background:#0d0d1a;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;box-shadow:0 0 100px rgba(167,139,250,.18),0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(167,139,250,.06)}
+.mockup-titlebar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+.mockup-dot{width:9px;height:9px;border-radius:50%}
+.mockup-url{margin-left:8px;flex:1;background:rgba(255,255,255,.05);border-radius:6px;height:20px;max-width:220px;display:flex;align-items:center;padding:0 10px;gap:6px}
+.mockup-url-text{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.02em}
+.mockup-app{display:grid;grid-template-columns:180px 1fr;height:380px}
+/* Sidebar */
+.mk-sidebar{background:rgba(10,10,20,.98);border-right:1px solid rgba(255,255,255,.06);padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.mk-logo{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:10px}
+.mk-logo-icon{width:22px;height:22px;background:linear-gradient(135deg,#a78bfa,#818cf8);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.mk-logo-text{font-size:13px;font-weight:700;background:linear-gradient(135deg,#c4b5fd,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.mk-nav{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:11px;color:rgba(255,255,255,.4);cursor:default}
+.mk-nav.active{background:rgba(167,139,250,.15);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)}
+.mk-nav-dot{width:14px;height:14px;border-radius:4px;background:currentColor;opacity:.5;flex-shrink:0}
+.mk-nav.active .mk-nav-dot{opacity:1;background:linear-gradient(135deg,#a78bfa,#818cf8)}
+/* Main area */
+.mk-main{display:flex;flex-direction:column;overflow:hidden}
+.mk-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.05)}
+.mk-page-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.85)}
+.mk-filters{display:flex;gap:4px}
+.mk-filter{font-size:9px;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4)}
+.mk-filter.active{background:rgba(167,139,250,.2);color:#c4b5fd}
+.mk-content{padding:10px 12px;display:flex;flex-direction:column;gap:10px;flex:1;overflow:hidden}
+/* KPI cards */
+.mk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mk-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 11px;position:relative;overflow:hidden}
+.mk-kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:9px 9px 0 0}
+.mk-kpi-label{font-size:9px;color:rgba(255,255,255,.4);margin-bottom:5px;margin-top:2px}
+.mk-kpi-value{font-size:14px;font-weight:700;color:#f1f5f9;line-height:1;margin-bottom:3px}
+.mk-kpi-sub{font-size:8px;color:rgba(255,255,255,.25)}
+/* Bottom grid */
+.mk-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0}
+.mk-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:10px 11px;overflow:hidden}
+.mk-card-title{font-size:9px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.mk-order-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.mk-order-row:last-child{border-bottom:none}
+.mk-order-dot{width:6px;height:6px;border-radius:50%;background:rgba(167,139,250,.7);flex-shrink:0}
+.mk-order-name{font-size:9px;color:rgba(255,255,255,.55);flex:1}
+.mk-order-val{font-size:9px;font-weight:600;color:rgba(167,139,250,.9)}
+.mk-stock-row{display:flex;align-items:center;gap:6px;padding:4px 0}
+.mk-stock-name{font-size:9px;color:rgba(255,255,255,.55);flex:1}
+.mk-stock-bar-wrap{width:48px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.mk-stock-bar{height:100%;border-radius:2px}
+.mk-stock-count{font-size:8px;color:rgba(255,255,255,.3);min-width:16px;text-align:right}
+/* AI bubble */
+.mock-ai{position:absolute;bottom:16px;right:16px;background:rgba(10,10,24,.95);border:1px solid rgba(167,139,250,.35);border-radius:12px;padding:10px 13px;font-size:10px;color:rgba(203,213,225,.85);max-width:190px;backdrop-filter:blur(16px);box-shadow:0 0 30px rgba(167,139,250,.25);z-index:5}
+.mock-ai-header{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.mock-ai-dot{width:5px;height:5px;background:#a78bfa;border-radius:50%;animation:pulse 2s infinite}
+.mock-ai-label{font-size:9px;font-weight:700;color:#c4b5fd;letter-spacing:.04em}
+.mock-ai-text{font-size:9px;line-height:1.5;color:rgba(203,213,225,.7)}
+.mockup-glow{position:absolute;inset:-40px;background:radial-gradient(ellipse 60% 40% at 50% 110%,rgba(167,139,250,.14),transparent 70%);pointer-events:none}
+
+/* Metrics bar */
+.metrics{padding:60px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;z-index:1}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:32px;text-align:center}
+.metric-val{font-size:36px;font-weight:800;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:4px}
+.metric-lbl{font-size:13px;color:var(--muted)}
+
+/* Sections */
+section{padding:80px 0;position:relative;z-index:1}
+.section-label{display:inline-block;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:100px;padding:4px 14px;font-size:11px;font-weight:700;color:var(--primary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}
+.section-title{font-size:clamp(26px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom:16px;letter-spacing:-.02em}
+.section-title .grad-text{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-sub{font-size:16px;color:var(--text2);max-width:560px;line-height:1.7}
+.text-center{text-align:center}
+.text-center .section-sub{margin:0 auto}
+
+/* Glass card */
+.glass-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px;backdrop-filter:blur(12px);transition:all .2s}
+.glass-card:hover{background:var(--card-hover);border-color:rgba(167,139,250,.2)}
+
+/* Segments */
+.seg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:40px}
+.seg-chip{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:14px;text-align:center;font-size:13px;color:var(--muted);transition:all .2s;cursor:default}
+.seg-chip:hover{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.25);color:var(--text)}
+.seg-icon{font-size:26px;margin-bottom:6px;display:block}
+
 /* Pain cards */
-.cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:40px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px}
-.card-icon{font-size:32px;margin-bottom:14px}
-.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
-.card p{font-size:14px;color:var(--muted);line-height:1.6}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:40px}
+.pain-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px;position:relative;overflow:hidden}
+.pain-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(167,139,250,.05) 0%,transparent 60%);pointer-events:none}
+.pain-icon{font-size:30px;margin-bottom:14px}
+.pain-card h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.pain-transition{text-align:center;margin-top:32px;font-size:16px;color:var(--primary);font-weight:600;padding:16px 24px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:12px}
+
 /* IA section */
-.ia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:40px}
-.ia-tag{display:inline-block;background:var(--primary-dim);color:var(--primary);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-top:20px}
-/* Features grid */
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:40px}
-.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
-.feat-card .f-icon{font-size:24px;margin-bottom:10px}
-.feat-card h4{font-size:14px;font-weight:700;margin-bottom:4px}
-.feat-card p{font-size:13px;color:var(--muted);line-height:1.5}
-/* Diferenciais */
-.diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:14px;overflow:hidden;margin-top:40px}
-.diff-item{background:var(--bg2);padding:28px}
-.diff-item h4{font-size:15px;font-weight:700;margin-bottom:6px}
-.diff-item p{font-size:13px;color:var(--muted);line-height:1.5}
-/* Pricing */
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:40px}
-.pricing-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;transition:all .15s;position:relative}
-.pricing-card:hover{border-color:var(--primary-dim)}
-.pricing-card.featured{border-color:var(--primary);background:rgba(37,99,235,.06)}
-.pricing-card .badge-pop{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap}
-.pricing-card .plan-name{font-weight:700;font-size:16px;margin-bottom:4px}
-.pricing-card .plan-price{font-size:32px;font-weight:800;margin:8px 0 2px}
-.pricing-card .plan-period{font-size:12px;color:var(--muted);margin-bottom:16px}
-.pricing-card .plan-features{list-style:none;text-align:left;font-size:13px;color:var(--muted);margin-bottom:20px}
-.pricing-card .plan-features li{padding:4px 0}
-.pricing-card .plan-features li::before{content:'✓ ';color:var(--primary)}
-.pricing-card .btn{display:block;width:100%}
-.reassurance{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
-/* FAQ */
-.faq-list{max-width:700px;margin:40px auto 0}
-.faq-item{border-bottom:1px solid var(--border);padding:20px 0}
-.faq-q{font-weight:700;font-size:15px;margin-bottom:6px}
-.faq-a{font-size:14px;color:var(--muted);line-height:1.6}
-/* CTA Final */
-.cta-final{text-align:center;padding:100px 0;position:relative}
-.cta-final::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(37,99,235,.06) 0%,transparent 70%);pointer-events:none}
-.cta-final h2{font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:12px;position:relative}
-.cta-final p{font-size:16px;color:var(--muted);margin-bottom:28px}
-/* Footer */
-footer{border-top:1px solid var(--border);padding:48px 0 32px}
-.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:32px;margin-bottom:40px}
-.footer-grid h4{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:12px}
-.footer-grid a{display:block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:6px;transition:color .15s}
-.footer-grid a:hover{color:var(--text)}
-.footer-bottom{text-align:center;font-size:12px;color:var(--muted);padding-top:24px;border-top:1px solid var(--border)}
+.ia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:40px}
+.ia-card{border-radius:16px;padding:28px;position:relative;overflow:hidden}
+.ia-card-chat{background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(79,70,229,.1));border:1px solid rgba(167,139,250,.2)}
+.ia-card-alert{background:linear-gradient(135deg,rgba(14,165,233,.1),rgba(79,70,229,.08));border:1px solid rgba(14,165,233,.15)}
+.ia-card h3{font-size:20px;font-weight:700;margin-bottom:12px}
+.ia-card p{font-size:14px;color:var(--text2);line-height:1.7}
+.ia-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.2);color:var(--primary);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-top:16px}
+
+/* Chat mockup inside IA card */
+.chat-bubble{background:rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--text2);margin-top:14px;margin-bottom:6px}
+.chat-reply{background:rgba(167,139,250,.1);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--primary);margin-bottom:6px}
+
 /* Steps */
-.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:40px}
-.step{border-left:2px solid var(--primary-dim);padding-left:20px}
-.step-num{font-size:12px;font-weight:800;color:var(--primary);letter-spacing:.06em;margin-bottom:4px}
-.step h4{font-size:16px;font-weight:700;margin-bottom:4px}
-.step p{font-size:13px;color:var(--muted)}
-/* Mobile */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;margin-top:48px;position:relative}
+.steps-grid::before{content:'';position:absolute;top:20px;left:60px;right:60px;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.3),transparent);pointer-events:none}
+.step{text-align:center;padding:0 16px;position:relative}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--grad);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;margin-bottom:16px;box-shadow:0 0 20px var(--glow)}
+.step h4{font-size:16px;font-weight:700;margin-bottom:6px}
+.step p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* Features bento grid */
+.bento{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto;gap:12px;margin-top:40px}
+.bento-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:24px;transition:all .2s;position:relative;overflow:hidden}
+.bento-card:hover{background:var(--card-hover);border-color:rgba(167,139,250,.2)}
+.bento-card.span2{grid-column:span 2}
+.bento-card.big{grid-row:span 2}
+.bento-card .f-icon{font-size:28px;margin-bottom:12px;display:block}
+.bento-card h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.bento-card p{font-size:13px;color:var(--muted);line-height:1.5}
+.bento-card .feat-badge{display:inline-block;background:rgba(167,139,250,.1);color:var(--primary);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-top:8px}
+.bento-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);opacity:0;transition:opacity .2s}
+.bento-card:hover::before{opacity:1}
+
+/* Differentials */
+.diff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:40px}
+.diff-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:24px;transition:all .2s}
+.diff-card:hover{background:var(--card-hover);border-color:rgba(167,139,250,.2)}
+.diff-card h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.diff-card p{font-size:13px;color:var(--muted);line-height:1.5}
+.diff-icon{font-size:24px;margin-bottom:10px}
+
+/* Pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:40px}
+.pricing-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px;text-align:center;transition:all .2s;position:relative}
+.pricing-card:hover{background:var(--card-hover)}
+.pricing-card.featured{border-color:rgba(167,139,250,.4);background:rgba(124,58,237,.1)}
+.pricing-card.featured::before{content:'';position:absolute;inset:-1px;border-radius:16px;background:linear-gradient(135deg,rgba(167,139,250,.5),rgba(129,140,248,.3),rgba(14,165,233,.2));z-index:-1}
+.badge-pop{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:20px;white-space:nowrap;box-shadow:0 0 16px var(--glow)}
+.plan-name{font-weight:700;font-size:15px;margin-bottom:4px;color:var(--text2)}
+.plan-price{font-size:36px;font-weight:800;margin:8px 0 2px;letter-spacing:-.02em}
+.plan-price.grad{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.plan-period{font-size:12px;color:var(--muted);margin-bottom:20px}
+.plan-features{list-style:none;text-align:left;font-size:13px;color:var(--muted);margin-bottom:24px}
+.plan-features li{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.plan-features li::before{content:'✓ ';color:var(--primary)}
+.plan-features li:last-child{border-bottom:none}
+.pricing-cta{display:block;width:100%;padding:12px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;text-align:center;transition:all .2s}
+.pricing-cta.ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--card-border)}
+.pricing-cta.ghost:hover{background:rgba(255,255,255,.1)}
+.pricing-cta.solid{background:var(--grad);color:#fff;box-shadow:0 0 20px var(--glow)}
+.pricing-cta.solid:hover{transform:translateY(-1px);box-shadow:0 0 30px var(--glow-strong)}
+.reassurance{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
+
+/* Affiliate */
+.affiliate-card{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(14,165,233,.08));border:1px solid rgba(167,139,250,.2);border-radius:20px;padding:56px;text-align:center;position:relative;overflow:hidden}
+.affiliate-card::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;background:radial-gradient(circle,rgba(167,139,250,.15),transparent 70%);pointer-events:none}
+
+/* FAQ */
+.faq-list{max-width:720px;margin:40px auto 0}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left}
+.faq-q{font-weight:700;font-size:15px;color:var(--text)}
+.faq-chevron{width:20px;height:20px;color:var(--muted);transition:transform .25s;flex-shrink:0}
+.faq-item.open .faq-chevron{transform:rotate(180deg);color:var(--primary)}
+.faq-a{font-size:14px;color:var(--muted);line-height:1.7;overflow:hidden;max-height:0;transition:max-height .3s ease,padding .3s}
+.faq-item.open .faq-a{max-height:200px;padding-bottom:16px}
+
+/* CTA Final */
+.cta-final{padding:100px 0;text-align:center;position:relative;overflow:hidden}
+.cta-final-bg{position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,.15) 0%,rgba(14,165,233,.08) 100%);border-top:1px solid rgba(167,139,250,.15);border-bottom:1px solid rgba(167,139,250,.1)}
+.cta-final-orb{position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(124,58,237,.2),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.cta-final-content{position:relative;z-index:1}
+.cta-final h2{font-size:clamp(28px,5vw,48px);font-weight:800;margin-bottom:16px;letter-spacing:-.02em;line-height:1.1}
+.cta-final p{font-size:17px;color:var(--text2);margin-bottom:36px}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:56px 0 32px;position:relative;z-index:1}
+.footer-top{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:40px;margin-bottom:48px}
+.footer-brand p{font-size:13px;color:var(--muted);margin-top:12px;max-width:240px;line-height:1.6}
+.footer-col h4{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+.footer-col a{display:block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:8px;transition:color .15s}
+.footer-col a:hover{color:var(--primary)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+.footer-logo{font-weight:800;font-size:18px;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* Responsive */
+@media(max-width:900px){
+  .bento{grid-template-columns:1fr 1fr}
+  .bento-card.span2{grid-column:span 2}
+  .bento-card.big{grid-row:auto}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .mockup-grid{grid-template-columns:1fr}
+  .mockup-sidebar{display:none}
+}
 @media(max-width:768px){
   .nav-links{display:none}
   .hero{padding:120px 0 60px}
-  .hero h1{font-size:30px}
-  .diff-grid{grid-template-columns:1fr}
-  .pricing-card.featured{order:-1}
+  .hero h1{font-size:32px}
   .hero-ctas{flex-direction:column;align-items:center}
   .trust-signals{flex-direction:column;align-items:center;gap:8px}
   section{padding:60px 0}
+  .bento{grid-template-columns:1fr}
+  .bento-card.span2{grid-column:span 1}
+  .steps-grid::before{display:none}
+  .footer-top{grid-template-columns:1fr}
+  .pricing-card.featured{order:-1}
+  .affiliate-card{padding:32px 20px}
 }
-
-.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 </style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-L6ZX24EJ98"></script>
 <script>
-window.dataLayer = window.dataLayer || [];
+window.dataLayer=window.dataLayer||[];
 function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-L6ZX24EJ98');
+gtag('js',new Date());
+gtag('config','G-L6ZX24EJ98');
 </script>
 </head>
 <body>
 
+<!-- Background orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Navbar -->
 <nav id="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="24" height="24" rx="6" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="M9 14l3 3 7-7" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-      Stoqio
-    </a>
-    <div class="nav-links">
-      <a href="#funcionalidades">Funcionalidades</a>
-      <a href="#precos">Preços</a>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <a href="/login" style="color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;padding:10px 16px;transition:color .15s">Entrar</a>
-      <a href="/login" class="nav-cta">Começar grátis</a>
+  <div class="nav-wrap">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+          <rect x="2" y="2" width="24" height="24" rx="6" stroke="#a78bfa" stroke-width="2"/>
+          <path d="M9 14l3 3 7-7" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Stoqio
+      </a>
+      <div class="nav-links">
+        <a href="#funcionalidades">Funcionalidades</a>
+        <a href="#precos">Preços</a>
+        <a href="#contadores">Contadores</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/login" class="nav-login">Entrar</a>
+        <a href="/login" class="nav-cta">Começar grátis</a>
+      </div>
     </div>
   </div>
 </nav>
 
 <!-- Hero -->
-<section class="hero" style="padding-bottom:60px">
+<section class="hero">
   <div class="container">
-    <h1>Gestão completa para o<br>seu negócio. <span>Sem planilha,<br>sem complicação.</span></h1>
-    <p>Pedidos, estoque, NF-e, caixa e IA assistente num só lugar. Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p>
+    <div class="hero-badge"><span class="hero-badge-dot"></span>✓ Pronto para a Reforma Tributária 2026</div>
+    <h1>Tire sua empresa da planilha.<br><span class="grad-text">Estoque, pedidos, NF-e e caixa num sistema só.</span></h1>
+    <p>O sistema de gestão completo para a sua PME — com uma IA que trabalha junto com você e já pronto para a mudança na nota fiscal de 2026. Quando a obrigatoriedade chegar, você só continua emitindo.</p>
     <div class="hero-ctas">
-      <a href="/login" class="btn-primary">Testar grátis — 14 dias</a>
+      <a href="/login" class="btn-primary">Testar grátis — 14 dias →</a>
       <a href="#precos" class="btn-ghost">Ver planos</a>
     </div>
     <div class="trust-signals">
+      <span>Nota fiscal pronta para 2026</span>
       <span>Sem cartão de crédito</span>
-      <span>Cancele quando quiser</span>
-      <span>Importa dados do Bling/Conta Azul</span>
+      <span>14 dias grátis</span>
     </div>
-    <div style="text-align:center;margin-top:16px">
-      <a href="/login" style="color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px">Já tem conta? <strong style="color:var(--primary)">Entrar</strong></a>
+
+    <!-- Dashboard mockup — high fidelity -->
+    <div class="hero-mockup">
+      <div class="mockup-frame" style="position:relative">
+        <!-- Browser titlebar -->
+        <div class="mockup-titlebar">
+          <div class="mockup-dot" style="background:#ef4444"></div>
+          <div class="mockup-dot" style="background:#f59e0b"></div>
+          <div class="mockup-dot" style="background:#22c55e"></div>
+          <div class="mockup-url">
+            <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/><path d="M6 3v3l2 2" stroke="rgba(255,255,255,.25)" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span class="mockup-url-text">app.stoqio.com.br</span>
+          </div>
+        </div>
+        <!-- App shell -->
+        <div class="mockup-app">
+          <!-- Sidebar -->
+          <div class="mk-sidebar">
+            <div class="mk-logo">
+              <div class="mk-logo-icon"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="3" stroke="white" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <span class="mk-logo-text">Stoqio</span>
+            </div>
+            <div class="mk-nav active"><div class="mk-nav-dot"></div>Dashboard</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Produtos</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Clientes</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Pedidos</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Notas Fiscais</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Caixa</div>
+            <div class="mk-nav"><div class="mk-nav-dot"></div>Relatórios</div>
+          </div>
+          <!-- Main content -->
+          <div class="mk-main">
+            <div class="mk-topbar">
+              <span class="mk-page-title">Dashboard</span>
+              <div class="mk-filters">
+                <span class="mk-filter">Hoje</span>
+                <span class="mk-filter active">Mês</span>
+                <span class="mk-filter">Ano</span>
+              </div>
+            </div>
+            <div class="mk-content">
+              <!-- KPIs -->
+              <div class="mk-kpis">
+                <div class="mk-kpi">
+                  <div class="mk-kpi-accent" style="background:linear-gradient(90deg,#a78bfa,#818cf8)"></div>
+                  <div class="mk-kpi-label">Faturamento</div>
+                  <div class="mk-kpi-value" style="color:#c4b5fd">R$ 47.200</div>
+                  <div class="mk-kpi-sub">↑ 23% vs mês ant.</div>
+                </div>
+                <div class="mk-kpi">
+                  <div class="mk-kpi-accent" style="background:linear-gradient(90deg,#22c55e,#16a34a)"></div>
+                  <div class="mk-kpi-label">Saldo em Caixa</div>
+                  <div class="mk-kpi-value" style="color:#4ade80">R$ 12.840</div>
+                  <div class="mk-kpi-sub">Atualizado agora</div>
+                </div>
+                <div class="mk-kpi">
+                  <div class="mk-kpi-accent" style="background:linear-gradient(90deg,#f59e0b,#d97706)"></div>
+                  <div class="mk-kpi-label">A Receber</div>
+                  <div class="mk-kpi-value" style="color:#fbbf24">R$ 8.540</div>
+                  <div class="mk-kpi-sub">12 duplicatas</div>
+                </div>
+                <div class="mk-kpi">
+                  <div class="mk-kpi-accent" style="background:linear-gradient(90deg,#ef4444,#dc2626)"></div>
+                  <div class="mk-kpi-label">Vencidas</div>
+                  <div class="mk-kpi-value" style="color:#f87171">R$ 1.200</div>
+                  <div class="mk-kpi-sub">3 contas</div>
+                </div>
+              </div>
+              <!-- Bottom grid -->
+              <div class="mk-bottom">
+                <div class="mk-card">
+                  <div class="mk-card-title">Pedidos Pendentes</div>
+                  <div class="mk-order-row"><div class="mk-order-dot" style="background:#a78bfa"></div><span class="mk-order-name">Distribuidora Norte</span><span class="mk-order-val">R$ 3.480</span></div>
+                  <div class="mk-order-row"><div class="mk-order-dot" style="background:#818cf8"></div><span class="mk-order-name">Mercado Central</span><span class="mk-order-val">R$ 1.920</span></div>
+                  <div class="mk-order-row"><div class="mk-order-dot" style="background:#6366f1"></div><span class="mk-order-name">Padaria São Jorge</span><span class="mk-order-val">R$ 840</span></div>
+                  <div class="mk-order-row"><div class="mk-order-dot" style="background:#4f46e5"></div><span class="mk-order-name">Auto Peças Lima</span><span class="mk-order-val">R$ 2.100</span></div>
+                </div>
+                <div class="mk-card">
+                  <div class="mk-card-title">Estoque Baixo</div>
+                  <div class="mk-stock-row"><span class="mk-stock-name">Óleo 20W50 — Galão</span><div class="mk-stock-bar-wrap"><div class="mk-stock-bar" style="width:20%;background:#ef4444"></div></div><span class="mk-stock-count">2</span></div>
+                  <div class="mk-stock-row"><span class="mk-stock-name">Filtro de Ar Universal</span><div class="mk-stock-bar-wrap"><div class="mk-stock-bar" style="width:35%;background:#f59e0b"></div></div><span class="mk-stock-count">7</span></div>
+                  <div class="mk-stock-row"><span class="mk-stock-name">Parafuso Zincado M8</span><div class="mk-stock-bar-wrap"><div class="mk-stock-bar" style="width:15%;background:#ef4444"></div></div><span class="mk-stock-count">3</span></div>
+                  <div class="mk-stock-row"><span class="mk-stock-name">Vela NGK BP6ES</span><div class="mk-stock-bar-wrap"><div class="mk-stock-bar" style="width:28%;background:#f59e0b"></div></div><span class="mk-stock-count">5</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Floating AI bubble -->
+        <div class="mock-ai">
+          <div class="mock-ai-header"><span class="mock-ai-dot"></span><span class="mock-ai-label">Stoqio IA</span></div>
+          <div class="mock-ai-text">Faturamento 23% acima da média. 3 clientes com vencimento amanhã — enviar cobrança?</div>
+        </div>
+      </div>
+      <div class="mockup-glow"></div>
     </div>
+  </div>
+</section>
+
+<!-- Metrics -->
+<div class="metrics">
+  <div class="container">
+    <div class="metrics-grid">
+      <div><div class="metric-val">16+</div><div class="metric-lbl">Segmentos suportados</div></div>
+      <div><div class="metric-val">14 dias</div><div class="metric-lbl">Trial grátis completo</div></div>
+      <div><div class="metric-val">1 fluxo</div><div class="metric-lbl">Do pedido à NF-e</div></div>
+      <div><div class="metric-val">&lt;1h</div><div class="metric-lbl">Para estar operando</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confiança / reversão de risco -->
+<section style="padding-top:0">
+  <div class="container">
+    <div style="background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:32px 28px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;text-align:center">
+        <div>
+          <div style="font-size:26px;margin-bottom:8px">🔓</div>
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)">Seus dados são seus</h4>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5">Exporte tudo quando quiser. Você nunca fica refém do sistema.</p>
+        </div>
+        <div>
+          <div style="font-size:26px;margin-bottom:8px">📄</div>
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)">NF-e oficial</h4>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5">Integrado ao Focus NFe, homologado pela SEFAZ.</p>
+        </div>
+        <div>
+          <div style="font-size:26px;margin-bottom:8px">🛡️</div>
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)">Dados protegidos</h4>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5">Criptografados na nuvem, em conformidade com a LGPD.</p>
+        </div>
+        <div>
+          <div style="font-size:26px;margin-bottom:8px">💳</div>
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)">Sem compromisso</h4>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5">14 dias grátis, sem cartão. Cancele quando quiser.</p>
+        </div>
+      </div>
+      <p style="text-align:center;font-size:14px;color:var(--text2);max-width:620px;margin:24px auto 0;line-height:1.6">Somos novos no mercado — e é por isso que, no Stoqio, você fala direto com quem construiu o sistema, não com um call center.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Reforma Tributária -->
+<section id="reforma">
+  <div class="container text-center">
+    <div class="section-label">REFORMA TRIBUTÁRIA 2026</div>
+    <h2 class="section-title">A maior mudança fiscal em 40 anos<br><span class="grad-text">já começou.</span></h2>
+    <p class="section-sub" style="margin:0 auto">IBS, CBS e a nova nota fiscal passam a valer em etapas a partir de 2026. Quem usa sistema desatualizado vai correr atrás. Quem usa Stoqio só continua emitindo.</p>
+    <div class="diff-grid" style="text-align:left;margin-bottom:20px">
+      <div class="diff-card"><div class="diff-icon">🧾</div><h4>Nota no modelo novo</h4><p>O emissor da Stoqio (Focus NFe) já trabalha com os campos de IBS e CBS. Sua nota acompanha a transição sem você mexer em nada.</p></div>
+      <div class="diff-card"><div class="diff-icon">🏷️</div><h4>Produto já preparado</h4><p>O cadastro de produto já tem classificação tributária (cClassTrib), o campo que a nova nota exige.</p></div>
+      <div class="diff-card"><div class="diff-icon">🔄</div><h4>Atualização contínua</h4><p>Conforme as regras avançam até 2033, a Stoqio acompanha. Você não precisa trocar de sistema no meio da reforma.</p></div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);max-width:600px;margin:0 auto 28px;line-height:1.6">A Stoqio emite sua nota no formato exigido. A apuração e a estratégia tributária seguem com você e seu contador.</p>
+    <a href="/login" class="btn-primary">Quero minha nota pronta para 2026 →</a>
   </div>
 </section>
 
@@ -167,7 +492,7 @@ gtag('config', 'G-L6ZX24EJ98');
 <section>
   <div class="container">
     <div class="section-label">Para o seu ramo</div>
-    <h2 class="section-title">Stoqio se adapta ao seu segmento</h2>
+    <h2 class="section-title">Stoqio se adapta ao<br><span class="grad-text">seu segmento</span></h2>
     <p class="section-sub">Configure em minutos para o seu tipo de negócio. Categorias, unidades e fluxos pré-ajustados.</p>
     <div class="seg-grid">
       <div class="seg-chip"><span class="seg-icon">🚚</span>Distribuidora</div>
@@ -187,57 +512,92 @@ gtag('config', 'G-L6ZX24EJ98');
 </section>
 
 <!-- Dor -->
-<section style="background:var(--bg2)">
-  <div class="container">
-    <h2 class="section-title" style="text-align:center">Se você gerencia um negócio assim,<br>você se identifica:</h2>
-    <div class="cards-3">
-      <div class="card">
-        <div class="card-icon">📋</div>
-        <h3>Planilha travou no fechamento do mês e você perdeu dados.</h3>
+<section>
+  <div class="container text-center">
+    <h2 class="section-title">Se você gerencia um negócio assim,<br><span class="grad-text">você se identifica:</span></h2>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">📋</div>
+        <h3>São 21h e você ainda na planilha pra saber quem te deve.</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.5;margin-top:6px">O fechamento do mês vira madrugada — e um número errado sai do seu bolso.</p>
       </div>
-      <div class="card">
-        <div class="card-icon">🧾</div>
-        <h3>NF emitida errada. Sistema separado. Retrabalho toda semana.</h3>
+      <div class="pain-card">
+        <div class="pain-icon">🧾</div>
+        <h3>A nota saiu errada e você só descobriu quando o cliente ligou.</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.5;margin-top:6px">Venda num sistema, nota em outro: retrabalho toda semana e risco de multa.</p>
       </div>
-      <div class="card">
-        <div class="card-icon">📦</div>
-        <h3>Vendedor fechou pedido sem saber que o estoque tinha zerado.</h3>
+      <div class="pain-card">
+        <div class="pain-icon">📦</div>
+        <h3>O vendedor fechou o pedido — o estoque já tinha zerado.</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.5;margin-top:6px">Você promete, não entrega, e o cliente compra do concorrente.</p>
       </div>
     </div>
-    <p style="text-align:center;margin-top:28px;font-size:16px;color:var(--primary);font-weight:600">O Stoqio resolve os três — e ainda avisa antes de virar problema.</p>
+    <div class="pain-transition">O Stoqio resolve os três — e ainda <strong>avisa</strong> antes de virar problema.</div>
   </div>
 </section>
 
 <!-- IA -->
 <section id="funcionalidades">
   <div class="container">
-    <div class="section-label">Diferencial exclusivo</div>
-    <h2 class="section-title">Seu negócio com IA que entende<br>o contexto real</h2>
+    <div class="section-label">O grande diferencial</div>
+    <h2 class="section-title">A IA que não só responde —<br><span class="grad-text">ela trabalha por você</span></h2>
+    <p class="section-sub" style="margin:0 auto 16px">Outros sistemas têm um chat que responde pergunta. O Stoqio tem uma IA que entende a sua operação, te avisa antes do problema e já começa a fazer o trabalho braçal por você.</p>
+    <div style="text-align:center;margin-bottom:36px"><span style="display:inline-flex;align-items:center;gap:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);border-radius:100px;padding:7px 18px;font-size:13px;color:var(--primary);font-weight:600">🔒 Nada acontece sem o seu OK</span></div>
     <div class="ia-grid">
-      <div class="card">
-        <div class="card-icon">💬</div>
+      <div class="ia-card ia-card-chat">
+        <span style="font-size:32px;display:block;margin-bottom:14px">💬</span>
         <h3>Chat com IA</h3>
         <p>Pergunte qualquer coisa sobre sua operação. "Quais clientes estão em atraso?", "Qual produto mais saiu esse mês?", "Tem estoque pra fechar esse pedido?" — resposta com seus dados reais, em segundos.</p>
+        <div class="chat-bubble">Quais clientes estão com pagamento vencido?</div>
+        <div class="chat-reply">3 clientes com total de R$4.200 em atraso: João Silva (R$1.800, 12 dias), Distribuidora Norte (R$1.500, 5 dias)...</div>
+        <span class="ia-tag">✦ Com seus dados reais</span>
       </div>
-      <div class="card">
-        <div class="card-icon">🔔</div>
+      <div class="ia-card ia-card-alert">
+        <span style="font-size:32px;display:block;margin-bottom:14px">🔔</span>
         <h3>Playbook de Alertas</h3>
         <p>Todo dia o Stoqio analisa sua operação e te avisa: inadimplência crescendo, estoque chegando no limite, faturamento abaixo da média. Sem você precisar lembrar de olhar.</p>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#fca5a5">⚠️ Produto X com 3 unidades em estoque — abaixo do mínimo</div>
+          <div style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#fdba74">📉 Faturamento 18% abaixo da média dos últimos 30 dias</div>
+        </div>
+        <span class="ia-tag">✦ Incluso em todos os planos pagos</span>
       </div>
     </div>
-    <div class="ia-tag" style="display:block;width:fit-content;margin:20px auto 0">Incluso em todos os planos pagos</div>
+    <div style="margin-top:40px;background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px 24px">
+      <div style="text-align:center;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--primary);margin-bottom:6px">Da resposta à ação</div>
+      <p style="text-align:center;font-size:15px;color:var(--text2);max-width:560px;margin:0 auto 24px">A IA está deixando de só informar para fazer o trabalho braçal por você — sempre preparando, mostrando em português claro e esperando o seu OK antes de qualquer coisa sair.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:10px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;color:#4ade80;margin-bottom:6px">✓ JÁ DISPONÍVEL</div>
+          <div style="font-size:14px;color:var(--text)">Classifica seus produtos para a Reforma, em lote — você revisa e aprova.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">EM BREVE</div>
+          <div style="font-size:14px;color:var(--text2)">Cobra seus inadimplentes via Pix, todos de uma vez.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">EM BREVE</div>
+          <div style="font-size:14px;color:var(--text2)">Prepara a nota do seu pedido — você confere e confirma antes de emitir.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">EM BREVE</div>
+          <div style="font-size:14px;color:var(--text2)">Lança suas despesas no caixa, na categoria certa.</div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- Como funciona -->
-<section style="background:var(--bg2)">
-  <div class="container">
-    <h2 class="section-title" style="text-align:center">Comece a operar em menos de 1 hora</h2>
+<section>
+  <div class="container text-center">
+    <div class="section-label">3 passos</div>
+    <h2 class="section-title">Comece a operar em<br><span class="grad-text">menos de 1 hora</span></h2>
     <div class="steps-grid">
       <div class="step">
         <div class="step-num">01</div>
         <h4>Crie sua conta</h4>
-        <p>2 minutos. Sem cartão.</p>
+        <p>2 minutos. Sem cartão. Só email e senha.</p>
       </div>
       <div class="step">
         <div class="step-num">02</div>
@@ -256,56 +616,95 @@ gtag('config', 'G-L6ZX24EJ98');
 <!-- Funcionalidades -->
 <section>
   <div class="container">
-    <h2 class="section-title" style="text-align:center">Tudo que você precisa.<br>Nada que você não vai usar.</h2>
-    <div class="feat-grid">
-      <div class="feat-card"><div class="f-icon">📦</div><h4>Estoque</h4><p>Controle em tempo real. Alerta de ruptura antes de acontecer. Scanner de código de barras incluso.</p></div>
-      <div class="feat-card"><div class="f-icon">🧾</div><h4>NF-e Nativa</h4><p>Emita nota fiscal em 3 cliques. Integrado Focus NFe, sem add-on.</p></div>
-      <div class="feat-card"><div class="f-icon">📋</div><h4>Pedidos</h4><p>Do rascunho à NF em um fluxo só. Sem retrabalho.</p></div>
-      <div class="feat-card"><div class="f-icon">💰</div><h4>Contas</h4><p>Recebíveis e pagáveis. Veja quem deve e quando vence.</p></div>
-      <div class="feat-card"><div class="f-icon">📊</div><h4>Caixa</h4><p>Fluxo de caixa do dia. Despesas fixas lançadas automaticamente.</p></div>
-      <div class="feat-card"><div class="f-icon">📈</div><h4>Relatórios</h4><p>Curva ABC de produtos e clientes. Veja onde está o lucro.</p></div>
-      <div class="feat-card"><div class="f-icon">🤖</div><h4>IA Assistente</h4><p>Chat e alertas com dados reais do seu negócio.</p></div>
-      <div class="feat-card"><div class="f-icon">👥</div><h4>Multi-usuário</h4><p>Admin, Vendedor, Visualizador e Contador externo. Cada um vê o que precisa.</p></div>
+    <div class="section-label">Módulos</div>
+    <h2 class="section-title">Tudo que você precisa.<br><span class="grad-text">Nada que você não vai usar.</span></h2>
+    <div class="bento">
+      <div class="bento-card span2">
+        <span class="f-icon">📦</span>
+        <h4>Estoque em tempo real</h4>
+        <p>Controle de entradas e saídas, alerta de ruptura antes de acontecer, histórico de movimentações e scanner de código de barras incluso em todos os planos.</p>
+        <span class="feat-badge">Scanner incluso</span>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">🧾</span>
+        <h4>NF-e Nativa</h4>
+        <p>Emita a nota direto do pedido, sem redigitar nada. Integrado Focus NFe, sem add-on.</p>
+        <span class="feat-badge">Sem extra</span>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">📋</span>
+        <h4>Pedidos</h4>
+        <p>Do rascunho à NF em um fluxo só. Sem retrabalho.</p>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">💰</span>
+        <h4>Contas</h4>
+        <p>Recebíveis e pagáveis. Veja quem deve e quando vence.</p>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">📊</span>
+        <h4>Caixa</h4>
+        <p>Fluxo de caixa do dia. Despesas fixas lançadas automaticamente.</p>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">📈</span>
+        <h4>Relatórios</h4>
+        <p>Curva ABC de produtos e clientes. Veja onde está o lucro real.</p>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">🤖</span>
+        <h4>IA Assistente</h4>
+        <p>Chat e alertas com dados reais do seu negócio.</p>
+        <span class="feat-badge">Incluso nos pagos</span>
+      </div>
+      <div class="bento-card">
+        <span class="f-icon">👥</span>
+        <h4>Multi-usuário</h4>
+        <p>Admin, Vendedor, Visualizador e Contador externo. Cada um vê o que precisa.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- Diferenciais -->
-<section style="background:var(--bg2)">
-  <div class="container">
-    <h2 class="section-title" style="text-align:center">Por que trocar o que você usa hoje?</h2>
-    <div class="diff-grid" style="margin-top:40px">
-      <div class="diff-item"><h4>🌐 Multi-segmento</h4><p>Funciona para distribuidoras, varejo, construção, alimentos e muito mais.</p></div>
-      <div class="diff-item"><h4>🤖 IA com seus dados</h4><p>Não é chat genérico — responde com a realidade do seu negócio.</p></div>
-      <div class="diff-item"><h4>🧾 NF-e incluída</h4><p>Não é módulo extra. Está no plano.</p></div>
-      <div class="diff-item"><h4>💎 Preço transparente</h4><p>Sem surpresa no boleto. Concorrentes escondem — o Stoqio não.</p></div>
-      <div class="diff-item"><h4>📥 Migração fácil</h4><p>Importa CSV do Bling, Conta Azul e Omie. Detecta o formato sozinho.</p></div>
-      <div class="diff-item"><h4>🎁 Trial real</h4><p>14 dias com tudo liberado. Sem cartão.</p></div>
+<section>
+  <div class="container text-center">
+    <div class="section-label">Comparativo</div>
+    <h2 class="section-title">Por que trocar o<br><span class="grad-text">que você usa hoje?</span></h2>
+    <div class="diff-grid" style="text-align:left">
+      <div class="diff-card"><div class="diff-icon">📋</div><h4>Pronto para a reforma</h4><p>Sua nota acompanha o IBS/CBS. Não vira problema quando a obrigatoriedade chegar.</p></div>
+      <div class="diff-card"><div class="diff-icon">🌐</div><h4>Multi-segmento</h4><p>Funciona para distribuidoras, varejo, construção, alimentos e muito mais. Não é um produto de nicho.</p></div>
+      <div class="diff-card"><div class="diff-icon">🤖</div><h4>IA com seus dados</h4><p>Não é chat genérico — responde com a realidade do seu estoque, clientes e NFs.</p></div>
+      <div class="diff-card"><div class="diff-icon">🧾</div><h4>NF-e incluída</h4><p>Não é módulo extra. Está no plano desde o primeiro dia.</p></div>
+      <div class="diff-card"><div class="diff-icon">💎</div><h4>Preço transparente</h4><p>Sem surpresa no boleto. Concorrentes escondem — o Stoqio não.</p></div>
+      <div class="diff-card"><div class="diff-icon">📥</div><h4>Migração fácil</h4><p>Importa CSV do Bling, Conta Azul e Omie. Detecta o formato sozinho.</p></div>
+      <div class="diff-card"><div class="diff-icon">🎁</div><h4>Trial real</h4><p>14 dias com tudo liberado — IA, NF-e, todos os módulos. Sem cartão.</p></div>
     </div>
   </div>
 </section>
 
 <!-- Pricing -->
 <section id="precos">
-  <div class="container">
+  <div class="container text-center">
     <div class="section-label">Preços</div>
-    <h2 class="section-title" style="text-align:center">Preço justo. Sem letra miúda.</h2>
+    <h2 class="section-title">Preço justo.<br><span class="grad-text">Sem letra miúda.</span></h2>
+    <p class="section-sub" style="margin:0 auto">Todos os planos pagos incluem NF-e, IA assistente e cancelamento a qualquer momento.</p>
     <div class="pricing-grid">
       <div class="pricing-card">
         <div class="plan-name">Trial</div>
         <div class="plan-price">Grátis</div>
-        <div class="plan-period">14 dias</div>
+        <div class="plan-period">14 dias completos</div>
         <ul class="plan-features">
           <li>Tudo liberado</li>
           <li>Sem cartão de crédito</li>
           <li>NF-e, IA, estoque</li>
         </ul>
-        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Testar grátis</a>
+        <a href="/login" class="pricing-cta ghost">Testar grátis</a>
       </div>
       <div class="pricing-card">
         <div class="plan-name">Essencial</div>
         <div class="plan-price">R$97<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-        <div class="plan-period">ou R$931/ano (-20%)</div>
+        <div class="plan-period">ou R$931/ano (−20%)</div>
         <ul class="plan-features">
           <li>1 usuário</li>
           <li>500 produtos</li>
@@ -313,13 +712,13 @@ gtag('config', 'G-L6ZX24EJ98');
           <li>Pedidos + NF + Caixa</li>
           <li>IA assistente</li>
         </ul>
-        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
+        <a href="/login" class="pricing-cta ghost">Começar agora</a>
       </div>
       <div class="pricing-card featured">
         <div class="badge-pop">Mais escolhido</div>
         <div class="plan-name" style="color:var(--primary)">Profissional</div>
-        <div class="plan-price">R$197<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-        <div class="plan-period">ou R$1.891/ano (-20%)</div>
+        <div class="plan-price grad">R$197<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
+        <div class="plan-period">ou R$1.891/ano (−20%)</div>
         <ul class="plan-features">
           <li>5 usuários</li>
           <li>3.000 produtos</li>
@@ -328,12 +727,12 @@ gtag('config', 'G-L6ZX24EJ98');
           <li>Curva ABC + DRE</li>
           <li>Tabela de preços por cliente</li>
         </ul>
-        <a href="/login" class="btn-primary" style="display:block;text-align:center">Começar agora</a>
+        <a href="/login" class="pricing-cta solid">Começar agora</a>
       </div>
       <div class="pricing-card">
         <div class="plan-name">Empresarial</div>
         <div class="plan-price">R$397<span style="font-size:14px;font-weight:400;color:var(--muted)">/mês</span></div>
-        <div class="plan-period">ou R$3.811/ano (-20%)</div>
+        <div class="plan-period">ou R$3.811/ano (−20%)</div>
         <ul class="plan-features">
           <li>Usuários ilimitados</li>
           <li>Produtos ilimitados</li>
@@ -341,70 +740,163 @@ gtag('config', 'G-L6ZX24EJ98');
           <li>API + PDV (em breve)</li>
           <li>Suporte prioritário</li>
         </ul>
-        <a href="/login" class="btn-ghost" style="display:block;text-align:center">Começar agora</a>
+        <a href="/login" class="pricing-cta ghost">Começar agora</a>
       </div>
     </div>
-    <p class="reassurance">Todos os planos pagos incluem NF-e, IA assistente e cancelamento a qualquer momento.</p>
+    <p class="reassurance">Todos os planos pagos emitem NF-e no modelo da reforma, têm IA assistente e você cancela quando quiser.</p>
+  </div>
+</section>
+
+<!-- Contadores -->
+<section id="contadores">
+  <div class="container">
+    <div class="affiliate-card">
+      <h2 style="font-size:32px;font-weight:800;margin-bottom:12px">Contador? A reforma é sua<br><span class="grad-text">maior oportunidade.</span></h2>
+      <p style="font-size:16px;color:var(--text2);max-width:560px;margin:0 auto 24px;line-height:1.7">Sua carteira inteira vai sentir a Reforma Tributária. Em vez de apagar incêndio cliente por cliente, leve a eles um sistema que já emite no novo modelo. Você acompanha a operação de cada cliente com acesso de leitura, sem custo.</p>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:28px;font-size:14px;color:var(--text2)">
+        <span>✓ Acesso de contador externo incluso</span>
+        <span>✓ Material de apresentação para seus clientes</span>
+      </div>
+      <a href="/login" class="btn-primary">Quero indicar como contador →</a>
+    </div>
   </div>
 </section>
 
 <!-- FAQ -->
 <section>
-  <div class="container">
-    <h2 class="section-title" style="text-align:center">Perguntas frequentes</h2>
+  <div class="container text-center">
+    <div class="section-label">Dúvidas</div>
+    <h2 class="section-title">Perguntas <span class="grad-text">frequentes</span></h2>
     <div class="faq-list">
-      <div class="faq-item"><div class="faq-q">Preciso de cartão para o trial?</div><div class="faq-a">Não. Só email e senha.</div></div>
-      <div class="faq-item"><div class="faq-q">Como migro meus dados?</div><div class="faq-a">Importamos CSV do Bling, Conta Azul e Omie. Detectamos o formato automaticamente.</div></div>
-      <div class="faq-item"><div class="faq-q">Funciona para qual ramo?</div><div class="faq-a">Distribuidoras, varejo, construção, alimentos, pet, farmácias, agro e muito mais. Configurável por segmento.</div></div>
-      <div class="faq-item"><div class="faq-q">A IA usa meus dados reais?</div><div class="faq-a">Sim. Ela lê sua operação no Stoqio e responde com base no seu estoque, clientes e NFs reais.</div></div>
-      <div class="faq-item"><div class="faq-q">Tem suporte?</div><div class="faq-a">Sim. Chat e email. Profissional e Empresarial têm prioridade.</div></div>
-      <div class="faq-item"><div class="faq-q">Posso cancelar?</div><div class="faq-a">Sim, quando quiser. Sem multa, sem burocracia.</div></div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">A Stoqio está pronta para a Reforma Tributária?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Sim. O emissor já trabalha com os campos de IBS e CBS e o cadastro de produto já tem a classificação tributária exigida. Conforme as regras avançam até 2033, a Stoqio acompanha.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">A Stoqio calcula o imposto da reforma pra mim?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">A Stoqio emite a nota no formato exigido. A apuração e a decisão tributária (ex.: sair ou não do Simples) seguem com você e seu contador — a gente não substitui a orientação contábil.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">Preciso de cartão para o trial?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Não. Só email e senha. Nenhum dado financeiro é pedido para começar o trial.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">Como migro meus dados?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Importamos CSV do Bling, Conta Azul e Omie. Detectamos o formato automaticamente — você faz upload e confirma antes de importar.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">Funciona para qual ramo?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Distribuidoras, varejo, construção, alimentos, pet, farmácias, agro e mais 10 segmentos. Configurável: o sistema ajusta categorias e fluxos ao seu ramo.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">A IA usa meus dados reais?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Sim. Ela lê sua operação no Stoqio e responde com base no seu estoque, clientes e NFs reais — não é um chatbot genérico.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">Tem suporte?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Sim. Chat e email para todos os planos. Profissional e Empresarial têm fila prioritária.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-btn">
+          <span class="faq-q">Posso cancelar?</span>
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-a">Sim, quando quiser. Sem multa, sem burocracia. O acesso fica ativo até o fim do período pago.</div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- CTA Final -->
-<section class="cta-final">
-  <div class="container">
-    <h2>Seu negócio merece um sistema<br>que entende ele.</h2>
-    <p>14 dias grátis. Sem cartão. Comece agora.</p>
-    <a href="/login" class="btn-primary" style="font-size:18px;padding:16px 40px">Testar o Stoqio grátis →</a>
+<div class="cta-final">
+  <div class="cta-final-bg"></div>
+  <div class="cta-final-orb"></div>
+  <div class="container cta-final-content">
+    <h2>Seu negócio merece um sistema<br><span class="grad-text">que entende ele.</span></h2>
+    <p>14 dias grátis. Sem cartão. E sua nota já pronta para 2026.</p>
+    <a href="/login" class="btn-primary" style="font-size:18px;padding:16px 48px">Testar o Stoqio grátis →</a>
+    <div class="trust-signals" style="margin-top:20px;justify-content:center">
+      <span>Sem cartão de crédito</span>
+      <span>Cancele quando quiser</span>
+      <span>14 dias completos</span>
+    </div>
   </div>
-</section>
+</div>
 
+<!-- Footer -->
 <footer>
   <div class="container">
-    <div class="footer-grid">
-      <div>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">Stoqio</div>
+        <p>ERP brasileiro para o seu tipo de negócio. Pedidos, estoque, NF-e, caixa e IA num só lugar.</p>
+      </div>
+      <div class="footer-col">
         <h4>Produto</h4>
         <a href="#funcionalidades">Funcionalidades</a>
         <a href="#precos">Preços</a>
+        <a href="#contadores">Contadores</a>
       </div>
-      <div>
+      <div class="footer-col">
         <h4>Empresa</h4>
         <a href="mailto:contato@stoqio.com.br">Contato</a>
       </div>
-      <div>
+      <div class="footer-col">
         <h4>Legal</h4>
         <a href="/termos">Termos de Uso</a>
         <a href="/privacidade">Privacidade</a>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 Stoqio. Todos os direitos reservados.</div>
+    <div class="footer-bottom">
+      <span>© 2026 Stoqio. Todos os direitos reservados.</span>
+      <span>Feito no Brasil 🇧🇷</span>
+    </div>
   </div>
 </footer>
 
 <script>
-// Navbar scroll effect
+// Navbar scroll
 window.addEventListener('scroll',()=>{
   document.getElementById('nav').classList.toggle('scrolled',window.scrollY>50);
 });
+
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click',e=>{
     if(a.getAttribute('href')==='#') return;
     e.preventDefault();
     document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
+
+// FAQ accordion
+document.querySelectorAll('.faq-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const item=btn.closest('.faq-item');
+    const isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+    if(!isOpen) item.classList.add('open');
   });
 });
 </script>
