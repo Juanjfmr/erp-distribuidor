@@ -421,13 +421,9 @@ async function faturarPedido(id){
   state.nfItems=o.items.map(it=>({productId:it.productId,qty:it.qty,price:it.price,itemDiscount:it.itemDiscount||0}));
   state.nfCosts=[];
   const clients=state.clients||[];
-  const nextNum=await getNextNFNumber();
   const obsVal=(o.notes||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   openModal(`<div class="modal-title">Emitir NF — Pedido ${o.number}</div>
     <div class="form-grid-2">
-      <div class="form-group"><label class="form-label">Número NF</label>
-        <input id="nf-num" class="form-input" value="${nextNum}" readonly>
-      </div>
       <div class="form-group"><label class="form-label">Data Emissão</label>
         <input id="nf-date" type="date" class="form-input" value="${today()}">
       </div>
@@ -494,15 +490,16 @@ async function faturarPedido(id){
     <div id="nf-costs-list" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="emitirNFdePedido('${nextNum}','${o.id}')">Emitir Nota</button>
+      <button class="btn btn-primary" onclick="emitirNFdePedido('${o.id}')">Emitir Nota</button>
     </div>`,true);
   nfRenderItems();
   nfRenderProdList("");
   nfRenderCosts();
   setTimeout(()=>{ const s=el("nf-scan-ean"); if(s) s.focus(); },100);
 }
-async function emitirNFdePedido(nfNum, pedidoId){
+async function emitirNFdePedido(pedidoId){
   if(!_guardSave()) return;
+  const nfNum=await getNextNFNumber();
   const clientId=parseInt(el("nf-client").value)||0;
   const terms=el("nf-terms").value;
   const disc=parseFloat(el("nf-disc").value)||0;

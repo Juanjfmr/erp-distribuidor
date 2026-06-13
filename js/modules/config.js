@@ -275,6 +275,16 @@ function renderConfig(activeTab){
       <button class="btn btn-primary" onclick="saveCatUnits()">Salvar Categorias e Unidades</button>
     </div>
     <div class="card" style="max-width:580px;margin-top:0">
+      <div class="section-title" style="margin-bottom:4px">Condições de Pagamento</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">As condições padrão de mercado já aparecem em pedidos e notas:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${DEFAULT_PAY_TERMS.map(t=>`<span class="badge bg-gray" style="font-size:11px">${escapeHtml(t)}</span>`).join("")}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Trabalha com alguma condição própria? Adicione aqui, separada por vírgula. Ex: <b>45 dias</b>, <b>15/30/45</b>.</div>
+      <div class="form-group">
+        <textarea id="cfg-payterms-extra" class="form-input" rows="2" style="resize:vertical" placeholder="Deixe em branco se as condições padrão já bastam">${escapeHtml((co.payTermsExtra||[]).join(", "))}</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="savePayConfig()">Salvar condições personalizadas</button>
+    </div>
+    <div class="card" style="max-width:580px;margin-top:0">
       <div class="section-title" style="margin-bottom:14px">Dados do Sistema</div>
       <div style="font-size:13px;color:var(--text2);line-height:2">
         Produtos: <b>${state.products.length}</b> &nbsp;·&nbsp;
@@ -344,6 +354,16 @@ function saveCatUnits(){
   state.company = {...(state.company||{}), categories: cats, units};
   saveState();
   showSyncStatus("✓ Categorias e unidades salvas");
+  renderConfig();
+}
+function savePayConfig(){
+  const extra = el("cfg-payterms-extra").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const prev = {...(state.company||{})};
+  prev.payTermsExtra = extra;
+  delete prev.payTerms; delete prev.payMethods; // limpa o formato antigo (lista completa)
+  state.company = prev;
+  saveState();
+  showSyncStatus(extra.length?`✓ ${extra.length} condição(ões) personalizada(s) salva(s)`:"✓ Condições atualizadas");
   renderConfig();
 }
 // ─── Logo da empresa ──────────────────────────────────────────────────

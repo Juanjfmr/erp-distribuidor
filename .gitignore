@@ -8,6 +8,11 @@ functions/node_modules/
 # Obsidian
 .obsidian/
 
+# Tooling / swarm state (ruflo, vetores locais)
+.swarm/
+ruvector.db
+ruvector.db-*
+
 # OS
 .DS_Store
 Thumbs.db

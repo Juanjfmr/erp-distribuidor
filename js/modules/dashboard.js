@@ -135,51 +135,74 @@ function renderDashboard(){
       : emptyState('bar-chart','Nenhum dado ainda','Comece cadastrando produtos e clientes para ver o dashboard.','Ir para Produtos',"navigate('produtos')");
   }
 
+  const kpiAccent = (color) => `position:absolute;top:0;left:0;right:0;height:3px;background:${color};border-radius:var(--radius-md) var(--radius-md) 0 0`;
+
   el("content").innerHTML = `
     ${onboardingHtml}
-    <div class="card" style="padding:16px 20px;margin-bottom:16px;background:linear-gradient(135deg,var(--primary-subtle),transparent 60%);border-color:var(--primary-border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">Pedidos Pendentes de Faturamento</div>
-          <div style="display:flex;align-items:baseline;gap:12px;margin-top:2px">
-            <span class="mono" style="font-size:28px;font-weight:600;color:var(--primary)">${pedidosPendentes.length}</span>
-            <span class="mono" style="font-size:18px;color:var(--text-secondary)">${fmt(totalPedidosPendentes)}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">${pedidosPendentes.slice(0,5).map(o=>{
-          const c=state.clients.find(cl=>cl.id==o.clientId);
-          return `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 7px;color:var(--text-secondary)">${c?.name?.substring(0,12)||'—'} ${fmt(o.total||0)}</span>`;
-        }).join('')}</div>
-      </div>
-    </div>
 
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
       <div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px">
         ${['hoje','semana','mes','mesant'].map(p=>`<button class="btn-sm" style="${period===p?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="window._dashPeriod='${p}';renderDashboard()">${p==='hoje'?'Hoje':p==='semana'?'7 dias':p==='mes'?'Este mês':'Mês anterior'}</button>`).join('')}
       </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="navigate('notas')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="13" height="13" style="vertical-align:middle"><use href="#icon-plus"/></svg> Nova NF-e</button>
+        <button class="btn btn-ghost" onclick="navigate('pedidos')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="13" height="13" style="vertical-align:middle"><use href="#icon-package"/></svg> Pedido</button>
+        <button class="btn btn-ghost" onclick="navigate('clientes')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="13" height="13" style="vertical-align:middle"><use href="#icon-users"/></svg> Cliente</button>
+      </div>
     </div>
 
-    <div class="kpi-grid" style="gap:12px;margin-bottom:20px">
-      <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value">${fmt(totalVendas)}</div><div class="kpi-sub">${totalNFs} NFs emitidas</div></div>
-      <div class="kpi"><div class="kpi-label">Saldo em Caixa</div><div class="kpi-value" style="color:${saldo>=0?'var(--success)':'var(--danger)'}">${fmt(saldo)}</div><div class="kpi-sub">Entradas − Saídas</div></div>
-      <div class="kpi"><div class="kpi-label">A Receber</div><div class="kpi-value" style="color:var(--warning)">${fmt(aReceber)}</div><div class="kpi-sub">${state.receivables.filter(r=>r.status==='aberta').length} parcelas</div></div>
-      <div class="kpi"><div class="kpi-label">Vencidas</div><div class="kpi-value" style="color:var(--danger)">${fmt(overdueRec.reduce((s,r)=>s+r.amount,0))}</div><div class="kpi-sub">${overdueRec.length} parcela(s)</div></div>
+    <div class="kpi-grid" style="gap:12px;margin-bottom:16px">
+      <div class="kpi" style="position:relative;overflow:hidden">
+        <div style="${kpiAccent('linear-gradient(90deg,var(--primary),#818cf8)')}"></div>
+        <div class="kpi-label" style="padding-top:4px">Faturamento</div>
+        <div class="kpi-value" style="color:var(--primary)">${fmt(totalVendas)}</div>
+        <div class="kpi-sub">${totalNFs} NF${totalNFs!==1?'s':''} emitida${totalNFs!==1?'s':''}</div>
+      </div>
+      <div class="kpi" style="position:relative;overflow:hidden">
+        <div style="${kpiAccent(saldo>=0?'linear-gradient(90deg,var(--success),#34d399)':'linear-gradient(90deg,var(--danger),#f87171)')}"></div>
+        <div class="kpi-label" style="padding-top:4px">Saldo em Caixa</div>
+        <div class="kpi-value" style="color:${saldo>=0?'var(--success)':'var(--danger)'}">${fmt(saldo)}</div>
+        <div class="kpi-sub">Entradas − Saídas</div>
+      </div>
+      <div class="kpi" style="position:relative;overflow:hidden">
+        <div style="${kpiAccent('linear-gradient(90deg,var(--warning),#fcd34d)')}"></div>
+        <div class="kpi-label" style="padding-top:4px">A Receber</div>
+        <div class="kpi-value" style="color:var(--warning)">${fmt(aReceber)}</div>
+        <div class="kpi-sub">${state.receivables.filter(r=>r.status==='aberta').length} parcela${state.receivables.filter(r=>r.status==='aberta').length!==1?'s':''} em aberto</div>
+      </div>
+      <div class="kpi" style="position:relative;overflow:hidden">
+        <div style="${kpiAccent(overdueRec.length?'linear-gradient(90deg,var(--danger),#f87171)':'linear-gradient(90deg,var(--success),#34d399)')}"></div>
+        <div class="kpi-label" style="padding-top:4px">Vencidas</div>
+        <div class="kpi-value" style="color:${overdueRec.length?'var(--danger)':'var(--success)'}">${fmt(overdueRec.reduce((s,r)=>s+r.amount,0))}</div>
+        <div class="kpi-sub">${overdueRec.length} parcela${overdueRec.length!==1?'s':''} vencida${overdueRec.length!==1?'s':''}</div>
+      </div>
     </div>
 
-    <div class="card" style="padding:0">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:16px;align-items:stretch">
+      <div class="card" style="margin-bottom:0;padding:16px 20px;background:linear-gradient(135deg,var(--primary-subtle),transparent 70%);border-color:var(--primary-border);position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--primary),transparent)"></div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">Pedidos Pendentes</div>
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span class="mono" style="font-size:32px;font-weight:700;color:var(--primary);line-height:1">${pedidosPendentes.length}</span>
+          <span class="mono" style="font-size:16px;color:var(--text-secondary)">${fmt(totalPedidosPendentes)}</span>
+        </div>
+        ${pedidosPendentes.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px">${pedidosPendentes.slice(0,4).map(o=>{const c=state.clients.find(cl=>cl.id==o.clientId);return `<span style="font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-secondary)">${c?.name?.substring(0,10)||'—'}</span>`;}).join('')}</div>`:'<div style="font-size:12px;color:var(--text-muted);margin-top:6px">Nenhum pedido pendente</div>'}
+      </div>
+      <div class="card" onclick="navigate('produtos')" style="margin-bottom:0;padding:16px 20px;cursor:pointer;min-width:130px;text-align:center;border-color:${lowStock.length?'rgba(245,158,11,.3)':'var(--border)'}">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">Estoque Baixo</div>
+        <div style="font-size:36px;font-weight:700;color:${lowStock.length?'var(--warning)':'var(--success)'};line-height:1">${lowStock.length}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">produto${lowStock.length!==1?'s':''}</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;margin-bottom:0">
       <div style="display:flex;border-bottom:1px solid var(--border);padding:0 16px">
-        ${['nfs','pedidos','financeiro'].map(t=>`<button style="padding:10px 14px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid ${feedTab===t?'var(--primary)':'transparent'};color:${feedTab===t?'var(--primary)':'var(--text-muted)'};cursor:pointer" onclick="window._feedTab='${t}';renderDashboard()">${t==='nfs'?'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-file-text\"/></svg> NFs':t==='pedidos'?'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-clipboard\"/></svg> Pedidos':'<svg width=\"14\" height=\"14\" style=\"vertical-align:middle\"><use href=\"#icon-credit-card\"/></svg> Financeiro'}</button>`).join('')}
+        ${['nfs','pedidos','financeiro'].map(t=>`<button style="padding:10px 14px;font-size:13px;font-weight:500;background:none;border:none;border-bottom:2px solid ${feedTab===t?'var(--primary)':'transparent'};color:${feedTab===t?'var(--primary)':'var(--text-muted)'};cursor:pointer;transition:color .15s" onclick="window._feedTab='${t}';renderDashboard()">${t==='nfs'?'<svg width="13" height="13" style="vertical-align:middle"><use href="#icon-file-text"/></svg> NFs':t==='pedidos'?'<svg width="13" height="13" style="vertical-align:middle"><use href="#icon-clipboard"/></svg> Pedidos':'<svg width="13" height="13" style="vertical-align:middle"><use href="#icon-credit-card"/></svg> Financeiro'}</button>`).join('')}
       </div>
       <div style="padding:4px 16px 12px">
         ${feedContent}
-        ${pedidosPendentes.length>5||recentNF.length>5||recentRec.length>5?`<div style="text-align:center;padding:8px;font-size:12px;color:var(--primary);cursor:pointer" onclick="navigate('${feedTab==='pedidos'?'pedidos':feedTab==='financeiro'?'contas':'notas'}')">Ver todos →</div>`:''}
+        ${pedidosPendentes.length>5||recentNF.length>5||recentRec.length>5?`<div style="text-align:center;padding:8px;font-size:12px;color:var(--primary);cursor:pointer;opacity:.8" onclick="navigate('${feedTab==='pedidos'?'pedidos':feedTab==='financeiro'?'contas':'notas'}')">Ver todos →</div>`:''}
       </div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="navigate('notas')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-plus"/></svg> Nova NF-e</button>
-      <button class="btn btn-ghost" onclick="navigate('pedidos')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-package"/></svg> Novo Pedido</button>
-      <button class="btn btn-ghost" onclick="navigate('clientes')" style="display:flex;align-items:center;gap:6px;font-size:13px"><svg width="14" height="14" style="vertical-align:middle"><use href="#icon-users"/></svg> Novo Cliente</button>
     </div>`;
 }
 
