@@ -1,6 +1,6 @@
 // Service Worker — Stoqio PWA
 // Cache de assets estáticos (HTML/CSS/JS). Dados sempre do Firestore (online-first).
-const CACHE = 'stoqio-v4';
+const CACHE = 'stoqio-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -45,6 +45,23 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // Só cacheia GET de assets estáticos — dados da API/Firebase passam direto
   if (e.request.method !== 'GET') return;
+
+  // HTML / navegação: network-first — landing e app sempre frescos.
+  // Cache só entra como fallback offline. Evita servir página antiga do SW.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp.ok && resp.type === 'basic') {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // Assets estáticos (JS/CSS): cache-first com revalidação em background.
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fetched = fetch(e.request).then(resp => {
