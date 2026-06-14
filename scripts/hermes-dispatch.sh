@@ -21,9 +21,19 @@ export PATH="/c/Users/juana/.bun/bin:/c/Users/juana/AppData/Roaming/npm/node_mod
 HERMES="/c/Users/juana/AppData/Local/hermes/hermes-agent/venv/Scripts/hermes.exe"
 STOQIO="/c/Users/juana/Claudecode/stoqio"
 
-# 1) Contexto relevante da memória GBrain (busca semântica)
-CTX=$(gbrain search "$TASK" 2>/dev/null | head -50)
-[ -z "$CTX" ] && CTX="(sem contexto do GBrain — brain vazio ou indisponível)"
+# 1) Contexto relevante: busca direta no vault Obsidian (fonte de verdade).
+#    Substitui o GBrain (busca semântica que travava) por grep determinístico.
+VAULT="/c/Users/juana/OneDrive/Documentos/Obsidian Vault"
+TERMS=$(echo "$TASK" | tr 'A-Z' 'a-z' | grep -oE '[a-zà-ú]{5,}' | sort -u | head -8 | paste -sd'|' -)
+CTX=""
+if [ -n "$TERMS" ] && [ -d "$VAULT" ]; then
+  CTX=$(grep -rilE "$TERMS" "$VAULT" --include='*.md' 2>/dev/null | grep -v '/\.obsidian/' | head -5 | while read -r f; do
+    echo "### ${f#$VAULT/}"
+    grep -iE "$TERMS" "$f" 2>/dev/null | head -8
+    echo
+  done)
+fi
+[ -z "$CTX" ] && CTX="(sem contexto relevante no vault)"
 
 # 2) Monta o prompt do implementador
 read -r -d '' PROMPT <<EOF || true
@@ -32,7 +42,7 @@ Você é o implementador DeepSeek do projeto Stoqio. Trabalhe no diretório atua
 == TAREFA ==
 $TASK
 
-== CONTEXTO DA MEMÓRIA (GBrain) ==
+== CONTEXTO DO VAULT (Obsidian — fonte de verdade) ==
 $CTX
 
 == REGRAS ==
