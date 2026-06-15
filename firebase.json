@@ -13,6 +13,7 @@
       "wiki/**",
       ".claude/**",
       ".obsidian/**",
+      ".hermes/**",
       "**/node_modules/**",
       "ruvector.db",
       "*.db",
@@ -25,7 +26,8 @@
       "rodaria",
       "cert-*",
       "*.pem",
-      "*.pfx"
+      "*.pfx",
+      "index-v1.html"
     ],
     "headers": [
       {
@@ -58,6 +60,18 @@
       {
         "source": "/admin.html",
         "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      },
+      {
+        "source": "/app.html",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      },
+      {
+        "source": "robots.txt",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+      },
+      {
+        "source": "sitemap.xml",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
       }
     ],
     "rewrites": [

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /admin
+Disallow: /login
+Disallow: /api/
+Disallow: /functions/
+Disallow: /404.html
+Disallow: /sw.js
+Disallow: /manifest.json
+
+Sitemap: https://stoqio.com.br/sitemap.xml
