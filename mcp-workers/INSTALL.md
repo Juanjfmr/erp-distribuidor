@@ -7,24 +7,25 @@ ao MiniMax M3 como camada de workers. O Claude Opus orquestra; o M3 executa.
 
 ## Pré-requisitos
 
-### 1. Node.js (v20 ou superior)
+### 1. Node.js v20 ou superior
 
 1. Acesse https://nodejs.org e baixe a versão **LTS**
 2. Execute o instalador com as opções padrão
-3. Abra o **Prompt de Comando** e confirme:
+3. Abra o **PowerShell** e confirme:
    ```
    node --version
    npm --version
    ```
+   O comando `node --version` deve retornar v20.x.x ou superior.
 
 ### 2. Chave da API MiniMax
 
 1. Acesse https://platform.minimax.io
 2. Crie uma conta ou faça login
 3. Navegue até **API Keys** e gere uma nova chave
-4. Guarde a chave — você vai precisar dela no passo 3
+4. Guarde a chave — você vai precisar dela no Passo 3
 
-> **Opcional:** Se quiser fallback para DeepSeek, gere também uma chave em https://platform.deepseek.com
+> **Opcional:** Para fallback automático em caso de falha do MiniMax, gere também uma chave em https://platform.deepseek.com
 
 ---
 
@@ -54,6 +55,10 @@ Remove-Item -Recurse -Force _tmp_mcp
 cd "$env:USERPROFILE\mcp-workers"
 npm install
 ```
+
+> **Reproducibilidade:** O `npm install` gera um `package-lock.json` local com as
+> versões exatas instaladas. Se quiser garantir que reinstalações futuras usem
+> as mesmas versões, guarde esse arquivo: `Copy-Item package-lock.json ../package-lock.json.bak`
 
 ### Passo 3 — Configurar variáveis de ambiente
 
@@ -89,7 +94,7 @@ node index.js
 ```
 
 Se aparecer a mensagem `minimax-workers MCP server running`, está funcionando.
-Pressione `Ctrl+C` para parar — o Claude Code vai iniciar o servidor automaticamente.
+Pressione `Ctrl+C` para parar — o Claude Code inicializa e encerra o servidor automaticamente.
 
 ---
 
@@ -123,62 +128,56 @@ Se o arquivo não existir, crie-o. Adicione (ou mescle) o bloco `mcpServers`:
 }
 ```
 
-> **Atenção:** Substitua `SEU_USUARIO` pelo seu nome de usuário Windows
-> (ex: `C:\\Users\\Juan\\mcp-workers\\index.js`)
+> **Atenção:** Substitua `SEU_USUARIO` pelo seu nome de usuário Windows.
 
-Se o arquivo `settings.json` já tiver conteúdo, adicione apenas o bloco
-`"minimax-workers"` dentro de `"mcpServers"` sem sobrescrever o restante.
+Se o `settings.json` já tiver conteúdo, adicione apenas o bloco `"minimax-workers"`
+dentro de `"mcpServers"` sem sobrescrever o restante.
 
 ### Passo 6 — Adicionar instruções de comportamento (global)
-
-Abra (ou crie) o arquivo de instruções globais:
 
 ```powershell
 notepad "$env:USERPROFILE\.claude\CLAUDE.md"
 ```
 
 Copie e cole o conteúdo do arquivo `claude-config/CLAUDE.md` deste repositório.
-
-Se o arquivo já existir com conteúdo, adicione as regras de delegação
-no final sem remover o que já está lá.
+Se o arquivo já existir, adicione as regras de delegação no final.
 
 ---
 
 ## Verificação final
 
 1. Feche e reabra o Claude Code
-2. Em qualquer sessão, execute:
-   ```
-   /mcp
-   ```
-   Você deve ver `minimax-workers` listado com as tools:
+2. Execute `/mcp` em qualquer sessão — `minimax-workers` deve aparecer com:
    - `summarize_file`
    - `execute_task`
    - `swarm_execute`
-
-3. Teste rápido — peça ao Claude:
+3. Teste rápido:
    ```
    Use execute_task para gerar uma função JavaScript que soma dois arrays
    ```
-   O Claude deve chamar a tool e retornar o resultado do worker M3.
 
 ---
 
-## Estrutura instalada
+## Onde ficam os arquivos de dados
 
 ```
 %USERPROFILE%\
 ├── .claude/
-│   ├── settings.json    ← MCP server registrado aqui
-│   └── CLAUDE.md        ← Regras de delegação globais
+│   ├── settings.json       ← MCP server registrado
+│   └── CLAUDE.md           ← Regras de delegação globais
+├── .cache/
+│   └── mcp-workers/
+│       ├── cache.json         ← Cache persistente de resumos (LRU, 500 entradas)
+│       └── usage.log          ← Log NDJSON: modelo, tokens, latência, ferramenta
 └── mcp-workers/
-    ├── index.js         ← Servidor MCP principal
+    ├── index.js
     ├── package.json
-    ├── .env             ← Suas chaves de API (não commitar)
+    ├── .env                ← Suas chaves de API (nunca commitar)
     └── src/
-        ├── workers.js   ← Pool de workers + rate limiter
-        ├── cache.js     ← Cache de resultados (TTL 1h)
-        └── router.js    ← Classificador de complexidade de tarefas
+        ├── workers.js         ← Pool + semáforo + sliding window rate limiter
+        ├── cache.js           ← Cache LRU com persistência em disco
+        ├── logger.js          ← Log de uso e custo
+        └── router.js          ← Classificação de complexidade de tarefas
 ```
 
 ---
@@ -187,16 +186,16 @@ no final sem remover o que já está lá.
 
 **`minimax-workers` não aparece no `/mcp`**
 - Confirme que o caminho no `settings.json` usa barras duplas (`\\`)
-- Confirme que o Node.js está no PATH: `node --version` no PowerShell
+- Confirme que Node.js é v20+: `node --version`
 - Reinicie o Claude Code completamente
 
 **Erro `model not found` ou `invalid model`**
-- Acesse seu dashboard MiniMax e verifique o nome exato do modelo disponível
+- Acesse seu dashboard MiniMax e verifique o nome exato do modelo
 - Atualize `MINIMAX_MODEL` no `.env` e no `settings.json`
 
 **Rate limit atingido**
-- Reduza `MAX_CONCURRENT` para 20 ou `MAX_RPM` para 100 no `.env` e no `settings.json`
+- Reduza `MAX_CONCURRENT` para 20 ou `MAX_RPM` para 100
 
 **Fallback para DeepSeek**
 - Adicione `DEEPSEEK_API_KEY=sua_chave` no `.env` e no bloco `env` do `settings.json`
-- O servidor usa DeepSeek automaticamente quando MiniMax falha
+- O fallback é automático para erros 429/5xx e timeouts

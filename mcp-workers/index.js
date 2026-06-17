@@ -14,11 +14,21 @@ if (!process.env.MINIMAX_API_KEY) {
 
 const MAX_FILE_SIZE_BYTES = Number(process.env.MAX_FILE_SIZE_BYTES ?? 512_000);
 
-const server = new McpServer({ name: 'minimax-workers', version: '1.2.0' });
+const server = new McpServer({ name: 'minimax-workers', version: '1.3.0' });
 const pool = new WorkerPool();
 const cache = new Cache();
 
+// Graceful shutdown: flush cache to disk before the process exits
+async function onShutdown() {
+  await cache.shutdown();
+  process.exit(0);
+}
+process.on('SIGTERM', onShutdown);
+process.on('SIGINT', onShutdown);
+
 const SUMMARIZE_SYSTEM = 'You are a senior developer assistant. Summarize source files so a lead architect can understand them quickly without reading every line. Be concise and precise. Return ONLY valid JSON — no markdown fences, no explanation outside the JSON object.';
+
+const EXECUTE_SYSTEM = 'You are an expert software developer. Execute the requested task precisely and return only the requested output — no explanation, no preamble, no apology, unless the task explicitly asks for commentary.';
 
 const SUMMARIZE_SCHEMA = `{
   "overview": "one paragraph description of what this file does",
@@ -54,7 +64,6 @@ server.tool(
       };
     }
 
-    // mtimeMs in key ensures cache busts automatically when file is edited
     const cacheKey = `summary:${filePath}:${focus ?? 'general'}:${fileStat.mtimeMs}`;
     const cached = cache.get(cacheKey);
     if (cached) return { content: [{ type: 'text', text: `[CACHED]\n${cached}` }] };
@@ -69,7 +78,7 @@ server.tool(
     const focusLine = focus ? `Focus specifically on: ${focus}.\n\n` : '';
     const prompt = `${focusLine}Return ONLY valid JSON matching this structure:\n${SUMMARIZE_SCHEMA}\n\nFile (${filePath}):\n\`\`\`\n${content}\n\`\`\``;
 
-    const result = await pool.execute({ systemPrompt: SUMMARIZE_SYSTEM, prompt, complexity: 'medium' });
+    const result = await pool.execute({ systemPrompt: SUMMARIZE_SYSTEM, prompt, complexity: 'medium', toolName: 'summarize_file' });
     cache.set(cacheKey, result, 3600);
     return { content: [{ type: 'text', text: result }] };
   }
@@ -90,7 +99,7 @@ server.tool(
     if (output_format) parts.push(`\nReturn output as: ${output_format}`);
 
     const complexity = routeTask(task);
-    const result = await pool.execute({ prompt: parts.join(''), complexity });
+    const result = await pool.execute({ systemPrompt: EXECUTE_SYSTEM, prompt: parts.join(''), complexity, toolName: 'execute_task' });
     return { content: [{ type: 'text', text: result }] };
   }
 );
@@ -110,7 +119,7 @@ server.tool(
     aggregate: z.boolean().optional().describe('If true, returns merged text. If false (default), returns JSON array with per-task results.'),
   },
   async ({ tasks, aggregate }) => {
-    const results = await pool.swarm(tasks);
+    const results = await pool.swarm(tasks, { systemPrompt: EXECUTE_SYSTEM });
 
     if (aggregate) {
       const merged = results

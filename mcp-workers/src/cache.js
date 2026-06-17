@@ -20,25 +20,19 @@ export class Cache {
       const now = Date.now();
       let loaded = 0;
       for (const [key, entry] of Object.entries(entries)) {
-        if (entry.expires > now) {
-          this._store.set(key, entry);
-          loaded++;
-        }
+        if (entry.expires > now) { this._store.set(key, entry); loaded++; }
       }
       console.error(`[cache] Loaded ${loaded} valid entries from disk`);
     } catch {
-      // File doesn't exist or is corrupted — start fresh
+      // File doesn't exist or corrupted — start fresh
     }
   }
 
   get(key) {
     const entry = this._store.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expires) {
-      this._store.delete(key);
-      return null;
-    }
-    // LRU: re-insert to move to end of Map iteration order
+    if (Date.now() > entry.expires) { this._store.delete(key); return null; }
+    // LRU: re-insert moves entry to end of Map iteration order
     this._store.delete(key);
     this._store.set(key, entry);
     return entry.value;
@@ -46,41 +40,34 @@ export class Cache {
 
   set(key, value, ttlSeconds = 3600) {
     if (this._store.size >= MAX_ENTRIES && !this._store.has(key)) {
-      // Evict least recently used (first entry in Map)
       this._store.delete(this._store.keys().next().value);
     }
-    this._store.set(key, {
-      value,
-      expires: Date.now() + ttlSeconds * 1_000,
-    });
+    this._store.set(key, { value, expires: Date.now() + ttlSeconds * 1_000 });
     this._scheduleSave();
   }
 
-  invalidate(key) {
-    this._store.delete(key);
-    this._scheduleSave();
-  }
+  invalidate(key) { this._store.delete(key); this._scheduleSave(); }
 
-  clear() {
-    this._store.clear();
-    this._scheduleSave();
-  }
+  clear() { this._store.clear(); this._scheduleSave(); }
 
-  get size() {
-    return this._store.size;
-  }
+  get size() { return this._store.size; }
 
-  _scheduleSave() {
-    clearTimeout(this._saveTimer);
-    this._saveTimer = setTimeout(() => this._persistToDisk(), SAVE_DEBOUNCE_MS);
-  }
-
-  async _persistToDisk() {
+  async flush() {
     try {
       await mkdir(CACHE_DIR, { recursive: true });
       await writeFile(CACHE_FILE, JSON.stringify(Object.fromEntries(this._store)));
     } catch (err) {
       console.error(`[cache] Failed to persist: ${err.message}`);
     }
+  }
+
+  async shutdown() {
+    clearTimeout(this._saveTimer);
+    await this.flush();
+  }
+
+  _scheduleSave() {
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this.flush(), SAVE_DEBOUNCE_MS);
   }
 }

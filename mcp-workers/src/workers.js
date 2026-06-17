@@ -2,7 +2,7 @@ import { logUsage, estimateTokens } from './logger.js';
 
 const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.io/v1';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL ?? 'MiniMax-M3';
-const MINIMAX_MODEL_SIMPLE = process.env.MINIMAX_MODEL_SIMPLE; // optional cheaper model for 'simple' tasks
+const MINIMAX_MODEL_SIMPLE = process.env.MINIMAX_MODEL_SIMPLE;
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-chat';
 
@@ -20,10 +20,7 @@ class Semaphore {
   }
 
   async acquire() {
-    if (this._active < this._limit) {
-      this._active++;
-      return;
-    }
+    if (this._active < this._limit) { this._active++; return; }
     await new Promise(resolve => this._queue.push(resolve));
     this._active++;
   }
@@ -37,28 +34,25 @@ class Semaphore {
 
 export class WorkerPool {
   constructor() {
-    this._requestCount = 0;
-    this._windowStart = Date.now();
+    this._timestamps = []; // sliding window: array of request timestamps
     this._semaphore = new Semaphore(MAX_CONCURRENT);
   }
 
+  // Sliding window rate limiter: no burst at window boundaries
   async _acquireSlot() {
-    const now = Date.now();
-    const elapsed = now - this._windowStart;
-
-    if (elapsed >= 60_000) {
-      this._requestCount = 0;
-      this._windowStart = now;
+    for (;;) {
+      const now = Date.now();
+      while (this._timestamps.length > 0 && now - this._timestamps[0] >= 60_000) {
+        this._timestamps.shift();
+      }
+      if (this._timestamps.length < MAX_RPM) {
+        this._timestamps.push(now);
+        return;
+      }
+      // Wait exactly until the oldest request exits the 60s window
+      const wait = 60_000 - (now - this._timestamps[0]) + 10;
+      await new Promise(r => setTimeout(r, wait));
     }
-
-    if (this._requestCount >= MAX_RPM) {
-      const wait = 60_000 - elapsed;
-      await new Promise(r => setTimeout(r, wait + 100));
-      this._requestCount = 0;
-      this._windowStart = Date.now();
-    }
-
-    this._requestCount++;
   }
 
   _selectModel(complexity) {
@@ -78,10 +72,7 @@ export class WorkerPool {
     try {
       response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages, temperature: 0.1, max_tokens: 4096 }),
         signal: controller.signal,
       });
@@ -107,7 +98,7 @@ export class WorkerPool {
     return !err.status || RETRYABLE_STATUS.has(err.status);
   }
 
-  async execute({ prompt, systemPrompt, complexity = 'medium' }) {
+  async execute({ prompt, systemPrompt, complexity = 'medium', toolName = 'execute' }) {
     await this._acquireSlot();
 
     const model = this._selectModel(complexity);
@@ -116,48 +107,38 @@ export class WorkerPool {
 
     try {
       const result = await this._callAPI({
-        systemPrompt,
-        userPrompt: prompt,
-        baseUrl: MINIMAX_BASE_URL,
-        model,
-        apiKey: process.env.MINIMAX_API_KEY,
+        systemPrompt, userPrompt: prompt,
+        baseUrl: MINIMAX_BASE_URL, model, apiKey: process.env.MINIMAX_API_KEY,
       });
-      logUsage({ model, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs });
+      logUsage({ tool: toolName, model, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs });
       return result;
     } catch (primaryErr) {
       if (!process.env.DEEPSEEK_API_KEY || !this._shouldFallback(primaryErr)) {
-        logUsage({ model, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: primaryErr.message });
+        logUsage({ tool: toolName, model, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: primaryErr.message });
         throw primaryErr;
       }
-
       console.error(`[workers] MiniMax failed (${primaryErr.message}), falling back to DeepSeek`);
       try {
         const result = await this._callAPI({
-          systemPrompt,
-          userPrompt: prompt,
-          baseUrl: DEEPSEEK_BASE_URL,
-          model: DEEPSEEK_MODEL,
-          apiKey: process.env.DEEPSEEK_API_KEY,
+          systemPrompt, userPrompt: prompt,
+          baseUrl: DEEPSEEK_BASE_URL, model: DEEPSEEK_MODEL, apiKey: process.env.DEEPSEEK_API_KEY,
         });
-        logUsage({ model: DEEPSEEK_MODEL, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs, fallback: true });
+        logUsage({ tool: toolName, model: DEEPSEEK_MODEL, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs, fallback: true });
         return result;
       } catch (fallbackErr) {
-        logUsage({ model: DEEPSEEK_MODEL, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: fallbackErr.message });
+        logUsage({ tool: toolName, model: DEEPSEEK_MODEL, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: fallbackErr.message });
         throw fallbackErr;
       }
     }
   }
 
-  // True semaphore swarm: a new task starts as soon as any slot opens
-  async swarm(tasks) {
+  async swarm(tasks, { systemPrompt, toolName = 'swarm_execute' } = {}) {
     return Promise.all(
       tasks.map(async (task) => {
         await this._semaphore.acquire();
         try {
-          const prompt = task.context
-            ? `${task.task}\n\nContext:\n${task.context}`
-            : task.task;
-          const result = await this.execute({ prompt });
+          const prompt = task.context ? `${task.task}\n\nContext:\n${task.context}` : task.task;
+          const result = await this.execute({ prompt, systemPrompt, toolName });
           return { id: task.id, result, success: true };
         } catch (err) {
           return { id: task.id, result: err.message, success: false };
