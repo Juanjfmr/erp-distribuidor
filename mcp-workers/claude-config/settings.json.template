@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "minimax-workers": {
+      "command": "node",
+      "args": ["C:\\Users\\SEU_USUARIO\\mcp-workers\\index.js"],
+      "env": {
+        "MINIMAX_API_KEY": "SUA_CHAVE_AQUI",
+        "MINIMAX_MODEL": "MiniMax-M3",
+        "MINIMAX_BASE_URL": "https://api.minimax.io/v1",
+        "MAX_RPM": "190",
+        "MAX_CONCURRENT": "40"
+      }
+    }
+  }
+}
