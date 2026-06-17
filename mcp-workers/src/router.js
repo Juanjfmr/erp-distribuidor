@@ -1,5 +1,6 @@
-// Classifies task complexity to guide future model routing
-// Currently all tasks go to MiniMax M3 — extend here when adding cheaper/faster models
+// Classifies task complexity — metadata for logging and future model routing.
+// To route simple tasks to a cheaper model, add the logic in WorkerPool.execute()
+// using the complexity value passed from here.
 
 const SIMPLE_PATTERNS = [
   /\bformat\b/i,
@@ -21,11 +22,7 @@ const COMPLEX_PATTERNS = [
   /\bperformance\b/i,
 ];
 
-/**
- * Returns 'simple' | 'medium' | 'complex'
- * Used by execute_task to attach metadata to requests.
- * Routing logic can be expanded here to select cheaper models for simpler tasks.
- */
+/** Returns 'simple' | 'medium' | 'complex' */
 export function routeTask(task) {
   if (SIMPLE_PATTERNS.some(p => p.test(task))) return 'simple';
   if (COMPLEX_PATTERNS.some(p => p.test(task))) return 'complex';

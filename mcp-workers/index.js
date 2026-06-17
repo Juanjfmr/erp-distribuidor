@@ -2,60 +2,65 @@ import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { WorkerPool } from './src/workers.js';
 import { Cache } from './src/cache.js';
 import { routeTask } from './src/router.js';
 
-const server = new McpServer({
-  name: 'minimax-workers',
-  version: '1.0.0',
-});
+if (!process.env.MINIMAX_API_KEY) {
+  console.error('[mcp-workers] MINIMAX_API_KEY is not set. Configure it in .env or in the env block of ~/.claude/settings.json.');
+  process.exit(1);
+}
 
+const MAX_FILE_SIZE_BYTES = Number(process.env.MAX_FILE_SIZE_BYTES ?? 512_000);
+
+const server = new McpServer({ name: 'minimax-workers', version: '1.1.0' });
 const pool = new WorkerPool();
 const cache = new Cache();
+
+const SUMMARIZE_SYSTEM = 'You are a senior developer assistant. Summarize source files so a lead architect can understand them quickly without reading every line. Be concise and precise. Return ONLY valid JSON — no markdown, no explanation outside the JSON object.';
 
 // ─── Tool 1: summarize_file ───────────────────────────────────────────────────
 server.tool(
   'summarize_file',
-  'Reads a large file and returns a structured summary optimized for Opus to process efficiently.',
+  'Reads a large file and returns a structured JSON summary optimized for Opus to process efficiently.',
   {
-    path: z.string().describe('Absolute path to the file'),
-    focus: z.string().optional().describe('Specific aspect to focus the summary on (e.g. "authentication logic", "data models")'),
+    filePath: z.string().describe('Absolute path to the file'),
+    focus: z.string().optional().describe('Specific aspect to focus on (e.g. "authentication logic", "data models")'),
   },
-  async ({ path, focus }) => {
-    const cacheKey = `summary:${path}:${focus ?? 'general'}`;
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return { content: [{ type: 'text', text: `[CACHED]\n${cached}` }] };
+  async ({ filePath, focus }) => {
+    let fileStat;
+    try {
+      fileStat = await stat(filePath);
+    } catch (err) {
+      return { content: [{ type: 'text', text: `Error accessing file: ${err.message}` }] };
     }
+
+    if (fileStat.size > MAX_FILE_SIZE_BYTES) {
+      return {
+        content: [{
+          type: 'text',
+          text: `File too large (${Math.round(fileStat.size / 1024)}KB). Limit is ${Math.round(MAX_FILE_SIZE_BYTES / 1024)}KB. Read specific sections instead.`,
+        }],
+      };
+    }
+
+    // mtimeMs in the key ensures edits automatically bust the cache
+    const cacheKey = `summary:${filePath}:${focus ?? 'general'}:${fileStat.mtimeMs}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return { content: [{ type: 'text', text: `[CACHED]\n${cached}` }] };
 
     let content;
     try {
-      content = await readFile(path, 'utf-8');
+      content = await readFile(filePath, 'utf-8');
     } catch (err) {
       return { content: [{ type: 'text', text: `Error reading file: ${err.message}` }] };
     }
 
-    const focusInstruction = focus ? `Focus specifically on: ${focus}.` : '';
-    const prompt = `You are a senior developer assistant. Summarize the following file so a lead architect can understand it quickly without reading every line. ${focusInstruction}
+    const focusLine = focus ? `Focus specifically on: ${focus}.\n\n` : '';
+    const prompt = `${focusLine}Return ONLY valid JSON:\n{\n  "overview": "one paragraph",\n  "key_elements": ["important functions, classes, patterns"],\n  "dependencies": ["external libs used"],\n  "state_managed": ["data/state this file owns"],\n  "concerns": ["issues, TODOs, surprises"],\n  "line_count": 0\n}\n\nFile (${filePath}):\n\`\`\`\n${content}\n\`\`\``;
 
-Return ONLY valid JSON with this structure:
-{
-  "overview": "one paragraph description of what this file does",
-  "key_elements": ["list of important functions, classes, or patterns"],
-  "dependencies": ["external libraries or modules used"],
-  "state_managed": ["data or state this file manages"],
-  "concerns": ["potential issues, TODOs, or things worth noting"],
-  "line_count": 0
-}
-
-File (${path}):
-\`\`\`
-${content}
-\`\`\``;
-
-    const result = await pool.execute({ prompt, complexity: 'medium' });
+    const result = await pool.execute({ systemPrompt: SUMMARIZE_SYSTEM, prompt, complexity: 'medium' });
     cache.set(cacheKey, result, 3600);
     return { content: [{ type: 'text', text: result }] };
   }
@@ -75,9 +80,8 @@ server.tool(
     if (context) parts.push(`\nContext:\n${context}`);
     if (output_format) parts.push(`\nReturn output as: ${output_format}`);
 
-    const prompt = parts.join('');
     const complexity = routeTask(task);
-    const result = await pool.execute({ prompt, complexity });
+    const result = await pool.execute({ prompt: parts.join(''), complexity });
     return { content: [{ type: 'text', text: result }] };
   }
 );
@@ -94,7 +98,7 @@ server.tool(
         context: z.string().optional().describe('Context or code for this specific task'),
       })
     ).describe('Array of independent tasks to run in parallel'),
-    aggregate: z.boolean().optional().describe('If true, returns a single merged text. If false (default), returns JSON array with per-task results.'),
+    aggregate: z.boolean().optional().describe('If true, returns merged text. If false (default), returns JSON array with per-task results.'),
   },
   async ({ tasks, aggregate }) => {
     const results = await pool.swarm(tasks);

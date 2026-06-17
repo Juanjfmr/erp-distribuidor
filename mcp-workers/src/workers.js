@@ -3,18 +3,19 @@ const MINIMAX_MODEL = process.env.MINIMAX_MODEL ?? 'MiniMax-M3';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-chat';
 
-const MAX_RPM = Number(process.env.MAX_RPM ?? 190); // keep 10 RPM margin below the 200 limit
+const MAX_RPM = Number(process.env.MAX_RPM ?? 190);
 const MAX_CONCURRENT = Number(process.env.MAX_CONCURRENT ?? 40);
+const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS ?? 60_000);
+
+// Only fall back to secondary provider on transient/server errors, not on client errors (4xx)
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 export class WorkerPool {
   constructor() {
     this._requestCount = 0;
     this._windowStart = Date.now();
-    this._queue = [];
-    this._activeWorkers = 0;
   }
 
-  // Token-bucket rate limiter — waits if we'd exceed MAX_RPM
   async _acquireSlot() {
     const now = Date.now();
     const elapsed = now - this._windowStart;
@@ -34,47 +35,66 @@ export class WorkerPool {
     this._requestCount++;
   }
 
-  async _callAPI({ prompt, baseUrl, model, apiKey }) {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        max_tokens: 4096,
-      }),
-    });
+  async _callAPI({ systemPrompt, userPrompt, baseUrl, model, apiKey }) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const messages = [];
+    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: 'user', content: userPrompt });
+
+    let response;
+    try {
+      response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model, messages, temperature: 0.1, max_tokens: 4096 }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') throw new Error(`Request timed out after ${FETCH_TIMEOUT_MS}ms`);
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`API ${response.status}: ${body.slice(0, 200)}`);
+      const err = new Error(`API ${response.status}: ${body.slice(0, 200)}`);
+      err.status = response.status;
+      throw err;
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   }
 
-  async execute({ prompt }) {
+  _shouldFallback(err) {
+    // Network errors have no status; server/rate-limit errors are retryable
+    return !err.status || RETRYABLE_STATUS.has(err.status);
+  }
+
+  async execute({ prompt, systemPrompt, complexity }) {
     await this._acquireSlot();
 
-    // Try MiniMax — fallback to DeepSeek if configured
     try {
       return await this._callAPI({
-        prompt,
+        systemPrompt,
+        userPrompt: prompt,
         baseUrl: MINIMAX_BASE_URL,
         model: MINIMAX_MODEL,
         apiKey: process.env.MINIMAX_API_KEY,
       });
     } catch (primaryErr) {
-      if (!process.env.DEEPSEEK_API_KEY) throw primaryErr;
+      if (!process.env.DEEPSEEK_API_KEY || !this._shouldFallback(primaryErr)) throw primaryErr;
 
-      console.error(`[workers] MiniMax failed, falling back to DeepSeek: ${primaryErr.message}`);
+      console.error(`[workers] MiniMax failed (${primaryErr.message}), falling back to DeepSeek`);
       return await this._callAPI({
-        prompt,
+        systemPrompt,
+        userPrompt: prompt,
         baseUrl: DEEPSEEK_BASE_URL,
         model: DEEPSEEK_MODEL,
         apiKey: process.env.DEEPSEEK_API_KEY,
@@ -82,7 +102,6 @@ export class WorkerPool {
     }
   }
 
-  // Fan-out: respects MAX_CONCURRENT, processes in chunks
   async swarm(tasks) {
     const results = [];
 
