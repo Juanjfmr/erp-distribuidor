@@ -1,5 +1,8 @@
+import { logUsage, estimateTokens } from './logger.js';
+
 const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.io/v1';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL ?? 'MiniMax-M3';
+const MINIMAX_MODEL_SIMPLE = process.env.MINIMAX_MODEL_SIMPLE; // optional cheaper model for 'simple' tasks
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-chat';
 
@@ -7,13 +10,36 @@ const MAX_RPM = Number(process.env.MAX_RPM ?? 190);
 const MAX_CONCURRENT = Number(process.env.MAX_CONCURRENT ?? 40);
 const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS ?? 60_000);
 
-// Only fall back to secondary provider on transient/server errors, not on client errors (4xx)
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+class Semaphore {
+  constructor(limit) {
+    this._limit = limit;
+    this._active = 0;
+    this._queue = [];
+  }
+
+  async acquire() {
+    if (this._active < this._limit) {
+      this._active++;
+      return;
+    }
+    await new Promise(resolve => this._queue.push(resolve));
+    this._active++;
+  }
+
+  release() {
+    this._active--;
+    const next = this._queue.shift();
+    if (next) next();
+  }
+}
 
 export class WorkerPool {
   constructor() {
     this._requestCount = 0;
     this._windowStart = Date.now();
+    this._semaphore = new Semaphore(MAX_CONCURRENT);
   }
 
   async _acquireSlot() {
@@ -33,6 +59,11 @@ export class WorkerPool {
     }
 
     this._requestCount++;
+  }
+
+  _selectModel(complexity) {
+    if (complexity === 'simple' && MINIMAX_MODEL_SIMPLE) return MINIMAX_MODEL_SIMPLE;
+    return MINIMAX_MODEL;
   }
 
   async _callAPI({ systemPrompt, userPrompt, baseUrl, model, apiKey }) {
@@ -73,58 +104,67 @@ export class WorkerPool {
   }
 
   _shouldFallback(err) {
-    // Network errors have no status; server/rate-limit errors are retryable
     return !err.status || RETRYABLE_STATUS.has(err.status);
   }
 
-  async execute({ prompt, systemPrompt, complexity }) {
+  async execute({ prompt, systemPrompt, complexity = 'medium' }) {
     await this._acquireSlot();
 
+    const model = this._selectModel(complexity);
+    const startMs = Date.now();
+    const promptTokens = estimateTokens((systemPrompt ?? '') + prompt);
+
     try {
-      return await this._callAPI({
+      const result = await this._callAPI({
         systemPrompt,
         userPrompt: prompt,
         baseUrl: MINIMAX_BASE_URL,
-        model: MINIMAX_MODEL,
+        model,
         apiKey: process.env.MINIMAX_API_KEY,
       });
+      logUsage({ model, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs });
+      return result;
     } catch (primaryErr) {
-      if (!process.env.DEEPSEEK_API_KEY || !this._shouldFallback(primaryErr)) throw primaryErr;
+      if (!process.env.DEEPSEEK_API_KEY || !this._shouldFallback(primaryErr)) {
+        logUsage({ model, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: primaryErr.message });
+        throw primaryErr;
+      }
 
       console.error(`[workers] MiniMax failed (${primaryErr.message}), falling back to DeepSeek`);
-      return await this._callAPI({
-        systemPrompt,
-        userPrompt: prompt,
-        baseUrl: DEEPSEEK_BASE_URL,
-        model: DEEPSEEK_MODEL,
-        apiKey: process.env.DEEPSEEK_API_KEY,
-      });
+      try {
+        const result = await this._callAPI({
+          systemPrompt,
+          userPrompt: prompt,
+          baseUrl: DEEPSEEK_BASE_URL,
+          model: DEEPSEEK_MODEL,
+          apiKey: process.env.DEEPSEEK_API_KEY,
+        });
+        logUsage({ model: DEEPSEEK_MODEL, tokens: promptTokens, success: true, latencyMs: Date.now() - startMs, fallback: true });
+        return result;
+      } catch (fallbackErr) {
+        logUsage({ model: DEEPSEEK_MODEL, tokens: promptTokens, success: false, latencyMs: Date.now() - startMs, error: fallbackErr.message });
+        throw fallbackErr;
+      }
     }
   }
 
+  // True semaphore swarm: a new task starts as soon as any slot opens
   async swarm(tasks) {
-    const results = [];
-
-    for (let i = 0; i < tasks.length; i += MAX_CONCURRENT) {
-      const chunk = tasks.slice(i, i + MAX_CONCURRENT);
-
-      const chunkResults = await Promise.all(
-        chunk.map(async (task) => {
+    return Promise.all(
+      tasks.map(async (task) => {
+        await this._semaphore.acquire();
+        try {
           const prompt = task.context
             ? `${task.task}\n\nContext:\n${task.context}`
             : task.task;
-          try {
-            const result = await this.execute({ prompt });
-            return { id: task.id, result, success: true };
-          } catch (err) {
-            return { id: task.id, result: err.message, success: false };
-          }
-        })
-      );
-
-      results.push(...chunkResults);
-    }
-
-    return results;
+          const result = await this.execute({ prompt });
+          return { id: task.id, result, success: true };
+        } catch (err) {
+          return { id: task.id, result: err.message, success: false };
+        } finally {
+          this._semaphore.release();
+        }
+      })
+    );
   }
 }

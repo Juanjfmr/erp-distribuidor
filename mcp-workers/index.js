@@ -14,11 +14,20 @@ if (!process.env.MINIMAX_API_KEY) {
 
 const MAX_FILE_SIZE_BYTES = Number(process.env.MAX_FILE_SIZE_BYTES ?? 512_000);
 
-const server = new McpServer({ name: 'minimax-workers', version: '1.1.0' });
+const server = new McpServer({ name: 'minimax-workers', version: '1.2.0' });
 const pool = new WorkerPool();
 const cache = new Cache();
 
-const SUMMARIZE_SYSTEM = 'You are a senior developer assistant. Summarize source files so a lead architect can understand them quickly without reading every line. Be concise and precise. Return ONLY valid JSON — no markdown, no explanation outside the JSON object.';
+const SUMMARIZE_SYSTEM = 'You are a senior developer assistant. Summarize source files so a lead architect can understand them quickly without reading every line. Be concise and precise. Return ONLY valid JSON — no markdown fences, no explanation outside the JSON object.';
+
+const SUMMARIZE_SCHEMA = `{
+  "overview": "one paragraph description of what this file does",
+  "key_elements": ["important functions, classes, or patterns"],
+  "dependencies": ["external libraries or modules used"],
+  "state_managed": ["data or state this file owns"],
+  "concerns": ["potential issues, TODOs, or surprises"],
+  "line_count": 0
+}`;
 
 // ─── Tool 1: summarize_file ───────────────────────────────────────────────────
 server.tool(
@@ -45,7 +54,7 @@ server.tool(
       };
     }
 
-    // mtimeMs in the key ensures edits automatically bust the cache
+    // mtimeMs in key ensures cache busts automatically when file is edited
     const cacheKey = `summary:${filePath}:${focus ?? 'general'}:${fileStat.mtimeMs}`;
     const cached = cache.get(cacheKey);
     if (cached) return { content: [{ type: 'text', text: `[CACHED]\n${cached}` }] };
@@ -58,7 +67,7 @@ server.tool(
     }
 
     const focusLine = focus ? `Focus specifically on: ${focus}.\n\n` : '';
-    const prompt = `${focusLine}Return ONLY valid JSON:\n{\n  "overview": "one paragraph",\n  "key_elements": ["important functions, classes, patterns"],\n  "dependencies": ["external libs used"],\n  "state_managed": ["data/state this file owns"],\n  "concerns": ["issues, TODOs, surprises"],\n  "line_count": 0\n}\n\nFile (${filePath}):\n\`\`\`\n${content}\n\`\`\``;
+    const prompt = `${focusLine}Return ONLY valid JSON matching this structure:\n${SUMMARIZE_SCHEMA}\n\nFile (${filePath}):\n\`\`\`\n${content}\n\`\`\``;
 
     const result = await pool.execute({ systemPrompt: SUMMARIZE_SYSTEM, prompt, complexity: 'medium' });
     cache.set(cacheKey, result, 3600);
@@ -114,5 +123,6 @@ server.tool(
   }
 );
 
+await cache.load();
 const transport = new StdioServerTransport();
 await server.connect(transport);
