@@ -16,10 +16,7 @@
 <title>Stoqio — Gestão Empresarial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script>(function(){var s=localStorage.getItem('stoqio_theme');if(s!=='light'){document.documentElement.classList.add('dark');}})();</script>
-<script
-  src="https://js.sentry-cdn.com/c5f7da09755c0bb83a69d0f3464bceae.min.js"
-  crossorigin="anonymous"
-></script>
+<!-- Monitoramento Sentry de producao desativado no Stoqio Lab. -->
 <script type="module">
 // ─── FIREBASE SDK ─────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -30,8 +27,7 @@ import { initializeApp as initSecondaryApp } from "https://www.gstatic.com/fireb
 
 // Lab isolado: nao existe configuracao de producao neste arquivo.
 const firebaseConfig = window.STOQIO_LAB_FIREBASE_CONFIG || null;
-if (!firebaseConfig || !firebaseConfig.projectId ||
-    firebaseConfig.projectId === 'erp-distribuidora-905ca') {
+if (!firebaseConfig || !['stoqio-v2-staging', 'demo-stoqio-lab'].includes(firebaseConfig.projectId)) {
   throw new Error('STOQIO LAB: Firebase isolado nao configurado. Nao conectar a producao.');
 }
 
