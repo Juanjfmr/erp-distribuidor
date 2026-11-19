@@ -1,12 +1,15 @@
 // ─── USUÁRIOS ────────────────────────────────────────────────────────────────
 async function loadUsers() {
   try {
-    const { collection, getDocs } = window._fbFns;
-    const snap = await getDocs(collection(window._db, 'users'));
+    const { collection, getDocs, query, where } = window._fbFns;
+    const myCompanyId = window._companyId;
+    if (!myCompanyId) return [];
+    // A consulta ja restringe o tenant; regras do Firestore nao sao filtros.
+    const usersQuery = query(collection(window._db, 'users'), where('companyId', '==', myCompanyId));
+    const snap = await getDocs(usersQuery);
     const users = [];
     snap.forEach(d => users.push({uid: d.id, ...d.data()}));
-    const myCompanyId = window._companyId;
-    return myCompanyId ? users.filter(u => u.companyId === myCompanyId) : users;
+    return users;
   } catch(e) { return []; }
 }
 
