@@ -8,7 +8,7 @@ class AccessError extends Error {
 }
 
 function parseBearer(header) {
-  const match = typeof header === 'string' && /^Bearer\\s+([A-Za-z0-9._~-]+)$/i.exec(header.trim());
+  const match = typeof header === 'string' && /^Bearer\s+([A-Za-z0-9._~-]+)$/i.exec(header.trim());
   return match ? match[1] : null;
 }
 
