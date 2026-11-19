@@ -5,47 +5,25 @@
 // Usa Firebase Function proxy (asaasProxy) para evitar CORS e manter token
 // seguro no Firestore. Fallback: chamada direta (produção mesmo domínio).
 
-var ASAAS_BASE = {
-  sandbox:  'https://api-sandbox.asaas.com/v3',
-  producao: 'https://api.asaas.com/v3'
-};
-
-// URL do proxy — definida em index.html via firebaseConfig
-// Acessar via window.ASAAS_PROXY
-
+// Credenciais nunca devem sair do servidor.
+// O proxy exige token Firebase e pertence exclusivamente ao tenant autenticado.
 async function _asaasReq(method, path, body) {
-  // Tenta proxy primeiro (evita CORS, token server-side)
-  if (window.ASAAS_PROXY) {
-    try {
-      const r = await fetch(window.ASAAS_PROXY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId: window._companyId,
-          method, path,
-          body: body || undefined
-        })
-      });
-      const data = await r.json();
-      if (!data.success) throw new Error(data.error || 'Erro Asaas via proxy');
-      return data.data;
-    } catch(e) {
-      console.warn('asaasProxy fallback:', e.message);
-    }
+  const user = window._auth?.currentUser;
+  if (!window.ASAAS_PROXY || !user || !window._companyId) {
+    throw new Error('Ambiente Asaas ou sessao nao configurados.');
   }
-
-  // Fallback: chamada direta
-  const key = state?.company?.asaasKey;
-  const env = state?.company?.asaasEnv || 'sandbox';
-  if (!key) throw new Error('Chave API Asaas não configurada.');
-  const r = await fetch(`${ASAAS_BASE[env]}${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', 'access_token': key },
-    body: body ? JSON.stringify(body) : undefined
+  const token = await user.getIdToken();
+  const response = await fetch(window.ASAAS_PROXY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      companyId: window._companyId,
+      method, path, body: body || undefined
+    })
   });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data?.errors?.[0]?.description || `Erro Asaas ${r.status}`);
-  return data;
+  const result = await response.json();
+  if (!response.ok || !result.success) throw new Error(result.error || 'Falha no proxy Asaas');
+  return result.data;
 }
 
 async function _asaasUpsertCustomer(client) {
