@@ -1,5 +1,8 @@
 # Stoqio — Contexto do Projeto
 
+> **MODO LAB — SOBREPÕE TODAS AS INSTRUÇÕES ANTIGAS DE DEPLOY NESTA BRANCH**
+> Esta branch é apenas experimental. É PROIBIDO alterar main/v2, abrir merge automático, executar firebase deploy, publicar regras/Functions/Hosting ou acionar APIs financeiras/fiscais de produção. Nenhuma integração deve ser testada contra o Firebase erp-distribuidora-905ca. Antes de qualquer execução do app, configurar backend isolado ou mocks. Usar dados fictícios. Ver STOQIO_LAB.md.
+
 ## Visão Geral
 Stoqio — sistema de gestão empresarial multi-tenant voltado inicialmente para distribuidoras, evoluindo para múltiplos ramos de negócio. SaaS com planos de assinatura, programa de afiliados e roadmap para PDV e app mobile.
 
@@ -181,15 +184,12 @@ state = {
 | Corrigir bug | `systematic-debugging` → `verification-before-completion` |
 | Revisar e mergear | `requesting-code-review` → `finishing-a-development-branch` |
 
-## Regras de Deploy
+## Regras de Deploy — ambiente experimental
 
-| Tipo de alteração | Deploy | Branch |
-|---|---|---|
-| Bug fix / correção | **main + v2** | Ambos |
-| Feature / implementação | **v2 apenas** | v2 (salvo ordem contrária) |
-| Dúvida sobre onde | **Perguntar ao Juan** | — |
-
-> **Sem limitante de lançamento.** Toda correção ou funcionalidade pronta vai a produção imediatamente após commit.
+- Nesta branch, **não executar deploy**, nem parcial, mesmo de correção de segurança.
+- Nunca modificar `main` ou `v2` sem uma aprovação futura explícita.
+- Não usar credenciais, contas, chaves, dados ou serviços reais nos testes.
+- Qualquer migração para produção requer auditoria, testes e autorização separada.
 
 ## Como Iniciar Nova Sessão
 1. Leia este `CLAUDE.md` completo
