@@ -11,8 +11,7 @@ const admin     = require('firebase-admin');
 
 const db = admin.firestore();
 
-// Token de autenticação do webhook — definido no painel Asaas
-// Se vazio, webhook aceita qualquer chamada (modo insecure — só para dev/sandbox)
+// Sem segredo configurado o endpoint falha fechado, inclusive em staging.
 const AUTH_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || '';
 
 exports.asaasWebhook = functions.https.onRequest(async (req, res) => {
@@ -20,13 +19,12 @@ exports.asaasWebhook = functions.https.onRequest(async (req, res) => {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Validar token de autenticação do Asaas (header asaas-access-token)
-  if (AUTH_TOKEN) {
-    const receivedToken = req.headers['asaas-access-token'];
-    if (receivedToken !== AUTH_TOKEN) {
-      console.warn('asaasWebhook: token inválido');
-      return res.status(401).send('Unauthorized');
-    }
+  // Nunca aceitar eventos sem segredo configurado: mensagens podem registrar pagamentos.
+  if (!AUTH_TOKEN) return res.status(503).send('Webhook nao configurado.');
+  const receivedToken = req.headers['asaas-access-token'];
+  if (receivedToken !== AUTH_TOKEN) {
+    console.warn('asaasWebhook: token invalido');
+    return res.status(401).send('Unauthorized');
   }
 
   const { id: eventId, event, payment } = req.body || {};
