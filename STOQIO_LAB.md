@@ -29,10 +29,10 @@ Este ramo é para prototipação e correções exploratórias. NÃO publicar no 
 ## Plano incremental
 - [x] Criar branch isolada
 - [x] Atualizar CLAUDE.md para bloquear deploy
-- [ ] Impedir conexão do cliente experimental ao Firebase de produção
-- [ ] Autenticar e autorizar os proxies de pagamento/fiscal
-- [ ] Endurecer regras do Firestore
-- [ ] Eliminar concorrência/erros de persistência do estado
+- [x] Impedir conexão do cliente experimental ao Firebase de produção
+- [x] Autenticar e autorizar os proxies de pagamento/fiscal
+- [x] Endurecer regras do Firestore
+- [x] Eliminar concorrência/erros de persistência do estado
 - [ ] Testes com emuladores e dados de demonstração
 - [ ] Auditar outras Cloud Functions e regras antes de qualquer uso real
 
