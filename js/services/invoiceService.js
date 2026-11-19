@@ -47,7 +47,7 @@ function _rtcTotais(itens, forcar) {
   return { cbs_valor_total: cbsTot, ibs_valor_total: ibsTot, is_valor_total: 0 };
 }
 
-const FOCUS_PROXY = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net/focusProxy';
+// Endereco resolvido pelo Firebase do ambiente isolado; nunca usar proxy da producao.
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
 // Chama o focusProxy e retorna { success, data } ou { success, error }
@@ -57,9 +57,13 @@ async function _focusCall(action, payload) {
   if (!companyId) return { success: false, error: 'companyId não disponível.' };
 
   try {
-    const resp = await fetch(FOCUS_PROXY, {
+    const proxyUrl = window._focusProxyUrl;
+    const user = window._auth?.currentUser;
+    if (!proxyUrl || !user) return { success: false, error: 'Ambiente ou sessao nao configurados.' };
+    const token = await user.getIdToken();
+    const resp = await fetch(proxyUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ companyId, action, payload }),
     });
     const result = await resp.json();
