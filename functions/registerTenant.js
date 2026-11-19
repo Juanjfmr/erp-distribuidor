@@ -115,6 +115,17 @@ exports.registerTenant = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'companyId e fiscalData.cnpj são obrigatórios.');
   }
 
+  // Operacoes fiscais externas sao proibidas no Lab sem staging isolado e opt-in.
+  const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '';
+  if (!projectId || projectId === 'erp-distribuidora-905ca' || process.env.STOQIO_LAB_ALLOW_EXTERNAL !== 'true') {
+    throw new functions.https.HttpsError('failed-precondition', 'Integracao fiscal desativada no Lab.');
+  }
+  const profileSnap = await admin.firestore().doc('users/' + context.auth.uid).get();
+  const profile = profileSnap.exists ? profileSnap.data() : null;
+  if (!profile || profile.active === false || profile.companyId !== companyId || profile.role !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Somente o administrador da empresa pode configurar o fiscal.');
+  }
+
   const cnpjLimpo    = fiscalData.cnpj.replace(/\D/g, '');
   const hasCert      = !!(pfxBase64 && certSenha);
   const masterToken  = await getMasterToken();
