@@ -198,20 +198,16 @@ tr:hover td{background:var(--surface2);}
 <script type="module">
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = 'juanjfmr1@gmail.com';
-const FUNCTIONS_BASE = 'https://us-central1-erp-distribuidora-905ca.cloudfunctions.net';
+const FUNCTIONS_BASE = `https://us-central1-${window.STOQIO_LAB_FIREBASE_CONFIG?.projectId || 'demo-stoqio-lab'}.cloudfunctions.net`;
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, orderBy, query, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
-  authDomain: "erp-distribuidora-905ca.firebaseapp.com",
-  projectId: "erp-distribuidora-905ca",
-  storageBucket: "erp-distribuidora-905ca.firebasestorage.app",
-  messagingSenderId: "1081428850259",
-  appId: "1:1081428850259:web:6e3d83b13a033e0154b8a6"
-};
+const firebaseConfig = window.STOQIO_LAB_FIREBASE_CONFIG || null;
+if (!firebaseConfig || !['stoqio-v2-staging','demo-stoqio-lab'].includes(firebaseConfig.projectId)) {
+  throw new Error('STOQIO LAB: console administrativo exige Firebase separado de producao.');
+}
 
 const app = initializeApp(firebaseConfig, 'admin');
 const auth = getAuth(app);
