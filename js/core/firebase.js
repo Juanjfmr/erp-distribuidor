@@ -25,64 +25,86 @@ const _COLS = ['products','clients','suppliers','invoices','purchases',
 
 if (!window._lastSaved) window._lastSaved = {};
 
-async function saveToFirebase() {
+// Persistencia sequencial: snapshots de cada save nunca gravam em paralelo.
+// A ultima versao salva so avanca quando todos os batches completam.
+let _stoqioSaveQueue = Promise.resolve();
+
+function saveToFirebase() {
+  const companyId = window._companyId || window._currentUser?.uid;
+  if (!companyId || companyId === 'default' || !window._currentUser) {
+    return Promise.resolve(); // offline/sem autenticacao: saveState ja salvou localmente
+  }
+  let snapshot;
+  try {
+    snapshot = JSON.parse(JSON.stringify(state));
+  } catch (err) {
+    console.error('Falha ao copiar estado para persistencia:', err);
+    showSyncStatus('⚠ Salvo local', true);
+    return Promise.resolve();
+  }
+  _stoqioSaveQueue = _stoqioSaveQueue
+    .catch(() => {}) // nenhuma falha deixa a fila travada
+    .then(() => _persistFirebaseSnapshot(companyId, snapshot));
+  return _stoqioSaveQueue;
+}
+
+async function _persistFirebaseSnapshot(companyId, snapshot) {
+  // Impede que um save enfileirado por uma sessao altere a nova sessao.
+  if (window._companyId !== companyId || !window._currentUser) return;
   try {
     const db = window._db;
     const { doc, setDoc, writeBatch } = window._fbFns;
-    const uid = window._companyId || (window._currentUser ? window._currentUser.uid : 'default');
 
-    await setDoc(doc(db, 'empresas', uid), {
-      company: state.company,
+    await setDoc(doc(db, 'empresas', companyId), {
+      company: snapshot.company,
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
     let batch = writeBatch(db);
     let opCount = 0;
-
+    const nextSaved = {};
     const flush = async () => {
-      if (opCount > 0) { await batch.commit(); batch = writeBatch(db); opCount = 0; }
+      if (opCount > 0) {
+        await batch.commit();
+        batch = writeBatch(db);
+        opCount = 0;
+      }
     };
 
     for (const colName of _COLS) {
-      const items = state[colName] || [];
+      const items = snapshot[colName] || [];
       const prevSnap = window._lastSaved[colName] || {};
-      const currentIds = new Set();
-
+      const nextSnap = {};
       for (const item of items) {
         const id = String(item.id);
-        currentIds.add(id);
         const json = JSON.stringify(item);
+        nextSnap[id] = json;
         if (prevSnap[id] !== json) {
-          batch.set(doc(db, 'empresas', uid, colName, id), item);
+          batch.set(doc(db, 'empresas', companyId, colName, id), item);
           opCount++;
           if (opCount >= 490) await flush();
         }
-        prevSnap[id] = json;
       }
-
       for (const prevId of Object.keys(prevSnap)) {
-        if (!currentIds.has(prevId)) {
-          batch.delete(doc(db, 'empresas', uid, colName, prevId));
-          delete prevSnap[prevId];
+        if (!Object.prototype.hasOwnProperty.call(nextSnap, prevId)) {
+          batch.delete(doc(db, 'empresas', companyId, colName, prevId));
           opCount++;
           if (opCount >= 490) await flush();
         }
       }
-
-      window._lastSaved[colName] = prevSnap;
+      nextSaved[colName] = nextSnap;
     }
-
     await flush();
-    const _uid = window._companyId || window._currentUser?.uid || '';
-    if (_uid) localStorage.setItem('stoqio_uid', _uid);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    showSyncStatus('✓ Salvo');
-  } catch(e) {
-    console.error('Firebase save error:', e);
+
+    // Nunca marcar como sincronizado antes do commit: falha deve ser reenviavel.
+    if (window._companyId === companyId) {
+      window._lastSaved = nextSaved;
+      showSyncStatus('✓ Salvo');
+    }
+  } catch (err) {
+    console.error('Firebase save error:', err);
     showSyncStatus('⚠ Salvo local', true);
-    const _uid = window._companyId || window._currentUser?.uid || '';
-    if (_uid) localStorage.setItem('stoqio_uid', _uid);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // A copia local continua sendo mantida por saveState; lastSaved nao avanca.
   }
 }
 
