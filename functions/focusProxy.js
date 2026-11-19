@@ -9,6 +9,7 @@
 const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
 const axios     = require('axios');
+const { requireTenantUser } = require('./requestAuth');
 
 // Mapeamento de action → { method, pathTemplate, needsRef }
 const ROUTES = {
@@ -71,6 +72,19 @@ exports.focusProxy = functions.https.onRequest(async (req, res) => {
   const route = ROUTES[action];
   if (!route) {
     return res.status(400).json({ success: false, error: `Ação desconhecida: ${action}` });
+  }
+
+  // No Lab, integrações externas são bloqueadas por padrão, mesmo com credenciais.
+  // Jamais permitir que esta branch use os serviços do projeto de produção.
+  const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || '';
+  if (!projectId || projectId === 'erp-distribuidora-905ca' || process.env.STOQIO_LAB_ALLOW_EXTERNAL !== 'true') {
+    return res.status(503).json({ success: false, error: 'Integracao externa desabilitada no Stoqio Lab.' });
+  }
+
+  try {
+    await requireTenantUser(req, admin, companyId, ['admin', 'vendedor']);
+  } catch (err) {
+    return res.status(err.status || 500).json({ success: false, error: err.status ? err.message : 'Falha de autenticacao.' });
   }
 
   try {
