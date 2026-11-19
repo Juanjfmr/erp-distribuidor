@@ -23,19 +23,17 @@
 <script type="module">
 // ─── FIREBASE SDK ─────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeApp as initSecondaryApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAhHYdX9NY4RG9JihVuP3VdJAE48QzjrmI",
-  authDomain: "erp-distribuidora-905ca.firebaseapp.com",
-  projectId: "erp-distribuidora-905ca",
-  storageBucket: "erp-distribuidora-905ca.firebasestorage.app",
-  messagingSenderId: "1081428850259",
-  appId: "1:1081428850259:web:6e3d83b13a033e0154b8a6"
-};
+// Lab isolado: nao existe configuracao de producao neste arquivo.
+const firebaseConfig = window.STOQIO_LAB_FIREBASE_CONFIG || null;
+if (!firebaseConfig || !firebaseConfig.projectId ||
+    firebaseConfig.projectId === 'erp-distribuidora-905ca') {
+  throw new Error('STOQIO LAB: Firebase isolado nao configurado. Nao conectar a producao.');
+}
 
 const app = initializeApp(firebaseConfig);
 window._firebaseConfig = firebaseConfig;
@@ -57,12 +55,14 @@ try {
   window.ASAAS_PROXY = `https://${region}-${pid}.cloudfunctions.net/asaasProxy`;
   window._focusProxyUrl = `https://${region}-${pid}.cloudfunctions.net/focusProxy`;
 } catch(_) {}
-window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
+window._fbFns = { doc, setDoc, getDoc, collection, getDocs, writeBatch, runTransaction, query, where, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, initSecondaryApp, GoogleAuthProvider, signInWithPopup };
 window._firebaseConfig = firebaseConfig;
 
 // Auth state listener
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // Cadastro proprio pode disparar o listener antes de gravar o perfil.
+    if (window._stoqioSignupPending) await window._stoqioSignupPending;
     window._currentUser = user;
     // Load user profile/role from Firestore
     try {
