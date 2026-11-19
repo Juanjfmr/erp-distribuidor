@@ -331,6 +331,9 @@ async function doSignup() {
   if (pass.length < 6) { errEl.style.display='block'; errEl.textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
 
   btn.textContent = 'Criando conta...'; btn.disabled = true;
+  // Aguarda a gravacao do perfil antes de o observer de auth iniciar bootstrap.
+  let releaseSignup;
+  window._stoqioSignupPending = new Promise(resolve => { releaseSignup = resolve; });
   try {
     const { createUserWithEmailAndPassword, doc, setDoc } = window._fbFns;
     const cred = await createUserWithEmailAndPassword(window._auth, email, pass);
@@ -366,6 +369,9 @@ async function doSignup() {
       errEl.textContent = 'Erro ao criar conta: ' + e.message;
     }
     btn.textContent = 'Criar conta grátis'; btn.disabled = false;
+  } finally {
+    releaseSignup();
+    window._stoqioSignupPending = null;
   }
 }
 
